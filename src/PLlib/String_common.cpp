@@ -1,3 +1,8 @@
+#include "String_common.hpp"
+
+#include "types.hpp"
+#include "mem_common.hpp"
+
 namespace string {
     int strlen(const char* text) {
         int len = 0;
@@ -43,68 +48,50 @@ namespace string {
 }
 
 namespace term {
-    const auto video = reinterpret_cast<volatile char *>(0xB8000);
-    int cursor_x = 0;
-    int cursor_y = 0;
-    constexpr int VGA_WIDTH = 80;
-    constexpr int VGA_HEIGHT = 25;
-    constexpr int TAB_SIZE = 4;
-
     void scroll(const int amount) {
         for (int i = amount; i > 0; i--) {
-            for (int j = 0; j < VGA_HEIGHT - 1; j++) {
-                for (int k = 0; k < VGA_WIDTH * 2; k++) {
-                    video[(j * VGA_WIDTH * 2) + k] = video[((j + 1) * VGA_WIDTH * 2) + k];
-                }
+            // Copy Line-1 to Line
+            for (int y = 0; y < VGA_HEIGHT - 1; y++) {
+                mem::memcpy(&video[y * VGA_WIDTH], &video[(y+1)*VGA_WIDTH], VGA_WIDTH * sizeof(uint16_t));
             }
-            for (int k = 0; k < VGA_WIDTH; k++) {
-                const int index = (VGA_HEIGHT - 1) * VGA_WIDTH * 2 + k * 2;
-                video[index] = ' ';
-                video[index + 1] = 0x07;
-
-            }
+            // Clear last line
+            mem::memset16(&video[(VGA_HEIGHT-1) * VGA_WIDTH], (0x07 << 8) | ' ', VGA_WIDTH);
             cursor_y--;
+            if (cursor_y < 0) cursor_y = 0;
         }
     }
 
     void print(const char* text) {
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
+
+            // Special cases
+            if (c == '\t') {
+                cursor_x += TAB_SIZE;
+                if (cursor_x >= VGA_WIDTH) {
+                    cursor_x = 0;
+                    cursor_y+=1;
+                }
+                continue;
+            } else if (c == '\n') {
+                cursor_x = 0;
+                cursor_y+=1;
+                continue;
+            }
+            // Scroll
             if (cursor_y >= VGA_HEIGHT) {
                 scroll(1);
             }
 
-            if (c == '\t') {
-                cursor_x += TAB_SIZE;
-                if (cursor_x >= 80) {
-                    cursor_x = 0;
-                    cursor_y+=1;
-                }
-                if (cursor_y >= VGA_HEIGHT) {
-                    scroll(1);
-                }
-                continue;
-            }
-            if (c == '\n') {
-                cursor_x = 0;
-                cursor_y+=1;
-                if (cursor_y >= VGA_HEIGHT) {
-                    scroll(1);
-                }
-                continue;
-            }
-
-            const int idx = (cursor_y*160)+cursor_x*2;
-            video[idx] = c;
-            video[idx+1] = 0x07;
+            // Draw char
+            const int idx = (cursor_y*VGA_WIDTH)+cursor_x;
+            video[idx] = (0x07 << 8) | c;
             cursor_x+=1;
 
-            if (cursor_x >= 80) {
+            // New line (if end of current)
+            if (cursor_x >= VGA_WIDTH) {
                 cursor_x = 0;
                 cursor_y+=1;
-                if (cursor_y >= VGA_HEIGHT) {
-                    scroll(1);
-                }
             }
         }
     }
@@ -115,14 +102,9 @@ namespace term {
         print(buf);
     }
 
+    // Clear whole screen
     void clear() {
-        for (int y = 0; y < VGA_HEIGHT; y++) {
-            for (int x = 0; x < VGA_WIDTH; x++) {
-                const int index = (y * VGA_WIDTH + x) * 2;
-                video[index] = ' ';
-                video[index + 1] = 0x07;
-            }
-        }
+        mem::memset16(video, (0x07 << 8) | ' ', VGA_WIDTH*VGA_HEIGHT);
         cursor_x = 0;
         cursor_y = 0;
     }
