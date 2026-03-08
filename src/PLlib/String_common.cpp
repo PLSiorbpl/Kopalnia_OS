@@ -64,18 +64,28 @@ namespace term {
     void print(const char* text) {
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
+            const int idx = (cursor_y*VGA_WIDTH)+cursor_x;
 
             // Special cases
-            if (c == '\t') {
+            if (c == '\t') { // TAB
                 cursor_x += TAB_SIZE;
                 if (cursor_x >= VGA_WIDTH) {
                     cursor_x = 0;
                     cursor_y+=1;
                 }
                 continue;
-            } else if (c == '\n') {
+            } else if (c == '\n') { // Enter
                 cursor_x = 0;
                 cursor_y+=1;
+                continue;
+            } else if (c == '\b') { // Backspace
+                cursor_x -= 1;
+                video[idx-1] = (0x07 << 8) | ' ';
+                if (cursor_x < 0) {
+                    cursor_x = VGA_WIDTH;
+                    cursor_y -= 1;
+                    if (cursor_y < 0) cursor_y = 0;
+                }
                 continue;
             }
             // Scroll
@@ -84,7 +94,6 @@ namespace term {
             }
 
             // Draw char
-            const int idx = (cursor_y*VGA_WIDTH)+cursor_x;
             video[idx] = (0x07 << 8) | c;
             cursor_x+=1;
 
@@ -99,6 +108,11 @@ namespace term {
     void print_int(const int value) {
         char buf[12];
         string::int_to_str(buf, value);
+        print(buf);
+    }
+
+    void put_char(const char c) {
+        const char buf[2] = {c, '\0'};
         print(buf);
     }
 

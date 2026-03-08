@@ -1,4 +1,5 @@
 #include "PLlib/String_common.hpp"
+#include "Drivers/Keyboard.hpp"
 
 extern "C" void kernel_main() {
     term::print("------------ Kopalnia OS ------------\n");
@@ -14,5 +15,8 @@ extern "C" void kernel_main() {
     term::print("Test\n");
 
     while (true) {
+        const uint8_t c = kb::get_char();
+        if (c != 0)
+            term::put_char(c);
     }
 }

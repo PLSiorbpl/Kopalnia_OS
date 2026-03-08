@@ -19,5 +19,6 @@ namespace term {
     void scroll(int amount);
     void print(const char* text);
     void print_int(int value);
+    void put_char(char c);
     void clear();
 }
