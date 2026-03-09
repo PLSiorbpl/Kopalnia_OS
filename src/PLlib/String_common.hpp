@@ -4,6 +4,7 @@
 namespace string {
     int strlen(const char* text);
     void int_to_str(char* buffer, int value);
+    bool str_cmp(const char* str1, const char* str2);
 }
 
 namespace term {
