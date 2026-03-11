@@ -6,7 +6,7 @@ section .multiboot_header
 align 4
 dd 0x1BADB002       ; magic
 dd 0x0              ; flags (align + memory info)
-dd -(0x1BADB002 + 0x0);0010003)
+dd -(0x1BADB002 + 0x0); 0010003
 
 section .text
 _start:
@@ -15,3 +15,5 @@ _start:
 .hang:
     hlt
     jmp .hang
+
+section .note.GNU-stack noalloc noexec nowrite progbits

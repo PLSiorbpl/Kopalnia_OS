@@ -20,28 +20,46 @@ extern "C" [[noreturn]] void kernel_main() {
     static int i = 0;
     while (true) {
         const char c = kb::get_char();
-        if (c) {
-            term::put_char(c);
-            buffer[i] = c;
-            i++;
-            // Logic
-            if (c == '\n') {
-                buffer[i] = '\0';
-                // Do command:
-                if (string::str_cmp(buffer, "help\n")) {
-                    term::print("\tcommands: help, clear, echo\n");
-                } else if (string::str_cmp(buffer, "clear\n")) {
-                    term::clear();
-                } else if (string::str_cmp(buffer, "echo\n")) {
-                    term::print("\techo: too lazy to make arguments xD\n");
-                } else {
-                    term::print("\tUnknown command\n");
-                }
 
-                term::print("Kopalnia-OS>");
-                mem::memset(buffer, 0, 256);
-                i = 0;
+        if (c == '\b' && i <= 0)
+            continue;
+
+        if (c) {
+            if (i < 255) {
+                term::put_char(c);
+                if (c == '\b') {
+                    i -= 1;
+                    buffer[i] = ' ';
+                } else {
+                    buffer[i] = c;
+                    i += 1;
+                }
+                // Logic
+                if (c == '\n') {
+                    // override \n with \0
+                    if (i > 0)
+                        buffer[i-1] = '\0';
+                    else
+                        buffer[0] = '\0';
+
+                    // Do commands:
+                    if (string::str_cmp(buffer, "help")) {
+                        term::print("\tcommands: help, clear, echo\n");
+                    } else if (string::str_cmp(buffer, "clear")) {
+                        term::clear();
+                    } else if (string::str_cmp(buffer, "echo")) {
+                        term::print("\techo: too lazy to make arguments xD\n");
+                    } else {
+                        term::print("\tUnknown command\n");
+                    }
+
+                    term::print("Kopalnia-OS>");
+                    mem::memset(buffer, 0, 256);
+                    i = 0;
+                }
             }
+            if (c == '\b' && i >= 255)
+                i--;
         }
     }
 }
