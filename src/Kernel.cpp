@@ -1,19 +1,23 @@
-#include <arch/x86/Common/common.hpp>
-
+#include "kernel/systemPL.hpp"
 #include "PLlib/String_common.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "PLlib/mem_common.hpp"
-#include "arch/x86/GDT/GDT.hpp"
-#include "arch/x86/IDT/IDT.hpp"
 #include "kernel/Sleep.hpp"
+#include "kernel/Memory/heap.hpp"
 
 extern "C" [[noreturn]] void kernel_main() {
-    GDT::gdt_install();
-    IDT::idt_install();
-    Time::Set_PIT(100); // 100Hz
-    x86::set_INT_flag(true);
+    systemPL::Init();
     term::print("------------ Kopalnia OS ------------\n\n", term::Color::Green);
     term::print("Update!!:\tInterrupts (Timer and Keyboard)\n\n", term::Color::Yellow);
+
+    term::print("malloc() test!\n", term::Color::LightBlue);
+    void* adr = heap::malloc(1);
+    auto adr_val = reinterpret_cast<uintptr_t>(adr);
+    term::print_hex(static_cast<int>(adr_val));
+    term::print("\nKernel size: ");
+    term::print_int(reinterpret_cast<uintptr_t>(&heap::_end) - 0x100000);
+    term::print("B\n\n");
+
     term::print("Kopalnia-OS>");
 
     static char buffer[256];

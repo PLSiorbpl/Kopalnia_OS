@@ -54,6 +54,22 @@ namespace string {
             buffer[i-1-j] = tmp;
         }
     }
+
+    void int_to_strhex(char *buffer, const int value) {
+        auto hex_chars = "0123456789ABCDEF";
+
+        buffer[0] = '0';
+        buffer[1] = 'x';
+
+        char *ptr = buffer + 2;
+
+        for (int i = 28; i >= 0; i -= 4) {
+            const uint8_t nibble = (value >> i) & 0xF;
+            *ptr++ = hex_chars[nibble];
+        }
+
+        *ptr = '\0';
+    }
 }
 
 namespace term {
@@ -114,13 +130,19 @@ namespace term {
         }
     }
 
-    void print_int(const int value, Color color) {
+    void print_int(const int value, const Color color) {
         char buf[12];
         string::int_to_str(buf, value);
         print(buf, color);
     }
 
-    void put_char(const char c, Color color) {
+    void print_hex(const int value, const Color color) {
+        char buf[12];
+        string::int_to_strhex(buf, value);
+        print(buf, color);
+    }
+
+    void put_char(const char c, const Color color) {
         const char buf[2] = {c, '\0'};
         print(buf, color);
     }

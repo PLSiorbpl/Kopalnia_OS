@@ -11,3 +11,4 @@ typedef int int32_t;
 typedef long int64_t;
 
 typedef unsigned int size_t;
+typedef unsigned int uintptr_t; // 32bit ptr

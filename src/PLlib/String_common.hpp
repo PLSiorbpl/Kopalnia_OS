@@ -4,6 +4,7 @@
 namespace string {
     int strlen(const char* text);
     void int_to_str(char* buffer, int value);
+    void int_to_strhex(char* buffer, int value);
     bool str_cmp(const char* str1, const char* str2);
 }
 
@@ -39,6 +40,7 @@ namespace term {
     void scroll(int amount);
     void print(const char* text, Color color = Color::White);
     void print_int(int value, Color color = Color::LightGreen);
+    void print_hex(int value, Color color = Color::LightGreen);
     void put_char(char c, Color color = Color::LightCyan);
     void clear(Color BGcolor = Color::Black);
 }
