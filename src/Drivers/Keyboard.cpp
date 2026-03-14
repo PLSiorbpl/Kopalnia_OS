@@ -1,16 +1,18 @@
 #include "Keyboard.hpp"
+
+#include <arch/x86/Common/common.hpp>
 #include "PLlib/types.hpp"
 
 namespace kb {
+    // force get char (waits until char)
     char get_char() {
-        uint8_t value;
-        asm volatile("inb %1, %0" : "=a"(value) : "Nd"(0x64));
-        if ((value & 1) == 1) {
-            uint8_t scancode;
-            asm volatile("inb %1, %0" : "=a"(scancode) : "Nd"(0x60));
-            if (scancode & 0x80) return 0;
-            return scancode_map[scancode];
-        }
+        while (buf.empty())
+            x86::halt(); // so it doesnt use 100% cpu
+
+        uint8_t sc;
+        buf.pop(sc);
+        if (sc < sizeof(scancode_map)/sizeof(scancode_map[0]))
+            return scancode_map[sc];
         return 0;
     }
 }

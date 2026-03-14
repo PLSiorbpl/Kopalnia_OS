@@ -1,6 +1,5 @@
 #pragma once
 #include "types.hpp"
-#include "mem_common.hpp"
 
 namespace mem {
     volatile void* memcpy(volatile void* dst, volatile const void* src, size_t size);

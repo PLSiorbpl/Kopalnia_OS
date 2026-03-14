@@ -70,7 +70,7 @@ namespace term {
         }
     }
 
-    void print(const char* text) {
+    void print(const char* text, Color color) {
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
             const int idx = (cursor_y*VGA_WIDTH)+cursor_x;
@@ -103,7 +103,7 @@ namespace term {
             }
 
             // Draw char
-            video[idx] = (0x07 << 8) | c;
+            video[idx] = (static_cast<uint8_t>(color) << 8) | c;
             cursor_x+=1;
 
             // New line (if end of current)
@@ -114,20 +114,20 @@ namespace term {
         }
     }
 
-    void print_int(const int value) {
+    void print_int(const int value, Color color) {
         char buf[12];
         string::int_to_str(buf, value);
-        print(buf);
+        print(buf, color);
     }
 
-    void put_char(const char c) {
+    void put_char(const char c, Color color) {
         const char buf[2] = {c, '\0'};
-        print(buf);
+        print(buf, color);
     }
 
     // Clear whole screen
-    void clear() {
-        mem::memset16(video, (0x07 << 8) | ' ', VGA_WIDTH*VGA_HEIGHT);
+    void clear(Color BGcolor) {
+        mem::memset16(video, (static_cast<uint8_t>(BGcolor) << 8) | ' ', VGA_WIDTH*VGA_HEIGHT);
         cursor_x = 0;
         cursor_y = 0;
     }
