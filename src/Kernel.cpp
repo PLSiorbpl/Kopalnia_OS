@@ -10,13 +10,20 @@ extern "C" [[noreturn]] void kernel_main() {
     term::print("------------ Kopalnia OS ------------\n\n", term::Color::Green);
     term::print("Update!!:\tInterrupts (Timer and Keyboard)\n\n", term::Color::Yellow);
 
-    term::print("malloc() test!\n", term::Color::LightBlue);
-    void* adr = heap::malloc(1);
-    auto adr_val = reinterpret_cast<uintptr_t>(adr);
-    term::print_hex(static_cast<int>(adr_val));
-    term::print("\nKernel size: ");
+    void* adr = heap::malloc(100);
+    void* adr1 = heap::malloc(67);
+    void* adr2 = heap::malloc(420);
+    void* adr3 = heap::malloc(2137);
+    heap::free(adr2);
+    heap::free(adr1);
+    heap::malloc(10);
+    heap::malloc(10000);
+    term::print("Kernel size: ");
     term::print_int(reinterpret_cast<uintptr_t>(&heap::_end) - 0x100000);
     term::print("B\n\n");
+    //term::print("Heap visualization:\n", term::Color::LightCyan);
+    //heap::dump_heap();
+    //term::print("\n");
 
     term::print("Kopalnia-OS>");
 
@@ -48,7 +55,9 @@ extern "C" [[noreturn]] void kernel_main() {
 
                     // Do commands:
                     if (string::str_cmp(buffer, "help")) {
-                        term::print("\tcommands: help, clear, echo, poweroff (VM Only), sleep\n", term::Color::LightBlue);
+                        term::print("\tcommands: help, clear, echo, poweroff (VM Only), sleep, heap\n", term::Color::LightBlue);
+                    } else if (string::str_cmp(buffer, "heap")) {
+                        heap::dump_heap();
                     } else if (string::str_cmp(buffer, "clear")) {
                         term::clear();
                     } else if (string::str_cmp(buffer, "echo")) {
@@ -70,8 +79,10 @@ extern "C" [[noreturn]] void kernel_main() {
                     i = 0;
                 }
             }
-            if (c == '\b' && i >= 255)
+            if (c == '\b' && i >= 255) {
                 i--;
+                term::print("\b");
+            }
         }
     }
 }

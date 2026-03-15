@@ -1,20 +1,121 @@
 #include "heap.hpp"
+#include "PLlib/String_common.hpp"
 
 namespace heap {
+    Block* heap_head;
     uintptr_t heap_start;
     uintptr_t heap_end;
     uintptr_t heap_ptr;
 
     void heap_init(const uintptr_t size) {
+        heap_head = &heap_start_;
+        heap_head->size = size - sizeof(Block);
+        heap_head->free = true;
+        heap_head->next = nullptr;
+        heap_head->prev = nullptr;
+
         heap_start = reinterpret_cast<uintptr_t>(&_end);
         heap_end = heap_start + size;
-        heap_ptr = heap_start;
     }
-    // Bump allocator
-    void* malloc(const size_t size) {
-        if (size > heap_end - heap_ptr || size <= 0) return nullptr;
-        const uintptr_t ret = (heap_ptr + 7) & ~7; // align 8
-        heap_ptr = ret + size;
-        return reinterpret_cast<void*>(ret);
+    // True allocator
+    void* malloc(size_t size) {
+        size = (size + 7) & ~7;
+        for (Block* block = heap_head; block != nullptr; block = block->next) {
+            if (block->free && block->size >= size) {
+
+                if (block->size >= size + sizeof(Block) + 8) {
+                    // Split
+                    const size_t new_size = block->size - size - sizeof(Block);
+                    auto* new_block = reinterpret_cast<Block *>(reinterpret_cast<uint8_t *>(block) + sizeof(Block) + size);
+                    new_block->size = new_size;
+                    new_block->free = true;
+                    new_block->next = block->next;
+                    new_block->prev = block;
+                    if (new_block->next)
+                        new_block->next->prev = new_block;
+                    block->size = size;
+                    block->next = new_block;
+                }
+
+                block->free = false;
+                return block+1;
+            }
+        }
+        return nullptr;
+    }
+
+    void free(void* ptr) {
+        if (!ptr) return;
+        Block* old_block = reinterpret_cast<Block*>(ptr) - 1;
+        old_block->free = true;
+
+        while (old_block->next && old_block->next->free) {
+            // Merge Right
+            const Block* next = old_block->next;
+            old_block->size += next->size + sizeof(Block);
+            old_block->next = next->next;
+            if (old_block->next)
+                old_block->next->prev = old_block;
+        }
+
+        while (old_block->prev && old_block->prev->free) {
+            old_block->prev->size += old_block->size + sizeof(Block);
+            old_block->prev->next = old_block->next;
+            if (old_block->next)
+                old_block->next->prev = old_block->prev;
+            old_block = old_block->prev;
+        }
+    }
+
+    size_t check_heap() {
+        size_t free_bytes = 0;
+        for (const Block* b = heap_head; b; b = b->next) {
+            free_bytes += b->size;
+        }
+        return free_bytes;
+    }
+
+    size_t check_free_heap() {
+        size_t free_bytes = 0;
+        for (const Block* b = heap_head; b; b = b->next) {
+            if (b->free) free_bytes += b->size;
+        }
+        return free_bytes;
+    }
+
+    size_t check_used_heap() {
+        size_t free_bytes = 0;
+        for (const Block* b = heap_head; b; b = b->next) {
+            if (!b->free) free_bytes += b->size;
+        }
+        return free_bytes;
+    }
+
+    void dump_heap() {
+        int b_count = 0;
+        term::print("Heap Visualization\n", term::Color::LightCyan);
+        for (Block* b = heap_head; b; b = b->next) {
+            b_count++;
+            term::print("\tBlock #");
+            term::print_int(b_count);
+            term::print(" @ ");
+            term::print_hex(reinterpret_cast<uintptr_t>(b), term::Color::LightGray);
+            term::print(" size: ");
+            term::print_int(b->size, term::Color::Green);
+            term::print("B");
+            term::print(b->free ? " free\n" : " used\n", b->free ? term::Color::LightGreen : term::Color::LightRed);
+        }
+        term::print("\tBlocks total: ");
+        term::print_int(b_count);
+        term::print("\nSummary (");
+        term::print("used", term::Color::LightRed); term::print("/");
+        term::print("free", term::Color::LightGreen); term::print("/");
+        term::print("all", term::Color::LightCyan); term::print("): ");
+        term::print_int(heap::check_used_heap(), term::Color::LightRed);
+        term::print("B / ");
+        term::print_int(heap::check_free_heap(), term::Color::LightGreen);
+        term::print("B / ");
+        term::print_int(heap::check_heap(), term::Color::LightCyan);
+        term::print("B\n\n");
     }
 }
