@@ -1,24 +1,33 @@
 # Kopalnia-OS
-- Very basic *kernel* made by PLSiorbpl in **C++**.
+- Very basic *kernel* made by PLSiorbpl in **C++** and **asm**.
 - _**Should**_ work on all modern and older CPUs.
+- Boots in **legacy** mode **(be careful on real machine)**
 
 ## Structure
 ```bash
 Kopalnia-OS/
 ├── isodir/   # used to create bootable .iso
 ├── src/      # Source code
+│   ├── arch/       # All arch dependent stuff
+│   │   └── x86/
+│   │
 │   ├── Drivers/    # Drivers code
+│   ├── kernel/     # Kernel code
 │   ├── PLib/       # Standard library
 │   └── Kernel.cpp  # Main Kernel file
+│
 ├── CMakeLists.txt    # Build Kernel.elf, iso and runs it in qemu
 ├── build.bash  # Alternative to CMake
-└── Linker.ld   # Linker file
+└── Linker.ld   # Linker settings
 ```
 
 ### Commands
 - help
 - clear
 - echo
+- poweroff (QEMU only)
+- sleep
+- heap
 
 ## Building
 Using CMake:
