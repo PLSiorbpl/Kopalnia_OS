@@ -3,6 +3,7 @@
 
 namespace mem {
     volatile void* memcpy(volatile void* dst, volatile const void* src, size_t size);
+    volatile void* memmove(volatile void* dst, volatile const void* src, size_t size);
 
     volatile void* memset(volatile void* dst, uint8_t value, size_t size);
 

@@ -35,7 +35,13 @@ target_compile_options(kopalnia_os PRIVATE
         $<$<COMPILE_LANGUAGE:C,CXX>:-ffreestanding>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-exceptions>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-stack-protector>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-omit-frame-pointer>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-builtin>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-rtti>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pie>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pic>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-march=i386>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-mtune=i386>
         $<$<COMPILE_LANGUAGE:C,CXX>:-std=gnu++17>
         -Wall
         -O2
@@ -44,13 +50,14 @@ target_compile_options(kopalnia_os PRIVATE
 target_link_options(kopalnia_os PRIVATE
         -m32
         -nostdlib
+        -no-pie
         -T ${CMAKE_SOURCE_DIR}/linker.ld
 )
 
 # Make ISO and run it
 add_custom_target(run
         COMMAND grub-mkrescue -o ${CMAKE_BINARY_DIR}/mykernel.iso ${ISODIR}
-        COMMAND qemu-system-i386 -m 512M -M pc -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso -serial stdio
+        COMMAND qemu-system-i386 -m 512M -M pc -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso -no-reboot -no-shutdown -serial stdio -vga std #-d int # Debug only
         COMMENT "Building ISO and running QEMU"
         DEPENDS ${CMAKE_PROJECT_NAME}
 )

@@ -10,9 +10,9 @@ namespace string {
 
 namespace term {
     // VGA video buffer
-    inline auto video = reinterpret_cast<volatile uint16_t * const>(0xB8000);
-    inline int cursor_x = 0;
-    inline int cursor_y = 0;
+    extern volatile uint16_t * video;
+    extern int cursor_x;
+    extern int cursor_y;
     // Consts
     constexpr int VGA_WIDTH = 80;
     constexpr int VGA_HEIGHT = 25;
@@ -37,7 +37,7 @@ namespace term {
         White = 15
     };
 
-    void scroll(int amount);
+    void scroll();
     void print(const char* text, Color color = Color::White);
     void print_int(int value, Color color = Color::LightGreen);
     void print_hex(int value, Color color = Color::LightGreen);

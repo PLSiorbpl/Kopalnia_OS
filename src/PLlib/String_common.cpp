@@ -2,6 +2,7 @@
 
 #include "types.hpp"
 #include "mem_common.hpp"
+#include "arch/x86/Common/common.hpp"
 
 namespace string {
     bool str_cmp(const char *str1, const char *str2) {
@@ -73,61 +74,58 @@ namespace string {
 }
 
 namespace term {
-    void scroll(const int amount) {
-        for (int i = amount; i > 0; i--) {
-            // Copy Line-1 to Line
-            for (int y = 0; y < VGA_HEIGHT - 1; y++) {
-                mem::memcpy(&video[y * VGA_WIDTH], &video[(y+1)*VGA_WIDTH], VGA_WIDTH * sizeof(uint16_t));
-            }
-            // Clear last line
-            mem::memset16(&video[(VGA_HEIGHT-1) * VGA_WIDTH], (0x07 << 8) | ' ', VGA_WIDTH);
-            cursor_y--;
-            if (cursor_y < 0) cursor_y = 0;
-        }
+    volatile uint16_t* video = reinterpret_cast<volatile uint16_t* const>(0xB8000);
+    int cursor_x = 0;
+    int cursor_y = 0;
+
+    void scroll() {
+        mem::memmove(video, video + 80, 24 * 80 * 2);
+        mem::memset16(&video[(VGA_HEIGHT-1) * VGA_WIDTH], (0x07 << 8) | ' ', VGA_WIDTH);
     }
 
     void print(const char* text, Color color) {
+        x86::set_INT_flag(false);
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
-            const int idx = (cursor_y*VGA_WIDTH)+cursor_x;
+
+            // Safety check
+            if (cursor_x >= VGA_WIDTH) {
+                cursor_x = 0;
+                cursor_y+=1;
+            }
+            if (cursor_y >= VGA_HEIGHT) {
+                scroll();
+                cursor_y = VGA_HEIGHT - 1;
+            }
 
             // Special cases
             if (c == '\t') { // TAB
                 cursor_x += TAB_SIZE;
-                if (cursor_x >= VGA_WIDTH) {
-                    cursor_x = 0;
-                    cursor_y+=1;
-                }
                 continue;
             } else if (c == '\n') { // Enter
                 cursor_x = 0;
                 cursor_y+=1;
                 continue;
             } else if (c == '\b') { // Backspace
-                cursor_x -= 1;
-                video[idx-1] = (0x07 << 8) | ' ';
-                if (cursor_x < 0) {
-                    cursor_x = VGA_WIDTH;
-                    cursor_y -= 1;
-                    if (cursor_y < 0) cursor_y = 0;
+                if (cursor_x > 0) {
+                    cursor_x--;
+                } else if (cursor_y > 0) {
+                    cursor_y--;
+                    cursor_x = VGA_WIDTH - 1;
                 }
+                const int idx = cursor_y * VGA_WIDTH + cursor_x;
+                video[idx] = (0x07 << 8) | ' ';
                 continue;
-            }
-            // Scroll
-            if (cursor_y >= VGA_HEIGHT) {
-                scroll(1);
             }
 
             // Draw char
-            video[idx] = (static_cast<uint8_t>(color) << 8) | c;
-            cursor_x+=1;
+            const int idx = cursor_y*VGA_WIDTH+cursor_x;
 
-            // New line (if end of current)
-            if (cursor_x >= VGA_WIDTH) {
-                cursor_x = 0;
-                cursor_y+=1;
-            }
+            video[idx] = (static_cast<uint8_t>(color) << 8) | c;
+
+            cursor_x+=1;
         }
+        x86::set_INT_flag(true);
     }
 
     void print_int(const int value, const Color color) {
@@ -149,7 +147,9 @@ namespace term {
 
     // Clear whole screen
     void clear(Color BGcolor) {
+        x86::set_INT_flag(false);
         mem::memset16(video, (static_cast<uint8_t>(BGcolor) << 8) | ' ', VGA_WIDTH*VGA_HEIGHT);
+        x86::set_INT_flag(true);
         cursor_x = 0;
         cursor_y = 0;
     }
