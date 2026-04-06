@@ -1,10 +1,11 @@
-OUTPUT_FORMAT(elf32-i386)
+OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(_start)
 SECTIONS
 {
-	. = 1M;
+	. = ALIGN(1M);
+	start_ = .;
 	.text : {
-	    *(.multiboot_header)
+	    *(.multiboot2)
 	    *(.text*)
 	}
 	.rodata : {*(.rodata*)}

@@ -2,7 +2,7 @@
 #include "PLlib/types.hpp"
 
 namespace Time {
-    inline uint64_t hz;
+    extern uint64_t hz;
 
     void Sleep(double t);
 

@@ -2,7 +2,7 @@
 #include "PLlib/Ring_Buffer.hpp"
 
 namespace kb {
-    inline mem::Ring_Buffer<uint8_t, 256> buf;
+    extern mem::Ring_Buffer<uint8_t, 256> buf;
 
     static constexpr char scancode_map[128] = {
         //[2] = '1', [3] = '3'

@@ -1,5 +1,5 @@
 #pragma once
 
 namespace systemPL {
-    void Init();
+    void Init(void* mbi);
 }

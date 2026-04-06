@@ -2,7 +2,7 @@
 
 #include "types.hpp"
 #include "mem_common.hpp"
-#include "arch/x86/Common/common.hpp"
+//#include "arch/x86/Common/common.hpp"
 
 namespace string {
     bool str_cmp(const char *str1, const char *str2) {
@@ -22,7 +22,7 @@ namespace string {
         return len;
     }
 
-    void int_to_str(char* buffer, int value) {
+    void int_to_str(char* buffer, int64_t value) {
         int i = 0;
         bool is_negative = false;
 
@@ -56,7 +56,32 @@ namespace string {
         }
     }
 
-    void int_to_strhex(char *buffer, const int value) {
+    void uint_to_str(char* buffer, uint64_t value) {
+        int i = 0;
+
+        if (value == 0) {
+            buffer[0] = '0';
+            buffer[1] = '\0';
+            return;
+        }
+
+        while (value > 0) {
+            const int digit = value % 10;
+            buffer[i] = '0' + digit;
+            i += 1;
+            value /= 10;
+        }
+
+        buffer[i] = '\0';
+
+        for (int j = 0; j < i/2; j++) {
+            const char tmp = buffer[j];
+            buffer[j] = buffer[i-1-j];
+            buffer[i-1-j] = tmp;
+        }
+    }
+
+    void int_to_strhex(char *buffer, const int64_t value) {
         auto hex_chars = "0123456789ABCDEF";
 
         buffer[0] = '0';
@@ -74,7 +99,7 @@ namespace string {
 }
 
 namespace term {
-    volatile uint16_t* video = reinterpret_cast<volatile uint16_t* const>(0xB8000);
+    uint16_t* video = reinterpret_cast<uint16_t* const>(0xB8000);
     int cursor_x = 0;
     int cursor_y = 0;
 
@@ -84,7 +109,7 @@ namespace term {
     }
 
     void print(const char* text, Color color) {
-        x86::set_INT_flag(false);
+        //x86::set_INT_flag(false);
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
 
@@ -125,17 +150,23 @@ namespace term {
 
             cursor_x+=1;
         }
-        x86::set_INT_flag(true);
+        //x86::set_INT_flag(true);
     }
 
-    void print_int(const int value, const Color color) {
-        char buf[12];
+    void print_int(const int64_t value, const Color color) {
+        char buf[16];
         string::int_to_str(buf, value);
         print(buf, color);
     }
 
-    void print_hex(const int value, const Color color) {
-        char buf[12];
+    void print_uint(const uint64_t value, const Color color) {
+        char buf[16];
+        string::uint_to_str(buf, value);
+        print(buf, color);
+    }
+
+    void print_hex(const int32_t value, const Color color) {
+        char buf[16];
         string::int_to_strhex(buf, value);
         print(buf, color);
     }
@@ -147,10 +178,17 @@ namespace term {
 
     // Clear whole screen
     void clear(Color BGcolor) {
-        x86::set_INT_flag(false);
+        //x86::set_INT_flag(false);
         mem::memset16(video, (static_cast<uint8_t>(BGcolor) << 8) | ' ', VGA_WIDTH*VGA_HEIGHT);
-        x86::set_INT_flag(true);
+        //x86::set_INT_flag(true);
         cursor_x = 0;
         cursor_y = 0;
+    }
+
+    void Serial_Write(const char *text) {
+        //for (int i = 0; text[i] != '\0'; i++) {
+            //while (!(x86::inb(0x3F8 + 5) & 0x20)) {}
+            //x86::outb(0x3F8, text[i]);
+        //}
     }
 }

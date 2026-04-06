@@ -3,6 +3,7 @@
 
 namespace heap {
 	extern "C" char _end;
+	extern "C" char start_;
 
 	struct Block {
 		size_t size;

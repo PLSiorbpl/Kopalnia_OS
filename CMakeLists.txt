@@ -2,36 +2,27 @@ cmake_minimum_required(VERSION 3.28)
 
 # Enable NASM compiler
 set(CMAKE_ASM_NASM_COMPILER nasm)
-set(CMAKE_ASM_NASM_OBJECT_FORMAT elf32)
+set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 
 project(kopalnia_os)
-#set(CMAKE_VERBOSE_MAKEFILE ON) # Debug only
 
 enable_language(ASM_NASM)
 
-# All .cpp and .asm files
-file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-file(GLOB_RECURSE ASM_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.asm")
-# ISO
-set(ISODIR ${CMAKE_SOURCE_DIR}/isodir)
+#file(GLOB_RECURSE CPP_SOURCES_32 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.cpp")
+file(GLOB_RECURSE ASM_SOURCES_32 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.asm")
 
-add_executable(kopalnia_os ${CPP_SOURCES} ${ASM_SOURCES})
+add_library(boot OBJECT ${ASM_SOURCES_32}) # ${CPP_SOURCES_32}
 
-target_include_directories(kopalnia_os PUBLIC
-        # ig this will be enough
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+target_include_directories(boot PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/src_boot"
 )
 
-set_target_properties(kopalnia_os PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/isodir/boot
-)
-
-target_compile_options(kopalnia_os PRIVATE
+target_compile_options(boot PRIVATE
         # NASM cant read this flags so enable them only for C,C++
-        $<$<COMPILE_LANGUAGE:C,CXX>:-m32>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-m64>
         $<$<COMPILE_LANGUAGE:C,CXX>:-ffreestanding>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-exceptions>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-stack-protector>
@@ -40,15 +31,53 @@ target_compile_options(kopalnia_os PRIVATE
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-rtti>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pie>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pic>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-march=i386>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-mtune=i386>
         $<$<COMPILE_LANGUAGE:C,CXX>:-std=gnu++17>
         -Wall
         -O2
 )
 
+#set(CMAKE_VERBOSE_MAKEFILE ON) # Debug only
+
+
+
+# All 64bit .cpp and .asm files
+file(GLOB_RECURSE CPP_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+file(GLOB_RECURSE ASM_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.asm")
+# ISO
+set(ISODIR ${CMAKE_SOURCE_DIR}/isodir)
+
+add_library(kernel OBJECT ${CPP_SOURCES} ${ASM_SOURCES})
+
+target_include_directories(kernel PUBLIC
+        # ig this will be enough
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/PLlib"
+)
+
+target_compile_options(kernel PRIVATE
+        # NASM cant read this flags so enable them only for C,C++
+        $<$<COMPILE_LANGUAGE:C,CXX>:-m64>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-ffreestanding>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-exceptions>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-stack-protector>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-omit-frame-pointer>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-builtin>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-rtti>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pie>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pic>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-std=gnu++17>
+        -Wall
+        -O2
+)
+
+add_executable(kopalnia_os $<TARGET_OBJECTS:boot> $<TARGET_OBJECTS:kernel>)
+
+set_target_properties(kopalnia_os PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/isodir/boot
+)
+
 target_link_options(kopalnia_os PRIVATE
-        -m32
+        -m64
         -nostdlib
         -no-pie
         -T ${CMAKE_SOURCE_DIR}/linker.ld
@@ -57,7 +86,7 @@ target_link_options(kopalnia_os PRIVATE
 # Make ISO and run it
 add_custom_target(run
         COMMAND grub-mkrescue -o ${CMAKE_BINARY_DIR}/mykernel.iso ${ISODIR}
-        COMMAND qemu-system-i386 -m 512M -M pc -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso -no-reboot -no-shutdown -serial stdio -vga std #-d int # Debug only
+        COMMAND qemu-system-x86_64 -cpu max -m 512M -M pc -vga std -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso -serial stdio #-d int # Debug only
         COMMENT "Building ISO and running QEMU"
         DEPENDS ${CMAKE_PROJECT_NAME}
 )
