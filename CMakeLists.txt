@@ -41,6 +41,7 @@ target_compile_options(kopalnia_os PRIVATE
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pie>
         $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pic>
         $<$<COMPILE_LANGUAGE:C,CXX>:-std=gnu++17>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-mcmodel=kernel>
         -Wall
         -O2
 )

@@ -1,8 +1,10 @@
 //#include <arch/x86/Common/common.hpp>
 
+#include "PLlib/types.hpp"
 #include "PLlib/String_common.hpp"
 #include "PLlib/mem_common.hpp"
 #include "glm/types.hpp"
+#include "arch/x86_64/IDT/IDT.hpp"
 
 #include "kernel/systemPL.hpp"
 //#include "kernel/Sleep.hpp"
@@ -14,7 +16,7 @@
 
 extern "C" [[noreturn]] void kernel_main(uint32_t magic, void* mbi) {
     //x86::outb(0x3C2, 0x00);
-    //systemPL::Init(mbi);
+    systemPL::Init(mbi);
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();

@@ -5,13 +5,14 @@
 
 namespace PCI {
     uint32_t pci_read32(const uint8_t bus, const uint8_t device, const uint8_t func, const uint8_t offset) {
-        const uint32_t address = (1u << 31) |
-        (static_cast<uint32_t>(bus) << 16) |
-        (static_cast<uint32_t>(device) << 11) |
-        (static_cast<uint32_t>(func) << 8) |
-        (offset & 0xFC);
+        //const uint32_t address = (1u << 31) |
+        //(static_cast<uint32_t>(bus) << 16) |
+        //(static_cast<uint32_t>(device) << 11) |
+        //(static_cast<uint32_t>(func) << 8) |
+        //(offset & 0xFC);
         //x86::outl(0xCF8, address);
         //return x86::inl(0xCFC);
+        return 0;
     }
 
     uint16_t pci_read16(const uint8_t bus, const uint8_t device, const uint8_t func, const uint8_t offset) {

@@ -1,17 +1,17 @@
 #include "systemPL.hpp"
 
-//#include <arch/x86/Common/common.hpp>
-//#include <arch/x86/GDT/GDT.hpp>
+#include <String_common.hpp>
+
 #include "Memory/heap.hpp"
 #include "kernel/multiboot2.hpp"
+#include "arch/x86_64/IDT/IDT.hpp"
 
 namespace systemPL {
     void Init(void* mbi) {
-        // GDT and IDT Initialization
         //Multiboot::Init(static_cast<uint8_t *>(mbi));
 
-        //GDT::gdt_install();
-        //IDT::idt_install();
+        // GDT is done in gdt.asm and elevate.asm
+        IDT::IDT_Install();
 
         // Timer frequency
         //Time::Set_PIT(100); // 100Hz
@@ -26,6 +26,7 @@ namespace systemPL {
         //Paging::Map_memory(Multiboot::Frame_buffer->addr, Multiboot::Frame_buffer->addr+(Multiboot::Frame_buffer->pitch*Multiboot::Frame_buffer->height));
         //Paging::Enable_paging();
 
+        asm volatile("sti");
 
         //x86::set_INT_flag(true); // Enable interrupts
     }

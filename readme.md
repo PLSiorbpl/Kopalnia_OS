@@ -1,6 +1,6 @@
 # Kopalnia-OS
-- Very basic *kernel* made by PLSiorbpl in **C++** and **asm**.
-- _**Should**_ work on all modern and older CPUs.
+- Very basic 64bit *kernel* made by PLSiorbpl in **C++** and **asm**.
+- _**Should**_ work on all modern and older CPUs supporting long mode (64bit mode).
 - Boots in **legacy** mode **(be careful on real machine)**
 
 ## Structure
