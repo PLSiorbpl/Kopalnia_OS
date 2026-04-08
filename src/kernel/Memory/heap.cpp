@@ -18,14 +18,14 @@ namespace heap {
         heap_end = heap_start + size;
     }
     // True allocator
-    void* malloc(size_t size) {
+    void* malloc(uint64_t size) {
         size = (size + 7) & ~7;
         for (Block* block = heap_head; block != nullptr; block = block->next) {
             if (block->free && block->size >= size) {
 
                 if (block->size >= size + sizeof(Block) + 8) {
                     // Split
-                    const size_t new_size = block->size - size - sizeof(Block);
+                    const uint64_t new_size = block->size - size - sizeof(Block);
                     auto* new_block = reinterpret_cast<Block *>(reinterpret_cast<uint8_t *>(block) + sizeof(Block) + size);
                     new_block->size = new_size;
                     new_block->free = true;
@@ -46,7 +46,7 @@ namespace heap {
 
     void free(void* ptr) {
         if (!ptr) return;
-        Block* old_block = reinterpret_cast<Block*>(ptr) - 1;
+        Block* old_block = static_cast<Block*>(ptr) - 1;
         old_block->free = true;
 
         while (old_block->next && old_block->next->free) {
@@ -67,24 +67,24 @@ namespace heap {
         }
     }
 
-    size_t check_heap() {
-        size_t free_bytes = 0;
+    uint64_t check_heap() {
+        uint64_t free_bytes = 0;
         for (const Block* b = heap_head; b; b = b->next) {
             free_bytes += b->size;
         }
         return free_bytes;
     }
 
-    size_t check_free_heap() {
-        size_t free_bytes = 0;
+    uint64_t check_free_heap() {
+        uint64_t free_bytes = 0;
         for (const Block* b = heap_head; b; b = b->next) {
             if (b->free) free_bytes += b->size;
         }
         return free_bytes;
     }
 
-    size_t check_used_heap() {
-        size_t free_bytes = 0;
+    uint64_t check_used_heap() {
+        uint64_t free_bytes = 0;
         for (const Block* b = heap_head; b; b = b->next) {
             if (!b->free) free_bytes += b->size;
         }
@@ -111,11 +111,11 @@ namespace heap {
         term::print("used", term::Color::LightRed); term::print("/");
         term::print("free", term::Color::LightGreen); term::print("/");
         term::print("all", term::Color::LightCyan); term::print("): ");
-        term::print_int(heap::check_used_heap(), term::Color::LightRed);
+        term::print_uint(heap::check_used_heap(), term::Color::LightRed);
         term::print("B / ");
-        term::print_int(heap::check_free_heap(), term::Color::LightGreen);
+        term::print_uint(heap::check_free_heap(), term::Color::LightGreen);
         term::print("B / ");
-        term::print_int(heap::check_heap(), term::Color::LightCyan);
+        term::print_uint(heap::check_heap(), term::Color::LightCyan);
         term::print("B\n\n");
     }
 }

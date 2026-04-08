@@ -18,6 +18,7 @@ align 4096
 PD_Table:
     dq (0x0000000000000083)
     dq (0x0000000020000083)
-    times 510 dq 0
+    dq (0x0000000040000083)
+    times 509 dq 0
 
 section .note.GNU-stack noalloc noexec nowrite progbits

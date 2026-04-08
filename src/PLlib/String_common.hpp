@@ -11,7 +11,7 @@ namespace string {
 
 namespace term {
     // VGA video buffer
-    extern uint16_t * video;
+    extern volatile uint16_t * video;
     extern int cursor_x;
     extern int cursor_y;
 

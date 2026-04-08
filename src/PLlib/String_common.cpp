@@ -1,12 +1,13 @@
 #include "String_common.hpp"
 
+#include <arch/x86_64/Common/Common.hpp>
+
 #include "types.hpp"
 #include "mem_common.hpp"
-//#include "arch/x86/Common/common.hpp"
 
 namespace string {
     bool str_cmp(const char *str1, const char *str2) {
-        size_t idx = 0;
+        uint64_t idx = 0;
         while (str1[idx] == str2[idx]) {
             if (str1[idx] == '\0') return true;
             idx++;
@@ -99,7 +100,7 @@ namespace string {
 }
 
 namespace term {
-    uint16_t* video = reinterpret_cast<uint16_t* const>(0xB8000);
+    volatile uint16_t* video = reinterpret_cast<volatile uint16_t* const>(0xB8000);
     int cursor_x = 0;
     int cursor_y = 0;
 
@@ -109,7 +110,7 @@ namespace term {
     }
 
     void print(const char* text, Color color) {
-        //x86::set_INT_flag(false);
+        //x64::set_INT_flag(false);
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
 
@@ -150,7 +151,7 @@ namespace term {
 
             cursor_x+=1;
         }
-        //x86::set_INT_flag(true);
+        //x64::set_INT_flag(true);
     }
 
     void print_int(const int64_t value, const Color color) {
@@ -178,9 +179,9 @@ namespace term {
 
     // Clear whole screen
     void clear(Color BGcolor) {
-        //x86::set_INT_flag(false);
+       // x64::set_INT_flag(false);
         mem::memset16(video, (static_cast<uint8_t>(BGcolor) << 8) | ' ', VGA_WIDTH*VGA_HEIGHT);
-        //x86::set_INT_flag(true);
+        //x64::set_INT_flag(true);
         cursor_x = 0;
         cursor_y = 0;
     }

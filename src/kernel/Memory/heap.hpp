@@ -6,7 +6,7 @@ namespace heap {
 	extern "C" char start_;
 
 	struct Block {
-		size_t size;
+		uint64_t size;
 		bool free;
 		Block* next;
 		Block* prev;
@@ -21,13 +21,13 @@ namespace heap {
 
 	void heap_init(uintptr_t size);
 
-	void* malloc(size_t size);
+	void* malloc(uint64_t size);
 
 	void free(void* ptr);
 
-	size_t check_free_heap();
-	size_t check_used_heap();
-	size_t check_heap();
+	uint64_t check_free_heap();
+	uint64_t check_used_heap();
+	uint64_t check_heap();
 
 	void dump_heap();
 }

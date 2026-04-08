@@ -30,18 +30,20 @@ target_include_directories(kopalnia_os PUBLIC
 )
 
 target_compile_options(kopalnia_os PRIVATE
-        # NASM cant read this flags so enable them only for C,C++
-        $<$<COMPILE_LANGUAGE:C,CXX>:-m64>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-ffreestanding>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-exceptions>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-stack-protector>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-omit-frame-pointer>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-builtin>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-rtti>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pie>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-pic>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-std=gnu++17>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-mcmodel=kernel>
+        $<$<COMPILE_LANGUAGE:C,CXX>:
+        -m64
+        -ffreestanding
+        -fno-exceptions
+        -fno-stack-protector
+        -fno-omit-frame-pointer
+        -fno-builtin
+        -fno-rtti
+        -fno-pie
+        -fno-pic
+        -mcmodel=kernel
+        -mno-red-zone
+        -mgeneral-regs-only # Prevents unintended use of XMM/SSE in handlers
+        >
         -Wall
         -O2
 )

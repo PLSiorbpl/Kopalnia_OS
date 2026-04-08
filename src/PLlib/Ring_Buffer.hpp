@@ -1,12 +1,12 @@
 #pragma once
-#include "PLlib/types.hpp"
+#include "types.hpp"
 
 namespace mem {
-    template<typename T, size_t size>
+    template<typename T, uint32_t size>
     struct Ring_Buffer {
         T data[size] = {};
-        size_t head = 0;
-        size_t tail = 0;
+        uint32_t head = 0;
+        uint32_t tail = 0;
 
         [[nodiscard]] bool empty() const {
             return tail == head;
@@ -17,14 +17,14 @@ namespace mem {
         }
 
         void clear() {
-            for (size_t i = 0; i < size; i++)
+            for (uint32_t i = 0; i < size; i++)
                 data[i] = {};
             head = 0;
             tail = 0;
         }
 
         bool push(const T &value) {
-            const size_t next = (head + 1) % size;
+            const uint32_t next = (head + 1) % size;
             if (next == tail) return false;
             data[head] = value;
             head = next;
