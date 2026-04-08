@@ -110,7 +110,7 @@ namespace term {
     }
 
     void print(const char* text, Color color) {
-        //x64::set_INT_flag(false);
+        x64::set_INT_flag(false);
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
 
@@ -151,7 +151,7 @@ namespace term {
 
             cursor_x+=1;
         }
-        //x64::set_INT_flag(true);
+        x64::set_INT_flag(true);
     }
 
     void print_int(const int64_t value, const Color color) {
@@ -179,17 +179,17 @@ namespace term {
 
     // Clear whole screen
     void clear(Color BGcolor) {
-       // x64::set_INT_flag(false);
+        x64::set_INT_flag(false);
         mem::memset16(video, (static_cast<uint8_t>(BGcolor) << 8) | ' ', VGA_WIDTH*VGA_HEIGHT);
-        //x64::set_INT_flag(true);
+        x64::set_INT_flag(true);
         cursor_x = 0;
         cursor_y = 0;
     }
 
     void Serial_Write(const char *text) {
-        //for (int i = 0; text[i] != '\0'; i++) {
-            //while (!(x86::inb(0x3F8 + 5) & 0x20)) {}
-            //x86::outb(0x3F8, text[i]);
-        //}
+        for (int i = 0; text[i] != '\0'; i++) {
+            while (!(x64::inb(0x3F8 + 5) & 0x20)) {}
+            x64::outb(0x3F8, text[i]);
+        }
     }
 }
