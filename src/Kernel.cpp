@@ -10,7 +10,6 @@
 #include "Drivers/PCI.hpp"
 
 extern "C" void kernel_main(uint32_t magic, void* mbi) {
-    //x86::outb(0x3C2, 0x00);
     systemPL::Init(mbi);
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
@@ -18,9 +17,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
     term::print("------------ Kopalnia OS 64bit ------------\n\n", term::Color::Green);
 
-    term::print("Kernel size: ");
-    term::print_uint(reinterpret_cast<uint64_t>(&heap::_end - heap::start_));
-    term::print("B\n\n");
+    term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size\n\n", term::Color::LightBlue);
 
     term::print("Kopalnia-OS>");
 
@@ -52,11 +49,15 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
                     // Do commands:
                     if (string::str_cmp(buffer, "help")) {
-                        term::print("\tcommands: help, clear, echo, poweroff (VM Only), sleep, heap, PCI\n", term::Color::LightBlue);
+                        term::print("\tcommands: help, clear, echo, poweroff (VM Only), sleep, heap, pci, size\n", term::Color::LightBlue);
                     } else if (string::str_cmp(buffer, "heap")) {
                         heap::dump_heap();
                     } else if (string::str_cmp(buffer, "clear")) {
                         term::clear();
+                    } else if (string::str_cmp(buffer, "size")) {
+                        term::print("\tKernel size: ", term::Color::LightBlue);
+                        term::print_uint(reinterpret_cast<uint64_t>(&heap::_end - heap::start_));
+                        term::print("B\n");
                     } else if (string::str_cmp(buffer, "pci")) {
                         PCI::Test();
                     } else if (string::str_cmp(buffer, "echo")) {

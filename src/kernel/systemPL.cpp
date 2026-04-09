@@ -4,6 +4,7 @@
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "kernel/Sleep.hpp"
+#include "kernel/Paging.hpp"
 
 namespace systemPL {
     void Init(void* mbi) {
@@ -19,12 +20,12 @@ namespace systemPL {
         // Heap Initialization
         heap::heap_init(1024*1024*2);
 
-        // Paging and PAT
-        //Paging::Init(); // 4KB page size
-        //Paging::Map_memory(0x0, 1024*1024*32);
+        // Paging
+        Paging::Init(); // 4KB page size
+        Paging::Map_memory(0x0, 1024*1024*32);
         //Paging::Map_memory(IntelGPU::GPU_MMIO_BASE, IntelGPU::GPU_MMIO_BASE + 32*1024*1024);
         //Paging::Map_memory(Multiboot::Frame_buffer->addr, Multiboot::Frame_buffer->addr+(Multiboot::Frame_buffer->pitch*Multiboot::Frame_buffer->height));
-        //Paging::Enable_paging();
+        Paging::Enable_paging();
 
         x64::set_INT_flag(true); // Enable interrupts
     }
