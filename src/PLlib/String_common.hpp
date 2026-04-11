@@ -43,7 +43,7 @@ namespace term {
     void print(const char* text, Color color = Color::White);
     void print_int(int64_t value, Color color = Color::LightGreen);
     void print_uint(uint64_t value, Color color = Color::LightGreen);
-    void print_hex(int32_t value, Color color = Color::LightGreen);
+    void print_hex(uint32_t value, Color color = Color::LightGreen);
     void put_char(char c, Color color = Color::LightCyan);
     void clear(Color BGcolor = Color::Black);
 

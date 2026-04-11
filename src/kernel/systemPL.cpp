@@ -18,7 +18,7 @@ namespace systemPL {
         Time::Set_PIT(100); // 100Hz
 
         // Heap Initialization
-        heap::heap_init(1024*1024*2);
+        heap::heap_init(1024*1024*32);
 
         // Paging
         Paging::Init(); // 4KB page size

@@ -166,7 +166,7 @@ namespace term {
         print(buf, color);
     }
 
-    void print_hex(const int32_t value, const Color color) {
+    void print_hex(const uint32_t value, const Color color) {
         char buf[16];
         string::int_to_strhex(buf, value);
         print(buf, color);

@@ -8,13 +8,14 @@
 
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
+#include "std/printf.hpp"
 
 extern "C" void kernel_main(uint32_t magic, void* mbi) {
     systemPL::Init(mbi);
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
-
+    std::printf("Printf(%%i %%u %%s %%x %%c %%u64) %i %u %s %x %c %u64\n", -6767, 290, "LOL", 0x666, 'j', 0xffffffffff);
     term::print("------------ Kopalnia OS 64bit ------------\n\n", term::Color::Green);
 
     term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size\n\n", term::Color::LightBlue);
@@ -63,9 +64,13 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                     } else if (string::str_cmp(buffer, "echo")) {
                         term::print("\techo: too lazy to make arguments xD\n", term::Color::Pink);
                     } else if (string::str_cmp(buffer, "poweroff")) {
-                        term::print("\tShutting down in 2.5s", term::Color::LightRed);
-                        Time::Sleep(2500);
-                        asm volatile("outw %0, %1" : : "a"(static_cast<uint16_t>(0x2000)), "Nd"(static_cast<uint16_t>(0x604)));
+                        term::print("\tShutting down in 5s (press ENTER to cancel!)\n", term::Color::LightRed);
+                        if (!Time::WaitForKey(5000, '\n')) {
+                            asm volatile("outw %0, %1" : : "a"(static_cast<uint16_t>(0x2000)), "Nd"(static_cast<uint16_t>(0x604)));
+                            term::print("Unable to shut down try shutting down manually\n");
+                        } else {
+                            term::print("\tShutdown Canceled\n", term::Color::LightRed);
+                        }
                     } else if (string::str_cmp(buffer, "sleep")) {
                         term::print("\tSleeping for 5 seconds\n", term::Color::LightGreen);
                         Time::Sleep(5000);

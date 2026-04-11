@@ -14,4 +14,5 @@ namespace kb {
         };
 
     char get_char();
+    char read_char();
 }

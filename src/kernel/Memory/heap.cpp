@@ -3,18 +3,18 @@
 
 namespace heap {
     Block* heap_head;
-    uintptr_t heap_start;
-    uintptr_t heap_end;
-    uintptr_t heap_ptr;
+    uint64_t heap_start;
+    uint64_t heap_end;
+    uint64_t heap_ptr;
 
-    void heap_init(const uintptr_t size) {
+    void heap_init(const uint64_t size) {
         heap_head = &heap_start_;
         heap_head->size = size - sizeof(Block);
         heap_head->free = true;
         heap_head->next = nullptr;
         heap_head->prev = nullptr;
 
-        heap_start = reinterpret_cast<uintptr_t>(&_end);
+        heap_start = reinterpret_cast<uint64_t>(&_end);
         heap_end = heap_start + size;
     }
     // True allocator

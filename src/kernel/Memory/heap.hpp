@@ -14,12 +14,12 @@ namespace heap {
 
 	extern "C" Block heap_start_;
 
-	extern uintptr_t heap_start;
-	extern uintptr_t heap_end;
-	extern uintptr_t heap_ptr;
+	extern uint64_t heap_start;
+	extern uint64_t heap_end;
+	extern uint64_t heap_ptr;
 	extern Block* heap_head;
 
-	void heap_init(uintptr_t size);
+	void heap_init(uint64_t size);
 
 	void* malloc(uint64_t size);
 

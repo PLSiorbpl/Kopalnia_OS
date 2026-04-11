@@ -6,6 +6,7 @@ namespace Time {
     extern volatile uint64_t tick;
 
     void Sleep(uint64_t t);
+    bool WaitForKey(uint64_t t, char key);
 
     void Set_PIT(uint64_t freq);
 }
