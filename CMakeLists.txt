@@ -27,7 +27,7 @@ target_include_directories(kopalnia_os PUBLIC
         # ig this will be enough
         "${CMAKE_CURRENT_SOURCE_DIR}/src_boot"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/PLlib"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/libs"
 )
 
 target_compile_options(kopalnia_os PRIVATE

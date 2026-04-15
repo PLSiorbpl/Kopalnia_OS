@@ -1,12 +1,10 @@
-#include <std/printf.hpp>
-
 #include "IDT.hpp"
-#include "PLlib/types.hpp"
-#include "PLlib/String_common.hpp"
+#include "../../../libs/std/types.hpp"
+#include "libs/String_common.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
-#include "Drivers/USB/usb.hpp"
+#include "std/printf.hpp"
 
 namespace IDT {
     const char* get_exception_name(const uint64_t int_no) {

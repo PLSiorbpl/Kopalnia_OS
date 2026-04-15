@@ -1,13 +1,10 @@
-#include "systemPL.hpp"
-
-#include <std/printf.hpp>
+#include "system.hpp"
 
 #include "kernel/Memory/heap.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
-#include "Drivers/USB/usb.hpp"
 
 namespace systemPL {
     void Init(void* mbi) {

@@ -1,16 +1,15 @@
-#include "PLlib/types.hpp"
-#include "PLlib/String_common.hpp"
-#include "PLlib/mem_common.hpp"
+#include "libs/std/types.hpp"
+#include "libs/String_common.hpp"
+#include "libs/std/mem_common.hpp"
 
-#include "kernel/systemPL.hpp"
+#include "kernel/system.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Memory/heap.hpp"
 
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
-#include "std/printf.hpp"
 #include "Drivers/USB/usb.hpp"
-#include "std/string.h"
+#include "std/printf.hpp"
 
 extern "C" void kernel_main(uint32_t magic, void* mbi) {
     systemPL::Init(mbi);
@@ -22,7 +21,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
     term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size, usb, colors\n", term::Color::LightBlue);
 
-    term::print("Kopalnia-OS>");
+    term::print("Plum-OS>");
 
     term::print_serial("eee");
 
@@ -88,7 +87,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                         Time::Sleep(250);
                     }
 
-                    term::print("Kopalnia-OS>");
+                    term::print("Plum-OS>");
                     mem::memset(buffer, 0, 256);
                     i = 0;
                 }

@@ -1,10 +1,10 @@
 #include "Framebuffer.hpp"
 
-#include <PLlib/String_common.hpp>
+#include <libs/String_common.hpp>
 
 #include "multiboot2.hpp"
 #include "kernel/Memory/heap.hpp"
-#include "PLlib/mem_common.hpp"
+#include "../libs/std/mem_common.hpp"
 
 namespace Framebuffer {
     uint32_t* back_buffer;
