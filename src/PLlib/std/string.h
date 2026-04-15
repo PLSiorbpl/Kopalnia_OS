@@ -12,7 +12,7 @@ namespace std {
     template <typename T>
     static const bool is_floating_point_v = is_floating_point<T>::value;
 
-    template <typename T>
+     template <typename T>
     void to_str(char* buffer, T value) {
         if constexpr (is_floating_point_v<T>) {
             int i = 0;
@@ -51,14 +51,17 @@ namespace std {
             }
 
             buffer[i++] = '.';
+            int last_non_zero_index = 0;
             for (int d = 0; d < precision; d++) {
                 frac_part *= 10;
                 int digit = static_cast<int>(frac_part);
+                if (digit > 0)
+                    last_non_zero_index = i;
                 buffer[i++] = '0' + digit;
                 frac_part -= digit;
             }
 
-            buffer[i] = '\0';
+            buffer[last_non_zero_index + 1] = '\0';
         }
         else {
             int i = 0;
@@ -93,4 +96,22 @@ namespace std {
         }
     }
 
+    template<typename T>
+    const char *format_size(T &size) {
+        int iters = 0;
+        while (size >= 1024) {
+            size /= 1024;
+            iters++;
+        }
+        switch (iters) {
+            case 0: return "B";
+            case 1: return "KB";
+            case 2: return "MB";
+            case 3: return "GB";
+            case 4: return "TB";
+            case 5: return "PB";
+            case 6: return "WTF";
+            default: return "B";
+        }
+    }
 }

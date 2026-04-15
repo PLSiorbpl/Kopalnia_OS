@@ -1,5 +1,6 @@
 #include "heap.hpp"
 #include "PLlib/String_common.hpp"
+#include "std/printf.hpp"
 
 namespace heap {
     Block* heap_head;
@@ -108,7 +109,7 @@ namespace heap {
     }
 
     uint64_t check_used_heap() {
-        uint64_t free_bytes = 0;
+        uint64_t free_bytes = 1;
         for (const Block* b = heap_head; b; b = b->next) {
             if (!b->free) free_bytes += b->size;
         }
@@ -117,29 +118,26 @@ namespace heap {
 
     void dump_heap() {
         int b_count = 0;
-        term::print("Heap Visualization\n", term::Color::LightCyan);
+        std::printf("&bHeap Visualization\n");
         for (Block* b = heap_head; b; b = b->next) {
             b_count++;
-            term::print("\tBlock #");
-            term::print_number(b_count);
-            term::print(" @ ");
-            term::print_hex(reinterpret_cast<uintptr_t>(b), term::Color::LightGray);
-            term::print(" size: ");
-            term::print_number(b->size, term::Color::Green);
-            term::print("B");
-            term::print(b->free ? " free\n" : " used\n", b->free ? term::Color::LightGreen : term::Color::LightRed);
+            std::printf("&f\tBlock #&a%u &f@ &7%x &fsize: ", b_count, reinterpret_cast<uint64_t>(b));
+            auto size = static_cast<double>(b->size);
+            const char *post_fix = std::format_size(size);
+            std::printf("&a%f&f%s ", size, post_fix);
+            if (b->free)
+                std::printf("&afree\n");
+            else
+                std::printf("&cused\n");
         }
-        term::print("\tBlocks total: ");
-        term::print_number(b_count);
-        term::print("\nSummary (");
-        term::print("used", term::Color::LightRed); term::print("/");
-        term::print("free", term::Color::LightGreen); term::print("/");
-        term::print("all", term::Color::LightCyan); term::print("): ");
-        term::print_number(heap::check_used_heap(), term::Color::LightRed);
-        term::print("B / ");
-        term::print_number(heap::check_free_heap(), term::Color::LightGreen);
-        term::print("B / ");
-        term::print_number(heap::check_heap(), term::Color::LightCyan);
-        term::print("B\n\n");
+        std::printf("&f\tBlock total: &a%u64\n", b_count);
+        std::printf("&fSummary (&cused / &afree / &ball): ");
+        auto used_s = static_cast<double>(check_used_heap());
+        const char *used_p = std::format_size(used_s);
+        auto free_s = static_cast<double>(check_free_heap());
+        const char *free_p = std::format_size(free_s);
+        auto all_s = static_cast<double>(check_heap());
+        const char *all_p = std::format_size(all_s);
+        std::printf("&c%f&f%s / &a%f&f%s / &b%f&f%s\n\n", used_s, used_p, free_s, free_p, all_s, all_p);
     }
 }
