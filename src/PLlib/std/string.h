@@ -51,14 +51,17 @@ namespace std {
             }
 
             buffer[i++] = '.';
+            int last_non_zero_index = 0;
             for (int d = 0; d < precision; d++) {
                 frac_part *= 10;
                 int digit = static_cast<int>(frac_part);
+                if (digit > 0)
+                    last_non_zero_index = i;
                 buffer[i++] = '0' + digit;
                 frac_part -= digit;
             }
 
-            buffer[i] = '\0';
+            buffer[last_non_zero_index + 1] = '\0';
         }
         else {
             int i = 0;

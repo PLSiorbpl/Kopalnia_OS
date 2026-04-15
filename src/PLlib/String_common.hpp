@@ -45,7 +45,6 @@ namespace term {
     }
 
     void print_hex(uint32_t value, Color color = Color::LightGreen);
-    void print_double(double args, Color color = Color::LightGray);
 
     void put_char(char c, Color color = Color::LightCyan);
     void clear(Color BGcolor = Color::Black);

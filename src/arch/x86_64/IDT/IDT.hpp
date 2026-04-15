@@ -18,7 +18,6 @@ namespace IDT {
     } __attribute__((packed));
 
     struct ISR_Registers {
-        // Corrected order to match your pushall macro
         uint64_t r15, r14, r13, r12, r11, r10, r9, r8, rdi, rsi, rbp, rbx, rdx, rcx, rax;
         uint64_t int_no, error_code;
         uint64_t rip, cs, rflags, rsp, ss;
@@ -31,7 +30,4 @@ namespace IDT {
 	void set_IDT_entry(IDTEntry& entry, void* handler);
     void IDT_Install();
     void PIC_Remap(uint8_t offset1, uint8_t offset2);
-    void CPU_Errors(uint8_t int_no, uint64_t error_code, const ISR_Registers* regs);
-    const char* ExceptionName(uint64_t int_no);
-
 }
