@@ -20,7 +20,7 @@ Elevate:
 
     mov ecx, 0xC0000080
     rdmsr
-    or eax, 0x100
+    or eax, 0x100 | 0x800
     wrmsr
 
     ; Enable paging

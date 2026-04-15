@@ -48,22 +48,4 @@ namespace term {
     void clear(Color BGcolor = Color::Black);
 
     void Serial_Write(const char* text);
-#ifndef NDEBUG
-    #define assert(condition) \
-    do { \
-        if (!(condition)) { \
-            term::Serial_Write("Assert failed in: "); \
-            term::Serial_Write(__FILE__); \
-            term::Serial_Write(" at line: "); \
-            char buf[12]; \
-            string::int_to_str(buf, __LINE__); \
-            term::Serial_Write(buf); \
-            term::Serial_Write(" in function: "); \
-            term::Serial_Write(__FUNCTION__); \
-            term::Serial_Write("\n"); \
-        } \
-    } while (false);
-#else
-#define assert(condition) do {} while(false)
-#endif
 }

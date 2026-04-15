@@ -1,9 +1,12 @@
+#include <std/printf.hpp>
+
 #include "IDT.hpp"
 #include "PLlib/types.hpp"
 #include "PLlib/String_common.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
+#include "Drivers/USB/usb.hpp"
 
 namespace IDT {
     // NOTE do not add [[noreturn]] to this function
@@ -22,6 +25,10 @@ namespace IDT {
         if (regs->int_no == 33) { // Keyboard
             uint8_t c = x64::inb(0x60);
             kb::buf.push(c);
+        }
+        if (regs->int_no == 32+USB::irq_no) {
+            std::printf("yes");
+            USB::xhci_irq_handler();
         }
 
         if (regs->int_no >= 32 && regs->int_no <= 47) {

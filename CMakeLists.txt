@@ -59,10 +59,30 @@ target_link_options(kopalnia_os PRIVATE
         -T ${CMAKE_SOURCE_DIR}/linker.ld
 )
 
+set(QEMU_FLAGS
+        # PC
+        -cpu max
+        -m 512M
+        -M q35
+        -vga std
+        # drive
+        -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso
+        -drive file=../disk.img,format=raw
+        # USB
+        -device qemu-xhci
+        -device usb-storage,drive=usbstick
+        -drive if=none,id=usbstick,file=../usb.img,format=raw
+        # Debug
+        -serial stdio
+        #-d trace:usb_xhci_*
+        #-d usb,guest_errors,int
+        #-d int # Debug
+)
+
 # Make ISO and run it
 add_custom_target(run
         COMMAND grub-mkrescue -o ${CMAKE_BINARY_DIR}/mykernel.iso ${ISODIR}
-        COMMAND qemu-system-x86_64 -cpu max -m 512M -M pc -vga std -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso -serial stdio #-d int # Debug only
+        COMMAND qemu-system-x86_64 ${QEMU_FLAGS}
         COMMENT "Building ISO and running QEMU"
         DEPENDS ${CMAKE_PROJECT_NAME}
 )

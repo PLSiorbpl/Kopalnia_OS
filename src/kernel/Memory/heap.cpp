@@ -44,6 +44,30 @@ namespace heap {
         return nullptr;
     }
 
+    void* malloc_aligned(uint64_t size, uint64_t align, uint64_t boundary) {
+        if (align == 0) align = 1;
+
+        const uint64_t total = size + align + (boundary ? boundary : 0);
+
+        const auto raw = reinterpret_cast<uint64_t>(malloc(total));
+        if (!raw) return nullptr;
+
+        // align
+        uint64_t aligned = (raw + align - 1) & ~(align - 1);
+
+        // boundary check
+        if (boundary) {
+            const uint64_t start_block = aligned & ~(boundary - 1);
+            const uint64_t end_block   = (aligned + size - 1) & ~(boundary - 1);
+
+            if (start_block != end_block) {
+                aligned = (aligned + boundary) & ~(boundary - 1);
+            }
+        }
+
+        return reinterpret_cast<void *>(aligned);
+    }
+
     void free(void* ptr) {
         if (!ptr) return;
         Block* old_block = static_cast<Block*>(ptr) - 1;

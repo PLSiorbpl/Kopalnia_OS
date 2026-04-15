@@ -17,5 +17,8 @@ namespace PCI {
 
     void Test();
 
-    PCI_Device Find(uint32_t vendor, uint32_t device);
+    uint32_t get_class(uint8_t bus, uint8_t dev, uint8_t fn);
+
+    PCI_Device Find(uint32_t vendor, uint32_t device_);
+    PCI_Device Find_Class(uint32_t Class);
 }
