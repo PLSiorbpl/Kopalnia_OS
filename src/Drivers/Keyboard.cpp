@@ -34,4 +34,13 @@ namespace kb {
             return scancode_map[sc];
         return 0;
     }
+
+    void flush_keyboard() {
+        // Read and discard all pending bytes in PS/2 output buffer
+        while (x64::inb(0x64) & 0x01) {
+            x64::inb(0x60);
+            // small delay
+            for (volatile int i = 0; i < 1000; i++);
+        }
+    }
 }

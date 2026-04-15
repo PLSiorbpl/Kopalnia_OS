@@ -3,6 +3,7 @@
 #include "kernel/Memory/heap.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
+#include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
 
@@ -28,6 +29,7 @@ namespace systemPL {
 
         Paging::Enable_paging();
 
+        kb::flush_keyboard();
         x64::set_INT_flag(true); // Enable interrupts
 
         //USB::Init();

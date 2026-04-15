@@ -1,15 +1,62 @@
 #include "libs/std/types.hpp"
 #include "libs/String_common.hpp"
 #include "libs/std/mem_common.hpp"
-
 #include "kernel/system.hpp"
-#include "kernel/Sleep.hpp"
-#include "kernel/Memory/heap.hpp"
-
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
 #include "Drivers/USB/usb.hpp"
+#include "kernel/Sleep.hpp"
+#include "kernel/Memory/heap.hpp"
 #include "std/printf.hpp"
+
+struct Command {
+    const char* name;
+    void (*func)();
+};
+
+i32 commands_len = 9;
+
+Command commands[] = {
+    {"help", [] {
+        std::printf("&9Commands: &9%s", commands[0].name);
+        for (i32 i = 1; i < commands_len; ++i) {
+            std::printf("&9, %s", commands[i].name);
+        }
+        std::printf("\n");
+    }},
+    {"clear", [] {
+        term::clear();
+    }},
+    {"poweroff", [] {
+        std::printf("&c\tShutting down in 5s (press ENTER to cancel!)\n");
+        if (!Time::WaitForKey(5000, '\n')) {
+            asm volatile("outw %0, %1" : : "a"(static_cast<uint16_t>(0x2000)), "Nd"(static_cast<uint16_t>(0x604)));
+            std::printf("&4Unable to shut down try shutting down manually\n");
+        } else {
+            std::printf("&a\tShutdown Canceled!\n");
+        }
+    }},
+    {"sleep", [] {
+        std::printf("&a\tSleeping for 5 seconds\n");
+        Time::Sleep(5000);
+    }},
+    {"heap", [] {
+        heap::dump_heap();
+    }},
+    {"pci", [] {
+        PCI::Test();
+    }},
+    {"size", [] {
+        auto size = reinterpret_cast<uint64_t>(&heap::_end - heap::start_);
+        std::printf("&9\tKernel size: %i%s\n", size, std::format_size(size));
+    }},
+    {"usb", [] {
+        USB::Test_Ports();
+    }},
+    {"colors", [] {
+        std::printf("&0 &&00 &1 &&11 &2 &&22 &3 &&33 &4 &&44 &5 &&55 &6 &&66 &7 &&77 &8 &&88 &9 &&99 &a &&aa &b &&bb &c &&cc &d &&dd &e &&ee &f &&ff\n");
+    }}
+};
 
 extern "C" void kernel_main(uint32_t magic, void* mbi) {
     systemPL::Init(mbi);
@@ -23,9 +70,6 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
     term::print("Plum-OS>");
 
-    term::print_serial("eee");
-
-
     static char buffer[256];
     static int i = 0;
     while (true) {
@@ -35,7 +79,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
             continue;
 
         if (c) {
-            if (i < 255) {
+            if (i < 254) { // 254 so we allow space for \n
                 term::put_char(c);
                 if (c == '\b') {
                     i -= 1;
@@ -44,55 +88,33 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                     buffer[i] = c;
                     i += 1;
                 }
-                // Logic
-                if (c == '\n') {
-                    // override \n with \0
-                    if (i > 0)
-                        buffer[i - 1] = '\0';
-                    else
-                        buffer[0] = '\0';
-
-                    // Do commands:
-                    if (std::str_cmp(buffer, "help")) {
-                        term::print("\tcommands: help, clear, echo, poweroff (VM Only), sleep, heap, pci, size, usb, colors\n", term::Color::LightBlue);
-                    } else if (std::str_cmp(buffer, "heap")) {
-                        heap::dump_heap();
-                    } else if (std::str_cmp(buffer, "clear")) {
-                        term::clear();
-                    } else if (std::str_cmp(buffer, "usb")) {
-                        USB::Test_Ports();
-                    } else if (std::str_cmp(buffer, "size")) {
-                        term::print("\tKernel size: ", term::Color::LightBlue);
-                        term::print_number(reinterpret_cast<uint64_t>(&heap::_end - heap::start_));
-                        term::print("B\n");
-                    } else if (std::str_cmp(buffer, "pci")) {
-                        PCI::Test();
-                    } else if (std::str_cmp(buffer, "echo")) {
-                        term::print("\techo: too lazy to make arguments xD\n", term::Color::Pink);
-                    } else if (std::str_cmp(buffer, "poweroff")) {
-                        term::print("\tShutting down in 5s (press ENTER to cancel!)\n", term::Color::LightRed);
-                        if (!Time::WaitForKey(5000, '\n')) {
-                            asm volatile("outw %0, %1" : : "a"(static_cast<uint16_t>(0x2000)), "Nd"(static_cast<uint16_t>(0x604)));
-                            term::print("Unable to shut down try shutting down manually\n");
-                        } else {
-                            term::print("\tShutdown Canceled\n", term::Color::LightRed);
-                        }
-                    } else if (std::str_cmp(buffer, "sleep")) {
-                        term::print("\tSleeping for 5 seconds\n", term::Color::LightGreen);
-                        Time::Sleep(5000);
-                    } else if (std::str_cmp(buffer, "colors")) {
-                        std::printf("&0 &&00 &1 &&11 &2 &&22 &3 &&33 &4 &&44 &5 &&55 &6 &&66 &7 &&77 &8 &&88 &9 &&99 &a &&aa &b &&bb &c &&cc &d &&dd &e &&ee &f &&ff\n");
-                    } else {
-                        std::printf("\tUnknown command: %s \n", buffer);
-                        Time::Sleep(250);
-                    }
-
-                    term::print("Plum-OS>");
-                    mem::memset(buffer, 0, 256);
-                    i = 0;
-                }
             }
-            if (c == '\b' && i >= 255) {
+
+            if (c == '\n') {
+                // override \n with \0
+                if (i > 0)
+                    buffer[i - 1] = '\0';
+                else
+                    buffer[0] = '\0';
+
+                bool found_command = false;
+                for (int i = 0; i < commands_len; ++i) {
+                    if (std::str_cmp(buffer, commands[i].name)) {
+                        commands[i].func();
+                        found_command = true;
+                    }
+                }
+                if (!found_command) {
+                    std::printf("\tUnknown command: %s \n", buffer);
+                    Time::Sleep(250);
+                }
+
+                term::print("Plum-OS>");
+                mem::memset(buffer, 0, 256);
+                i = 0;
+            }
+
+            if (c == '\b' && i >= 254) {
                 i--;
                 term::print("\b");
             }
