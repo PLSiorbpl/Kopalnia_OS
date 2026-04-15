@@ -2,6 +2,7 @@
 
 #include <arch/x86_64/Common/Common.hpp>
 #include "../libs/std/types.hpp"
+#include "kernel/Sleep.hpp"
 
 namespace kb {
     mem::Ring_Buffer<uint8_t, 256> buf;
@@ -39,8 +40,7 @@ namespace kb {
         // Read and discard all pending bytes in PS/2 output buffer
         while (x64::inb(0x64) & 0x01) {
             x64::inb(0x60);
-            // small delay
-            for (volatile int i = 0; i < 1000; i++);
+            Time::Sleep(10);
         }
     }
 }
