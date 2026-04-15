@@ -120,9 +120,9 @@ namespace term {
         cursor_y = 0;
     }
 
-    void Serial_Write(const char *text) { // ?????
+    void print_serial(const char *text) {
         for (int i = 0; text[i] != '\0'; i++) {
-            while (!(x64::inb(0x3F8 + 5) & 0x20)) {}
+            while (!(x64::inb(0x3F8 + 5) & 0x20)) { }
             x64::outb(0x3F8, text[i]);
         }
     }

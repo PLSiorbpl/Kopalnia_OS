@@ -24,6 +24,8 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
     term::print("Kopalnia-OS>");
 
+    term::print_serial("eee");
+
     static char buffer[256];
     static int i = 0;
     while (true) {
@@ -80,7 +82,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                         term::print("\tSleeping for 5 seconds\n", term::Color::LightGreen);
                         Time::Sleep(5000);
                     } else {
-                        std::printf("\tUnknown command: %s \n", buffer);
+                        std::printf("\tUnknown command: %s \n", term::Color::LightGray, buffer);
                         Time::Sleep(250);
                     }
 

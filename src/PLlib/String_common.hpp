@@ -47,5 +47,5 @@ namespace term {
     void put_char(char c, Color color = Color::LightCyan);
     void clear(Color BGcolor = Color::Black);
 
-    void Serial_Write(const char* text);
+    void print_serial(const char* text);
 }
