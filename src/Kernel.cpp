@@ -70,7 +70,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
     list_commands();
 
-    term::print("Plum-OS>");
+    term::print("Plum-OS> ");
 
     static char buffer[256];
     static int i = 0;
@@ -111,7 +111,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                     Time::Sleep(250);
                 }
 
-                term::print("Plum-OS>");
+                term::print("Plum-OS> ");
                 mem::memset(buffer, 0, 256);
                 i = 0;
             }
