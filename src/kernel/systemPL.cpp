@@ -1,15 +1,19 @@
 #include "systemPL.hpp"
 
+#include <std/printf.hpp>
+
 #include "kernel/Memory/heap.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
+#include "Drivers/USB/usb.hpp"
 
 namespace systemPL {
     void Init(void* mbi) {
         x64::set_INT_flag(false);
         //Multiboot::Init(static_cast<uint8_t *>(mbi));
+        Paging::Init(); // 4KB page size
 
         // GDT is done in gdt.asm and elevate.asm
         IDT::IDT_Install();
@@ -20,13 +24,16 @@ namespace systemPL {
         // Heap Initialization
         heap::heap_init(1024*1024*32);
 
+        USB::PreInit();
+
         // Paging
-        Paging::Init(); // 4KB page size
         Paging::Map_memory(0x0, 1024*1024*32);
-        //Paging::Map_memory(IntelGPU::GPU_MMIO_BASE, IntelGPU::GPU_MMIO_BASE + 32*1024*1024);
-        //Paging::Map_memory(Multiboot::Frame_buffer->addr, Multiboot::Frame_buffer->addr+(Multiboot::Frame_buffer->pitch*Multiboot::Frame_buffer->height));
+        Paging::Map_memory(USB::base, USB::base+USB::size, Paging::Profile::MMIO);
+
         Paging::Enable_paging();
 
         x64::set_INT_flag(true); // Enable interrupts
+
+        USB::Init();
     }
 }

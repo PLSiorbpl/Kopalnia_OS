@@ -22,6 +22,7 @@ namespace heap {
 	void heap_init(uint64_t size);
 
 	void* malloc(uint64_t size);
+	void* malloc_aligned(uint64_t size, uint64_t align, uint64_t boundry);
 
 	void free(void* ptr);
 

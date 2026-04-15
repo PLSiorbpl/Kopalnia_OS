@@ -23,12 +23,12 @@ namespace Paging {
     void Enable_paging();
 
     namespace Profile {
-        #define KernelCode  Present | Global;
-        #define KernelData  Present | Writable | NoExecute | Global;
-        #define KernelStack Present | Writable | NoExecute;
-        #define UserCode    Present | User;
-        #define UserData    Present | Writable | User | NoExecute;
-        #define MMIO        Present | Writable | CacheDisable | NoExecute;
-        #define VramWC      Present | Writable | WriteThrough | NoExecute;
+        constexpr uint64_t KernelCode =  Global;
+        constexpr uint64_t KernelData =  (NoExecute | Global);
+        constexpr uint64_t KernelStack = NoExecute;
+        constexpr uint64_t UserCode =    User;
+        constexpr uint64_t UserData =    (User | NoExecute);
+        constexpr uint64_t MMIO =        (CacheDisable | NoExecute);
+        constexpr uint64_t VramWC =      (CacheDisable | NoExecute);
     }
 }

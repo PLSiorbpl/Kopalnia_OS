@@ -1,4 +1,7 @@
 #include "PCI.hpp"
+
+#include <std/printf.hpp>
+
 #include "PLlib/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "PLlib/String_common.hpp"
@@ -99,28 +102,66 @@ namespace PCI {
         term::print(" PCI Devices\n");
     }
 
-    PCI_Device Find(const uint32_t vendor, const uint32_t device) {
-        for (int bus = 0; bus < 256; ++bus) {
-            for (int dev = 0; dev < 32; ++dev) {
-                for (int fn = 0; fn < 8; ++fn) {
+    PCI_Device Find(const uint32_t vendor, const uint32_t device_) {
+        for (int bus = 0; bus < 256; bus++) {
+            for (int dev = 0; dev < 32; dev++) {
+                for (int fn = 0; fn < 8; fn++) {
                     const uint16_t vid = pci_read16(bus, dev, fn, 0x00);
-                    uint16_t did = pci_read16(bus, dev, fn, 0x02);
-                    if (vid == vendor && did == device) {
-                        const uint16_t cmd = pci_read16(bus, dev, fn, 0x04);
-                        term::print_hex(cmd);
-                        term::print("\n");
-                        PCI_Device gpu{};
-                        gpu.bus = bus; gpu.device = dev; gpu.function = fn;
-                        gpu.vendor_id = vid; gpu.device_id = did;
+                    const uint16_t did = pci_read16(bus, dev, fn, 0x02);
+                    if (vid == vendor && did == device_) {
+                        PCI_Device device{};
+                        device.bus = bus; device.device = dev; device.function = fn;
+                        device.vendor_id = vid; device.device_id = did;
                         for (int i = 0; i < 6; ++i) {
-                            gpu.bar[i] = pci_read32(bus, dev, fn, 0x10 + i*4);
+                            device.bar[i] = pci_read32(bus, dev, fn, 0x10 + i*4);
                         }
-                        return gpu;
+                        return device;
                     }
                 }
             }
         }
         constexpr PCI_Device none = {};
         return none;
+    }
+
+    uint32_t get_class(const uint8_t bus, const uint8_t dev, const uint8_t fn) {
+        const uint8_t base = pci_read8(bus, dev, fn, 0x0B);
+        const uint8_t sub  = pci_read8(bus, dev, fn, 0x0A);
+        const uint8_t ifc  = pci_read8(bus, dev, fn, 0x09);
+
+        //std::printf("class: %x  ", (ifc << 16) | (sub << 8) | base);
+        return (ifc << 16) | (sub << 8) | base;
+    }
+
+    PCI_Device Find_Class(const uint32_t Class) {
+        for (int bus = 0; bus < 256; bus++) {
+            for (int dev = 0; dev < 32; dev++) {
+                uint16_t vid = pci_read16(bus, dev, 0, 0x00);
+                if (vid == 0xFFFF) continue;
+                const uint8_t header = pci_read8(bus, dev, 0, 0x0E);
+                const int fn_limit = (header & 0x80) ? 8 : 1;
+
+                for (int fn = 0; fn < fn_limit; fn++) {
+                    vid = pci_read16(bus, dev, fn, 0x00);
+                    if (vid == 0xFFFF || vid == 0x0000) continue;
+                    uint32_t test = get_class(bus, dev, fn);
+                    if (test == Class) {
+                        PCI_Device device{};
+                        device.bus = bus;
+                        device.device = dev;
+                        device.function = fn;
+                        device.vendor_id = vid;
+                        device.device_id = pci_read16(bus, dev, fn, 0x02);
+
+                        for (int i = 0; i < 6; ++i) {
+                            device.bar[i] =
+                                pci_read32(bus, dev, fn, 0x10 + i * 4);
+                        }
+                        return device;
+                    }
+                }
+            }
+        }
+        return {};
     }
 }
