@@ -9,7 +9,7 @@ namespace std {
 
     void printf(const char* text, term::Color color, ...) {
         __builtin_va_list args;
-        __builtin_va_start(args, text);
+        __builtin_va_start(args, color);
 
         uint8_t STATE = State_Normal; // Normal state
         for (int i = 0; text[i] != '\0'; i++) {
