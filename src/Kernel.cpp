@@ -14,16 +14,10 @@ struct Command {
     void (*func)();
 };
 
-i32 commands_len = 9;
+void list_commands();
 
-Command commands[] = {
-    {"help", [] {
-        std::printf("&9Commands: &9%s", commands[0].name);
-        for (i32 i = 1; i < commands_len; ++i) {
-            std::printf("&9, %s", commands[i].name);
-        }
-        std::printf("\n");
-    }},
+Command commands[9] = {
+    {"help", list_commands},
     {"clear", [] {
         term::clear();
     }},
@@ -58,6 +52,14 @@ Command commands[] = {
     }}
 };
 
+void list_commands() {
+    std::printf("&9\tCommands: &9%s", commands[0].name);
+    for (i32 i = 1; i < sizeof(commands) / sizeof(Command); ++i) {
+        std::printf("&9, %s", commands[i].name);
+    }
+    std::printf("\n");
+}
+
 extern "C" void kernel_main(uint32_t magic, void* mbi) {
     systemPL::Init(mbi);
     //Framebuffer::Init();
@@ -66,7 +68,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
     std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x666, 'j', 0xffffffffff, 3.040100);
     term::print("------------ Kopalnia OS 64bit ------------\n\n", term::Color::Green);
 
-    term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size, usb, colors\n", term::Color::LightBlue);
+    list_commands();
 
     term::print("Plum-OS>");
 
@@ -98,7 +100,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                     buffer[0] = '\0';
 
                 bool found_command = false;
-                for (int i = 0; i < commands_len; ++i) {
+                for (int i = 0; i < sizeof(commands) / sizeof(Command); ++i) {
                     if (std::str_cmp(buffer, commands[i].name)) {
                         commands[i].func();
                         found_command = true;
