@@ -42,11 +42,6 @@ _start:
     push eax ; Magic
     push ebx ; Mb2 Info
 
-    mov dl, '3'
-    call Print
-    mov dl, '2'
-    call Print
-
     call Elevate
 .hang:
     hlt
