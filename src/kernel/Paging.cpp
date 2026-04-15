@@ -1,8 +1,8 @@
 #include "Paging.hpp"
 
 #include "Memory/heap.hpp"
-#include "PLlib/mem_common.hpp"
-#include "PLlib/types.hpp"
+#include "../libs/std/mem_common.hpp"
+#include "../libs/std/types.hpp"
 
 namespace Paging {
     alignas(4096) uint64_t PML4[512];

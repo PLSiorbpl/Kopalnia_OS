@@ -1,53 +1,13 @@
-#include <std/printf.hpp>
-
 #include "IDT.hpp"
-#include "PLlib/types.hpp"
-#include "PLlib/String_common.hpp"
+#include "../../../libs/std/types.hpp"
+#include "libs/String_common.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
-#include "Drivers/USB/usb.hpp"
+#include "std/printf.hpp"
 
 namespace IDT {
-    // NOTE do not add [[noreturn]] to this function
-    extern "C" void isr_common(const ISR_Registers *regs) {
-        if (regs->int_no <= 31) {
-            CPU_Errors(regs->int_no, regs->error_code, regs);
-            // CPU interrupts (bad so we halt cpu)
-            while (true)
-                asm volatile("hlt");
-        }
-
-        // Handlers here
-        if (regs->int_no == 32) { // Timer
-            Time::tick++;
-        }
-        if (regs->int_no == 33) { // Keyboard
-            uint8_t c = x64::inb(0x60);
-            kb::buf.push(c);
-        }
-        // if (regs->int_no == 32+USB::irq_no) {
-        //     std::printf("yes");
-        //     USB::xhci_irq_handler();
-        // }
-
-        if (regs->int_no >= 32 && regs->int_no <= 47) {
-            x64::pic_send_eoi(regs->int_no - 32);
-        }
-    }
-
-    void CPU_Errors(const uint8_t int_no, const uint64_t error_code, const ISR_Registers* regs) {
-        term::print(ExceptionName(int_no), term::Color::Red);
-        term::print(" ");
-        if (int_no > 19) {
-            term::print_number(int_no);
-            term::print(" ");
-        }
-        term::print_number(error_code);
-        std::printf("\n&4Caused by line: &e%x", *reinterpret_cast<uint8_t*>(regs->rip));
-    }
-
-    const char* ExceptionName(const uint64_t int_no) {
+    const char* get_exception_name(const uint64_t int_no) {
         switch(int_no) {
             case 0: return "Divide Error";
             case 1: return "Debug";
@@ -67,7 +27,39 @@ namespace IDT {
             case 17: return "Alignment Check";
             case 18: return "Machine Check";
             case 19: return "SIMD Floating-Point";
+            case 20: return "Virtualization Exception";
+            case 21: return "Control Protection Exception (yes its acronym is #CP)";
+            case 28: return "Hypervisor Injection Exception";
+            case 29: return "VMM Communication Exception";
+            case 30: return "Security Exception";
             default: return "Unknown";
+        }
+    }
+
+    // NOTE do not add [[noreturn]] to this function
+    extern "C" void isr_common(const ISR_Registers* regs) {
+        if (regs->int_no <= 31) {
+            std::printf("&4%s &c%i\n&4Caused by line: &e%x", get_exception_name(regs->int_no), regs->error_code, *reinterpret_cast<uint8_t*>(regs->rip));
+
+            // CPU interrupts (bad so we halt cpu)
+            asm volatile("cli; hlt");
+        }
+
+        // Handlers here
+        if (regs->int_no == 32) { // Timer
+            Time::tick++;
+        }
+        if (regs->int_no == 33) { // Keyboard
+            uint8_t c = x64::inb(0x60);
+            kb::buf.push(c);
+        }
+        // if (regs->int_no == 32+USB::irq_no) {
+        //     std::printf("yes");
+        //     USB::xhci_irq_handler();
+        // }
+
+        if (regs->int_no >= 32 && regs->int_no <= 47) {
+            x64::pic_send_eoi(regs->int_no - 32);
         }
     }
 }

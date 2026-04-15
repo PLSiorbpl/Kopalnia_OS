@@ -1,6 +1,6 @@
 #include "PIT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
-#include "PLlib/types.hpp"
+#include "../../../libs/std/types.hpp"
 
 namespace PIT {
     void timer_set_frequency(const uint32_t hz) {

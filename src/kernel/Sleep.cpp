@@ -1,8 +1,5 @@
 #include "Sleep.hpp"
-
-#include "std/printf.hpp"
 #include <arch/x86_64/Common/Common.hpp>
-
 #include "arch/x86_64/IDT/PIT.hpp"
 #include "Drivers/Keyboard.hpp"
 

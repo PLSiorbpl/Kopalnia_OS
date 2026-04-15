@@ -1,30 +1,30 @@
-#include "PLlib/types.hpp"
-#include "PLlib/String_common.hpp"
-#include "PLlib/mem_common.hpp"
+#include "libs/std/types.hpp"
+#include "libs/String_common.hpp"
+#include "libs/std/mem_common.hpp"
 
-#include "kernel/systemPL.hpp"
+#include "kernel/system.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Memory/heap.hpp"
 
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
-#include "std/printf.hpp"
 #include "Drivers/USB/usb.hpp"
-#include "std/string.h"
+#include "std/printf.hpp"
 
 extern "C" void kernel_main(uint32_t magic, void* mbi) {
     systemPL::Init(mbi);
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
-    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x666, 'j', 0xffffffffff, 3.14159265f);
+    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x666, 'j', 0xffffffffff, 3.040100);
     term::print("------------ Kopalnia OS 64bit ------------\n\n", term::Color::Green);
 
-    term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size\n", term::Color::LightBlue);
+    term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size, usb, colors\n", term::Color::LightBlue);
 
-    term::print("Kopalnia-OS>");
+    term::print("Plum-OS>");
 
     term::print_serial("eee");
+
 
     static char buffer[256];
     static int i = 0;
@@ -54,14 +54,13 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
                     // Do commands:
                     if (std::str_cmp(buffer, "help")) {
-                        term::print("\tcommands: help, clear, echo, poweroff (VM Only), sleep, heap, pci, size, usb\n", term::Color::LightBlue);
+                        term::print("\tcommands: help, clear, echo, poweroff (VM Only), sleep, heap, pci, size, usb, colors\n", term::Color::LightBlue);
                     } else if (std::str_cmp(buffer, "heap")) {
                         heap::dump_heap();
                     } else if (std::str_cmp(buffer, "clear")) {
                         term::clear();
                     } else if (std::str_cmp(buffer, "usb")) {
                         USB::Test_Ports();
-                    } else if (std::str_cmp(buffer, "size")) {
                     } else if (std::str_cmp(buffer, "size")) {
                         term::print("\tKernel size: ", term::Color::LightBlue);
                         term::print_number(reinterpret_cast<uint64_t>(&heap::_end - heap::start_));
@@ -81,12 +80,14 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                     } else if (std::str_cmp(buffer, "sleep")) {
                         term::print("\tSleeping for 5 seconds\n", term::Color::LightGreen);
                         Time::Sleep(5000);
+                    } else if (std::str_cmp(buffer, "colors")) {
+                        std::printf("&0 &&00 &1 &&11 &2 &&22 &3 &&33 &4 &&44 &5 &&55 &6 &&66 &7 &&77 &8 &&88 &9 &&99 &a &&aa &b &&bb &c &&cc &d &&dd &e &&ee &f &&ff\n");
                     } else {
                         std::printf("\tUnknown command: %s \n", buffer);
                         Time::Sleep(250);
                     }
 
-                    term::print("Kopalnia-OS>");
+                    term::print("Plum-OS>");
                     mem::memset(buffer, 0, 256);
                     i = 0;
                 }

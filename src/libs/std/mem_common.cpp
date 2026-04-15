@@ -1,5 +1,3 @@
-#include "mem_common.hpp"
-
 #include "types.hpp"
 
 namespace mem {

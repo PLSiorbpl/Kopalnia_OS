@@ -1,6 +1,5 @@
 #include "heap.hpp"
-#include "PLlib/String_common.hpp"
-#include "std/printf.hpp"
+#include "libs/String_common.hpp"
 
 namespace heap {
     Block* heap_head;

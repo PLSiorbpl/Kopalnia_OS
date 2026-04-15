@@ -1,16 +1,14 @@
 #include "usb.hpp"
 
-#include <mem_common.hpp>
 #include <arch/x86_64/Common/Common.hpp>
-#include <kernel/Paging.hpp>
 #include <kernel/Memory/heap.hpp>
 
 #include "Drivers/PCI.hpp"
-#include "PLlib/types.hpp"
-#include "std/printf.hpp"
+#include "../../libs/std/types.hpp"
 #include "Drivers/mmio.hpp"
 #include "kernel/Sleep.hpp"
-#include "std/vector.hpp"
+#include "std/mem_common.hpp"
+#include "std/printf.hpp"
 
 namespace USB {
     xhci_doorbell_manager m_doorbell_manager;

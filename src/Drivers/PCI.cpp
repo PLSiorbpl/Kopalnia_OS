@@ -1,10 +1,7 @@
 #include "PCI.hpp"
-
-#include <std/printf.hpp>
-
-#include "PLlib/types.hpp"
+#include "../libs/std/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
-#include "PLlib/String_common.hpp"
+#include "libs/String_common.hpp"
 
 namespace PCI {
     uint32_t pci_read32(const uint8_t bus, const uint8_t device, const uint8_t func, const uint8_t offset) {

@@ -1,6 +1,6 @@
 #include "main.hpp"
 
-#include <PLlib/String_common.hpp>
+#include <libs/String_common.hpp>
 
 namespace IntelGPU {
     PCI::PCI_Device gpu;

@@ -3,7 +3,7 @@ bits 32
 global Elevate
 extern gdt_descriptor
 extern PML4_Table
-extern Kernel_64
+extern kernel_main
 
 section .bss
 align 16
@@ -84,6 +84,6 @@ long_mode_entry:
     sub rsp, 8
     xor rbp, rbp
 
-    jmp Kernel_64
+    jmp kernel_main
 
 section .note.GNU-stack noalloc noexec nowrite progbits
