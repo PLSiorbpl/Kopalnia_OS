@@ -57,9 +57,9 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                         heap::dump_heap();
                     } else if (std::str_cmp(buffer, "clear")) {
                         term::clear();
-                    } else if (string::str_cmp(buffer, "usb")) {
+                    } else if (std::str_cmp(buffer, "usb")) {
                         USB::Test_Ports();
-                    } else if (string::str_cmp(buffer, "size")) {
+                    } else if (std::str_cmp(buffer, "size")) {
                     } else if (std::str_cmp(buffer, "size")) {
                         term::print("\tKernel size: ", term::Color::LightBlue);
                         term::print_number(reinterpret_cast<uint64_t>(&heap::_end - heap::start_));
