@@ -97,25 +97,25 @@ namespace heap {
         for (Block* b = heap_head; b; b = b->next) {
             b_count++;
             term::print("\tBlock #");
-            term::print_int(b_count);
+            term::print_number(b_count);
             term::print(" @ ");
             term::print_hex(reinterpret_cast<uintptr_t>(b), term::Color::LightGray);
             term::print(" size: ");
-            term::print_int(b->size, term::Color::Green);
+            term::print_number(b->size, term::Color::Green);
             term::print("B");
             term::print(b->free ? " free\n" : " used\n", b->free ? term::Color::LightGreen : term::Color::LightRed);
         }
         term::print("\tBlocks total: ");
-        term::print_int(b_count);
+        term::print_number(b_count);
         term::print("\nSummary (");
         term::print("used", term::Color::LightRed); term::print("/");
         term::print("free", term::Color::LightGreen); term::print("/");
         term::print("all", term::Color::LightCyan); term::print("): ");
-        term::print_uint(heap::check_used_heap(), term::Color::LightRed);
+        term::print_number(heap::check_used_heap(), term::Color::LightRed);
         term::print("B / ");
-        term::print_uint(heap::check_free_heap(), term::Color::LightGreen);
+        term::print_number(heap::check_free_heap(), term::Color::LightGreen);
         term::print("B / ");
-        term::print_uint(heap::check_heap(), term::Color::LightCyan);
+        term::print_number(heap::check_heap(), term::Color::LightCyan);
         term::print("B\n\n");
     }
 }

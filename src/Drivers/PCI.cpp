@@ -95,7 +95,7 @@ namespace PCI {
             }
         }
         term::print("found: ");
-        term::print_uint(devices);
+        term::print_number(devices);
         term::print(" PCI Devices\n");
     }
 

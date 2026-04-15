@@ -8,7 +8,6 @@
 
 namespace systemPL {
     void Init(void* mbi) {
-        x64::set_INT_flag(false);
         //Multiboot::Init(static_cast<uint8_t *>(mbi));
 
         // GDT is done in gdt.asm and elevate.asm

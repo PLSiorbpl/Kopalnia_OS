@@ -30,7 +30,7 @@ namespace x64 {
     }
 
     inline void halt() {
-        asm volatile("hlt");
+        asm volatile("sti; hlt");
     }
 
     void set_INT_flag(bool flag);

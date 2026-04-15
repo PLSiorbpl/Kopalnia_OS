@@ -4,8 +4,8 @@
 #include "PLlib/String_common.hpp"
 
 namespace std {
-#define State_Normal 0
-#define State_Type 1
+    #define State_Normal 0
+    #define State_Type 1
 
     void printf(const char* text, ...) {
         __builtin_va_list args;
@@ -27,17 +27,17 @@ namespace std {
             if (STATE == State_Type) {
                 if (c == 'i') {
                     if (c2 == '6' && c3 == '4') {
-                        term::print_int(__builtin_va_arg(args, long long)); // int64_t
+                        term::print_number(__builtin_va_arg(args, long long)); // int64_t
                         i += 2;
                     } else {
-                        term::print_int(__builtin_va_arg(args, int)); // int32_t
+                        term::print_number(__builtin_va_arg(args, int)); // int32_t
                     }
                 } else if (c == 'u') {
                     if (c2 == '6' && c3 == '4') {
-                        term::print_uint(__builtin_va_arg(args, unsigned long long)); // uint64_t
+                        term::print_number(__builtin_va_arg(args, unsigned long long)); // uint64_t
                         i += 2;
                     } else {
-                        term::print_uint(__builtin_va_arg(args, unsigned int)); // uint32_t
+                        term::print_number(__builtin_va_arg(args, unsigned int)); // uint32_t
                     }
                 } else if (c == 's') {
                     term::print(__builtin_va_arg(args, const char*)); // const char*

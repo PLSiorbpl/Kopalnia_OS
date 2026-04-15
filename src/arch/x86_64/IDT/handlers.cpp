@@ -33,10 +33,10 @@ namespace IDT {
         term::print(ExceptionName(int_no), term::Color::Red);
         term::print(" ");
         if (int_no > 19) {
-            term::print_uint(int_no);
+            term::print_number(int_no);
             term::print(" ");
         }
-        term::print_uint(error_code);
+        term::print_number(error_code);
     }
 
     const char* ExceptionName(const uint64_t int_no) {

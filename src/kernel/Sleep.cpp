@@ -42,9 +42,7 @@ namespace Time {
     10hz <-> 10khz  (100hz recomended)
     */
     void Set_PIT(const uint64_t freq) {
-        x64::set_INT_flag(false);
         PIT::timer_set_frequency(freq);
-        x64::set_INT_flag(true);
         hz = freq;
     }
 }

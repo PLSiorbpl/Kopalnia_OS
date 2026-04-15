@@ -1,13 +1,6 @@
 #pragma once
 #include "types.hpp"
-
-namespace string {
-    int strlen(const char* text);
-    void int_to_str(char* buffer, int64_t value);
-    void uint_to_str(char* buffer, uint64_t value);
-    void int_to_strhex(char* buffer, int64_t value);
-    bool str_cmp(const char* str1, const char* str2);
-}
+#include "std/string.h"
 
 namespace term {
     // VGA video buffer
@@ -41,9 +34,16 @@ namespace term {
 
     void scroll();
     void print(const char* text, Color color = Color::White);
-    void print_int(int64_t value, Color color = Color::LightGreen);
-    void print_uint(uint64_t value, Color color = Color::LightGreen);
+
+    template <typename T>
+    void print_number(T value, Color color = Color::LightGreen) {
+        char buffer[16];
+        std::to_str(buffer, value);
+        print(buffer, color);
+    }
+
     void print_hex(uint32_t value, Color color = Color::LightGreen);
+
     void put_char(char c, Color color = Color::LightCyan);
     void clear(Color BGcolor = Color::Black);
 
