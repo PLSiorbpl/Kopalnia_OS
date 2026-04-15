@@ -12,7 +12,7 @@ namespace IDT {
     // NOTE do not add [[noreturn]] to this function
     extern "C" void isr_common(const ISR_Registers *regs) {
         if (regs->int_no <= 31) {
-            CPU_Errors(regs->int_no, regs->error_code);
+            CPU_Errors(regs->int_no, regs->error_code, regs);
             // CPU interrupts (bad so we halt cpu)
             while (true)
                 asm volatile("hlt");
@@ -26,17 +26,17 @@ namespace IDT {
             uint8_t c = x64::inb(0x60);
             kb::buf.push(c);
         }
-        if (regs->int_no == 32+USB::irq_no) {
-            std::printf("yes");
-            USB::xhci_irq_handler();
-        }
+        // if (regs->int_no == 32+USB::irq_no) {
+        //     std::printf("yes");
+        //     USB::xhci_irq_handler();
+        // }
 
         if (regs->int_no >= 32 && regs->int_no <= 47) {
             x64::pic_send_eoi(regs->int_no - 32);
         }
     }
 
-    void CPU_Errors(const uint8_t int_no, const uint64_t error_code) {
+    void CPU_Errors(const uint8_t int_no, const uint64_t error_code, const ISR_Registers* regs) {
         term::print(ExceptionName(int_no), term::Color::Red);
         term::print(" ");
         if (int_no > 19) {
@@ -44,6 +44,7 @@ namespace IDT {
             term::print(" ");
         }
         term::print_number(error_code);
+        std::printf("\n&4Caused by line: &e%x", *reinterpret_cast<uint8_t*>(regs->rip));
     }
 
     const char* ExceptionName(const uint64_t int_no) {

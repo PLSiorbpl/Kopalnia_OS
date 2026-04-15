@@ -12,7 +12,7 @@ Elevate:
     lgdt [gdt_descriptor]
 
     mov eax, cr4
-    or eax, 1 << 5
+    or eax, ((1 << 5) | (1 << 9) | (1 << 10))
     mov cr4, eax
 
     mov eax, PML4_Table
@@ -25,7 +25,8 @@ Elevate:
 
     ; Enable paging
     mov eax, cr0
-    or eax, (1 << 31) | (1 << 0)
+    and eax, ~(1 << 2)
+    or eax, (1 << 31) | (1 << 0) | (1 << 1) | (1 << 5)
     mov cr0, eax
 
     popa

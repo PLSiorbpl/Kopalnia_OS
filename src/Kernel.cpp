@@ -17,10 +17,10 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
-    //std::printf("Printf(%%i %%u %%s %%x %%c %%u64) %i %u %s %x %c %u64\n", -6767, 290, "LOL", 0x666, 'j', 0xffffffffff);
+    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u\n", -6767, 0, "LOL", 0x666, 'j', 0xffffffffff);
     term::print("------------ Kopalnia OS 64bit ------------\n\n", term::Color::Green);
 
-    term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size\n\n", term::Color::LightBlue);
+    term::print("Commands: help, clear, echo, poweroff, sleep, heap, pci, size\n", term::Color::LightBlue);
 
     term::print("Kopalnia-OS>");
 
@@ -82,7 +82,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                         term::print("\tSleeping for 5 seconds\n", term::Color::LightGreen);
                         Time::Sleep(5000);
                     } else {
-                        std::printf("\tUnknown command: %s \n", term::Color::LightGray, buffer);
+                        std::printf("\tUnknown command: %s \n", buffer);
                         Time::Sleep(250);
                     }
 

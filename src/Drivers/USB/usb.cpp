@@ -28,7 +28,7 @@ namespace USB {
     void PreInit() {
         usb = PCI::Find_Class(0x0030030C);
         irq_no = PCI::pci_read8(usb.bus, usb.device, usb.function, 0x3C);
-        std::printf("irq_no = %u", term::Color::LightGray, irq_no);
+        std::printf("irq_no = %u\n", irq_no);
         if (usb.vendor_id == 0) {
             std::printf("No USB Device found\n");
             return;
@@ -112,12 +112,12 @@ namespace USB {
     #define ERDP 0x18
 
     void Print_OP() {
-        std::printf("USBCMD: %x\n", term::Color::LightGray, mio.MMIO_READ32(caplenght + USBCMD));
-        std::printf("USBSTS: %x\n", term::Color::LightGray, mio.MMIO_READ32(caplenght + USBSTS));
-        std::printf("DNCTRL: %x\n", term::Color::LightGray, mio.MMIO_READ32(caplenght + DNCTRL));
-        std::printf("CRCR: %x\n", term::Color::LightGray, mio.MMIO_READ32(caplenght + CRCR));
-        std::printf("DCBAAP: %x\n", term::Color::LightGray, mio.MMIO_READ32(caplenght + DCBAAP));
-        std::printf("CONFIG: %x\n", term::Color::LightGray, mio.MMIO_READ32(caplenght + CONFIG));
+        std::printf("USBCMD: %x\n", mio.MMIO_READ32(caplenght + USBCMD));
+        std::printf("USBSTS: %x\n", mio.MMIO_READ32(caplenght + USBSTS));
+        std::printf("DNCTRL: %x\n", mio.MMIO_READ32(caplenght + DNCTRL));
+        std::printf("CRCR: %x\n", mio.MMIO_READ32(caplenght + CRCR));
+        std::printf("DCBAAP: %x\n",mio.MMIO_READ32(caplenght + DCBAAP));
+        std::printf("CONFIG: %x\n", mio.MMIO_READ32(caplenght + CONFIG));
     }
 
     void Get_Info() {
@@ -138,7 +138,7 @@ namespace USB {
 
         m_runtime_regs = reinterpret_cast<runtime_registers*>(base + (cap_regs->rtsoff & ~0x1F));
 
-        std::printf("USB INFO: Ver: %u Max Slots: %u Max Ports: %u\n", term::Color::LightGray, Version, max_slots, max_ports);
+        std::printf("USB INFO: Ver: %u Max Slots: %u Max Ports: %u\n", Version, max_slots, max_ports);
 
         m_doorbell_manager.construct(base + (cap_regs->dboff & ~0x3));
     }
@@ -399,7 +399,7 @@ namespace USB {
         }
 
         for (int i = 0; i < 10; i++) {
-            std::printf("event: %u", term::Color::LightGray, trbs_array[i]);
+            std::printf("event: %u", trbs_array[i]);
         }
 
         Acknowladge_irq(0);
@@ -419,12 +419,12 @@ namespace USB {
         // Config
         Configure_Op_Regs();
         std::printf("Controller Started\n");
-        std::printf("usbsts before: %x\n", term::Color::LightGray, mio.MMIO_READ32(USBSTS + caplenght));
+        std::printf("usbsts before: %x\n", mio.MMIO_READ32(USBSTS + caplenght));
         if (!Start()) {
             std::printf("Failed to start controller\n");
             return;
         }
-        std::printf("usbsts after: %x\n", term::Color::LightGray, mio.MMIO_READ32(USBSTS + caplenght));
+        std::printf("usbsts after: %x\n", mio.MMIO_READ32(USBSTS + caplenght));
 
         log_usbsts();
     }
@@ -434,7 +434,7 @@ namespace USB {
             const uint32_t port = 0x400 + caplenght + i*0x10;
             uint32_t portsc = mio.MMIO_READ32(port);
             if ((portsc & 1) && (portsc & (1 << 1))) {
-                std::printf("Active Device at Port: %u = %x\n", term::Color::LightGray, i, portsc);
+                std::printf("Active Device at Port: %u = %x\n", i, portsc);
             }
         }
         log_usbsts();

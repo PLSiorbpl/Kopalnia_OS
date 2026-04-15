@@ -23,16 +23,16 @@ namespace systemPL {
         // Heap Initialization
         heap::heap_init(1024*1024*32);
 
-        USB::PreInit();
+        //USB::PreInit();
 
         // Paging
         Paging::Map_memory(0x0, 1024*1024*32);
-        Paging::Map_memory(USB::base, USB::base+USB::size, Paging::Profile::MMIO);
+        //Paging::Map_memory(USB::base, USB::base+USB::size, Paging::Profile::MMIO);
 
         Paging::Enable_paging();
 
         x64::set_INT_flag(true); // Enable interrupts
 
-        USB::Init();
+        //USB::Init();
     }
 }

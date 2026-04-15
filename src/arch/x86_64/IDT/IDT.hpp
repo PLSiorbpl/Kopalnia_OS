@@ -31,7 +31,7 @@ namespace IDT {
 	void set_IDT_entry(IDTEntry& entry, void* handler);
     void IDT_Install();
     void PIC_Remap(uint8_t offset1, uint8_t offset2);
-    void CPU_Errors(uint8_t int_no, uint64_t error_code);
+    void CPU_Errors(uint8_t int_no, uint64_t error_code, const ISR_Registers* regs);
     const char* ExceptionName(uint64_t int_no);
 
 }

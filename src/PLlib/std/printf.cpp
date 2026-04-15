@@ -1,61 +1,113 @@
 #include "printf.hpp"
-#include "PLlib/types.hpp"
-#include "arch/x86_64/Common/Common.hpp"
 #include "PLlib/String_common.hpp"
 
 namespace std {
-    #define State_Normal 0
-    #define State_Type 1
-
-    void printf(const char* text, term::Color color, ...) {
+    void printf(const char* text, ...) {
         __builtin_va_list args;
-        __builtin_va_start(args, color);
+        __builtin_va_start(args, text);
 
-        uint8_t STATE = State_Normal; // Normal state
+        auto active_color = term::Color::LightGray;
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
-            const char c2 = text[i+1];
-            char c3 = 0;
-            if (c2 != '\0')
-                c3 = text[i+2];
 
-            // Args
-            if (c == '%' && STATE == State_Normal) {
-                STATE = State_Type;
-                continue;
-            }
-            if (STATE == State_Type) {
-                if (c == 'i') {
-                    if (c2 == '6' && c3 == '4') {
-                        term::print_number(__builtin_va_arg(args, long long), color); // int64_t
-                        i += 2;
-                    } else {
-                        term::print_number(__builtin_va_arg(args, int), color); // int32_t
+            if (c == '%') {
+                const char arg = text[i + 1];
+                switch (arg) {
+                    case 'c':
+                        put_char(static_cast<char>(__builtin_va_arg(args, int)), active_color);
+                        break;
+                    case 's':
+                        print(__builtin_va_arg(args, const char*), active_color);
+                        break;
+                    case 'i':
+                    case 'd':
+                        print_number(__builtin_va_arg(args, int), active_color);
+                        break;
+                    case 'u':
+                        print_number(__builtin_va_arg(args, unsigned int), active_color);
+                        break;
+                    case 'x':
+                        print_hex(__builtin_va_arg(args, unsigned int), active_color);
+                        break;
+                    case 'f':
+                        print_number(__builtin_va_arg(args, double), active_color);
+                        break;
+
+                    default: {
+                        term::put_char(c, active_color);
+                        continue;
                     }
-                } else if (c == 'u') {
-                    if (c2 == '6' && c3 == '4') {
-                        term::print_number(__builtin_va_arg(args, unsigned long long), color); // uint64_t
-                        i += 2;
-                    } else {
-                        term::print_number(__builtin_va_arg(args, unsigned int), color); // uint32_t
-                    }
-                } else if (c == 's') {
-                    term::print(__builtin_va_arg(args, const char*), color); // const char*
-                } else if (c == 'x') {
-                    term::print_hex(__builtin_va_arg(args, unsigned int), color); // uint32_t
-                } else if (c == 'c') {
-                    term::put_char(static_cast<char>(__builtin_va_arg(args, int)), color); // char (int)
-                } else if (c == '%') {
-                    term::put_char(c, color);
-                } else {
-                    term::put_char('%');
-                    term::put_char(c, color);
                 }
-                STATE = State_Normal;
+
+                i++;
                 continue;
             }
-            term::put_char(c, color);
+
+            if (c == '&') {
+                const char arg = text[i + 1];
+                switch (arg) {
+                    case '0':
+                        active_color = term::Color::Black;
+                        break;
+                    case '1':
+                        active_color = term::Color::Blue;
+                        break;
+                    case '2':
+                        active_color = term::Color::Green;
+                        break;
+                    case '3':
+                        active_color = term::Color::Cyan;
+                        break;
+                    case '4':
+                        active_color = term::Color::Red;
+                        break;
+                    case '5':
+                        active_color = term::Color::Magenta;
+                        break;
+                    case '6':
+                        active_color = term::Color::Brown;
+                        break;
+                    case '7':
+                        active_color = term::Color::LightGray;
+                        break;
+                    case '8':
+                        active_color = term::Color::DarkGray;
+                        break;
+                    case '9':
+                        active_color = term::Color::LightBlue;
+                        break;
+                    case 'a':
+                        active_color = term::Color::LightGreen;
+                        break;
+                    case 'b':
+                        active_color = term::Color::LightCyan;
+                        break;
+                    case 'c':
+                        active_color = term::Color::LightRed;
+                        break;
+                    case 'd':
+                        active_color = term::Color::Pink;
+                        break;
+                    case 'e':
+                        active_color = term::Color::Yellow;
+                        break;
+                    case 'f':
+                        active_color = term::Color::White;
+                        break;
+
+                    default: {
+                        term::put_char(c, active_color);
+                        continue;
+                    }
+                }
+
+                i++;
+                continue;
+            }
+
+            term::put_char(c, active_color);
         }
+
         __builtin_va_end(args);
     }
 }
