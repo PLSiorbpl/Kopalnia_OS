@@ -1,7 +1,9 @@
 #include "PCI.hpp"
-#include "../libs/std/types.hpp"
+
+#include <std/printf.hpp>
+
+#include "std/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
-#include "libs/String_common.hpp"
 
 namespace PCI {
     uint32_t pci_read32(const uint8_t bus, const uint8_t device, const uint8_t func, const uint8_t offset) {
@@ -33,70 +35,64 @@ namespace PCI {
                 if (vendor != 0xFFFF && vendor != 0000) {
                     const uint16_t device = pci_read16(bus, dev, 0, 0x02);
 
-                    term::print("Vendor: ");
-                    term::print_hex(vendor);
-                    term::print(" Device: ");
-                    term::print_hex(device);
-                    term::print(" ");
+                    std::printf("&fVendor: &a%x&f, Device: &a%x ", vendor, device);
                     switch (vendor) {
                         case 0x8086: {
-                            term::print("Intel ");
+                            std::printf("&bIntel ");
                             switch (device) {
                                 case 0x5914: {
-                                    term::print("Xeon E3-1200 Host Bridge");
+                                    std::printf("&7Xeon E3-1200 Host Bridge");
                                     break;
                                 }
                                 case 0x5917: {
-                                    term::print("UHD Graphics 620");
+                                    std::printf("&7UHD Graphics 620");
                                     break;
                                 }
                                 case 0x9D4E: {
-                                    term::print("100 Series Chipset Family");
+                                    std::printf("&7100 Series Chipset Family");
                                     break;
                                 }
                                 case 0x1237: {
-                                    term::print("440FX - 82441FX PMC");
+                                    std::printf("&7440FX - 82441FX PMC");
                                     break;
                                 }
                                 case 0x7000: {
-                                    term::print("82371SB PIIX3 ISA");
+                                    std::printf("&782371SB PIIX3 ISA");
                                     break;
                                 }
                                 case 0x100E: {
-                                    term::print("Gigabit Ethernet Controller");
+                                    std::printf("&7Gigabit Ethernet Controller");
                                     break;
                                 }
                             }
                             break;
                         }
                         case 0x10DE: {
-                            term::print("Nvidia ");
+                            std::printf("&aNvidia ");
                             if (device == 0x1d10)
-                                term::print("GeForce MX150");
+                                std::printf("&7GeForce MX150");
                             break;
                         }
                         case 0x10EC: {
-                            term::print("Realtek ");
+                            std::printf("&9Realtek ");
                             if (device == 0x5287)
-                                term::print("RTL8411B PCI Express Card Reader");
+                                std::printf("&7RTL8411B PCI Express Card Reader");
                             break;
                         }
                         case 0x168C: {
-                            term::print("Atheros ");
+                            std::printf("&dAtheros ");
                             if (device == 0x003e)
-                                term::print("Wireless Network Adapter");
+                                std::printf("&7Wireless Network Adapter");
                             break;
                         }
-                        default: term::print("Unknown");
+                        default: std::printf("&cUnknown");
                     }
-                    term::print("\n");
+                    std::printf("\n");
                     devices++;
                 }
             }
         }
-        term::print("found: ");
-        term::print_number(devices);
-        term::print(" PCI Devices\n");
+        std::printf("&ffound &a%u &fPCI Devices\n", devices);
     }
 
     PCI_Device Find(const uint32_t vendor, const uint32_t device_) {
@@ -126,7 +122,6 @@ namespace PCI {
         const uint8_t sub  = pci_read8(bus, dev, fn, 0x0A);
         const uint8_t ifc  = pci_read8(bus, dev, fn, 0x09);
 
-        //std::printf("class: %x  ", (ifc << 16) | (sub << 8) | base);
         return (ifc << 16) | (sub << 8) | base;
     }
 

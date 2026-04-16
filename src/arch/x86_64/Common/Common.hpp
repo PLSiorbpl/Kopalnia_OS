@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../libs/std/types.hpp"
+#include "libs/std/types.hpp"
 
 namespace x64 {
     inline void outb(uint16_t port, uint8_t val) {

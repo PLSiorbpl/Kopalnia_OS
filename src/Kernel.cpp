@@ -1,13 +1,13 @@
 #include "libs/std/types.hpp"
 #include "libs/String_common.hpp"
 #include "libs/std/mem_common.hpp"
+#include "std/printf.hpp"
 #include "kernel/system.hpp"
+#include "kernel/Sleep.hpp"
+#include "kernel/Memory/heap.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
 #include "Drivers/USB/usb.hpp"
-#include "kernel/Sleep.hpp"
-#include "kernel/Memory/heap.hpp"
-#include "std/printf.hpp"
 
 struct Command {
     const char* name;
@@ -24,14 +24,14 @@ Command commands[9] = {
     {"poweroff", [] {
         std::printf("&c\tShutting down in 5s (press ENTER to cancel!)\n");
         if (!Time::WaitForKey(5000, '\n')) {
-            asm volatile("outw %0, %1" : : "a"(static_cast<uint16_t>(0x2000)), "Nd"(static_cast<uint16_t>(0x604)));
+            asm volatile("outw %0, %1" : : "a"(static_cast<uint16_t>(0x2000)), "Nd"(static_cast<uint16_t>(0x604))); // QEMU only
             std::printf("&4Unable to shut down try shutting down manually\n");
         } else {
             std::printf("&a\tShutdown Canceled!\n");
         }
     }},
     {"sleep", [] {
-        std::printf("&a\tSleeping for 5 seconds\n");
+        std::printf("&a\tSleeping for &f5 &aseconds\n");
         Time::Sleep(5000);
     }},
     {"heap", [] {
@@ -42,7 +42,7 @@ Command commands[9] = {
     }},
     {"size", [] {
         auto size = reinterpret_cast<uint64_t>(&heap::_end - heap::start_);
-        std::printf("&9\tKernel size: %i%s\n", size, std::format_size(size));
+        std::printf("&9\tKernel size: &a%i%s\n", size, std::format_size(size));
     }},
     {"usb", [] {
         USB::Test_Ports();
@@ -65,8 +65,8 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
-    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x666, 'j', 0xffffffffff, 3.146767);
-    std::printf("&f------------ &Plum OS 64bit &f------------\n\n");
+    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x00000666, 'j', 0xffffffffff, 3.146767);
+    std::printf("&f------------ &bPlum OS 64bit &f------------\n\n");
 
     list_commands();
 
