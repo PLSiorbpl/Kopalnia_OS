@@ -35,8 +35,6 @@ namespace term {
     void scroll();
     void print(const char* text, Color color = Color::White);
 
-    void print_serial(const char* text);
-
     template <typename T>
     void print_number(T value, Color color = Color::LightGreen) {
         char buffer[16];
@@ -48,4 +46,15 @@ namespace term {
 
     void put_char(char c, Color color = Color::LightCyan);
     void clear(Color BGcolor = Color::Black);
+
+    // Serial
+    void print_serial(const char* text);
+    void put_serial(char c);
+    void print_hex_serial(uint32_t value);
+    template<typename T>
+    void print_number_serial(T value) {
+        char buf[16];
+        std::to_str(buf, value);
+        print_serial(buf);
+    }
 }

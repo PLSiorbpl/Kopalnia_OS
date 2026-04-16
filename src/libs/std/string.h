@@ -114,4 +114,24 @@ namespace std {
             default: return "B";
         }
     }
+
+    template<typename T>
+    const char *format_number(T &number) {
+         int iters = 0;
+         while (number >= 1000) {
+             number /= 1000;
+             iters++;
+         }
+
+         switch (iters) {
+             case 0: return "K";
+             case 1: return "M";
+             case 2: return "B";
+             case 3: return "T";
+             case 4: return "Q";
+             case 5: return "Qi";
+             case 6: return "SX";
+             default: return "";
+         }
+     }
 }

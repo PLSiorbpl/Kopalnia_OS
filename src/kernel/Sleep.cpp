@@ -9,6 +9,7 @@ namespace Time {
 
     /*
      1000 -> 1s, 500 -> 0.5s
+     10ms accuracy  (means 4ms is technically still 0ms)
     */
     void Sleep(const uint64_t t) {
         const uint64_t end = tick + ((t * hz) / 1000);

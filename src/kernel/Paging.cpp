@@ -20,7 +20,8 @@ namespace Paging {
         return aligned;
     }
 
-    // Phys = Virt
+    // TODO
+    // fix being able to map only 0-136MB
     void Map_memory(uint64_t start, uint64_t end, const uint64_t flags) {
         start = start & ~(4095);
         end = (end + 4095) & ~(4095);
@@ -52,11 +53,12 @@ namespace Paging {
             }
 
             auto *PT = reinterpret_cast<uint64_t *>(PD[pd_i] & ~0xFFFULL);
-            PT[pt_i] = addr | Present | Writable | flags;
+            PT[pt_i] = addr | Present | Writable | flags; // Physical == Virtual (identity mapping)
         }
     }
 
     void Enable_paging() {
+        // We only need to update address of PML4 because we enabled it before in elevate.asm
         auto pml4_addr = reinterpret_cast<uint64_t>(PML4);
         asm volatile("mov %0, %%cr3" :: "r"(pml4_addr));
     }

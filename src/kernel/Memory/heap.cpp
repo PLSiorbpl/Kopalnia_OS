@@ -18,7 +18,8 @@ namespace heap {
         heap_start = reinterpret_cast<uint64_t>(&_end);
         heap_end = heap_start + size;
     }
-    // True allocator
+
+    // Block allocator
     void* malloc(uint64_t size) {
         size = (size + 7) & ~7;
         for (Block* block = heap_head; block != nullptr; block = block->next) {
@@ -45,10 +46,13 @@ namespace heap {
         return nullptr;
     }
 
-    void* malloc_aligned(uint64_t size, uint64_t align, uint64_t boundary) {
+    // TODO
+    // maybe make this not waste space
+    // and maybe store original pointer in aligned-sizeof(Block)?
+    void* malloc_aligned(const uint64_t size, uint64_t align, const uint64_t boundry) {
         if (align == 0) align = 1;
 
-        const uint64_t total = size + align + (boundary ? boundary : 0);
+        const uint64_t total = size + align + (boundry ? boundry : 0);
 
         const auto raw = reinterpret_cast<uint64_t>(malloc(total));
         if (!raw) return nullptr;
@@ -57,18 +61,20 @@ namespace heap {
         uint64_t aligned = (raw + align - 1) & ~(align - 1);
 
         // boundary check
-        if (boundary) {
-            const uint64_t start_block = aligned & ~(boundary - 1);
-            const uint64_t end_block   = (aligned + size - 1) & ~(boundary - 1);
+        if (boundry) {
+            const uint64_t start_block = aligned & ~(boundry - 1);
+            const uint64_t end_block   = (aligned + size - 1) & ~(boundry - 1);
 
             if (start_block != end_block) {
-                aligned = (aligned + boundary) & ~(boundary - 1);
+                aligned = (aligned + boundry) & ~(boundry - 1);
             }
         }
 
         return reinterpret_cast<void *>(aligned);
     }
 
+    // TODO
+    // be able to easly free aligned pointers from function above
     void free(void* ptr) {
         if (!ptr) return;
         Block* old_block = static_cast<Block*>(ptr) - 1;

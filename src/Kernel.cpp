@@ -65,12 +65,12 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
-    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x666, 'j', 0xffffffffff, 3.040100);
-    term::print("------------ Kopalnia OS 64bit ------------\n\n", term::Color::Green);
+    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x666, 'j', 0xffffffffff, 3.146767);
+    std::printf("&f------------ &Plum OS 64bit &f------------\n\n");
 
     list_commands();
 
-    term::print("Plum-OS> ");
+    std::printf("&fPlum-OS> ");
 
     static char buffer[256];
     static int i = 0;
@@ -107,18 +107,18 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
                     }
                 }
                 if (!found_command) {
-                    std::printf("\tUnknown command: %s \n", buffer);
-                    Time::Sleep(250);
+                    std::printf("&7\tUnknown command: &c%s \n", buffer);
+                    Time::Sleep(250); // fake delay so people think lots of stuff is happening fr
                 }
 
-                term::print("Plum-OS> ");
+                std::printf("&fPlum-OS> ");
                 mem::memset(buffer, 0, 256);
                 i = 0;
             }
 
             if (c == '\b' && i >= 254) {
                 i--;
-                term::print("\b");
+                std::printf("\b");
             }
         }
     }

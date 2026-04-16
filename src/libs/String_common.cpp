@@ -44,7 +44,7 @@ namespace term {
 
     inline char get_char_at(const uint8_t x, const uint8_t y) {
         const int idx = y * VGA_WIDTH + x;
-        return video[idx] & 0xFF;
+        return static_cast<char>(video[idx] & 0xFF);
     }
 
     void put_char(const char c, const Color color) {
@@ -103,9 +103,21 @@ namespace term {
 
         char *ptr = buffer + 2;
 
+        bool started = false;
         for (int i = 28; i >= 0; i -= 4) {
             const uint8_t nibble = (value >> i) & 0xF;
+
+            if (!started) {
+                if (nibble == 0)
+                    continue;
+                started = true;
+            }
+
             *ptr++ = hex_chars[nibble];
+        }
+
+        if (!started) {
+            *ptr++ = '0';
         }
 
         *ptr = '\0';
@@ -125,5 +137,41 @@ namespace term {
             while (!(x64::inb(0x3F8 + 5) & 0x20)) { }
             x64::outb(0x3F8, text[i]);
         }
+    }
+
+    void put_serial(const char c) {
+        while (!(x64::inb(0x3F8 + 5) & 0x20)) { }
+        x64::outb(0x3F8, c);
+    }
+
+    void print_hex_serial(uint32_t value) {
+        auto hex_chars = "0123456789ABCDEF";
+        char buffer[16];
+
+        buffer[0] = '0';
+        buffer[1] = 'x';
+
+        char *ptr = buffer + 2;
+
+        bool started = false;
+        for (int i = 28; i >= 0; i -= 4) {
+            const uint8_t nibble = (value >> i) & 0xF;
+
+            if (!started) {
+                if (nibble == 0)
+                    continue;
+                started = true;
+            }
+
+            *ptr++ = hex_chars[nibble];
+        }
+
+        if (!started) {
+            *ptr++ = '0';
+        }
+
+        *ptr = '\0';
+
+        print_serial(buffer);
     }
 }

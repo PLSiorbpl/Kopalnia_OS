@@ -30,6 +30,7 @@ namespace systemPL {
         Paging::Enable_paging();
 
         kb::flush_keyboard();
+
         x64::set_INT_flag(true); // Enable interrupts
 
         //USB::Init();
