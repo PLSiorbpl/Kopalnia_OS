@@ -1,7 +1,4 @@
 #include "Framebuffer.hpp"
-
-#include <libs/String_common.hpp>
-
 #include "multiboot2.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "../libs/std/mem_common.hpp"

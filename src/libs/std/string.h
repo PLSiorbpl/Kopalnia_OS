@@ -116,7 +116,7 @@ namespace std {
     }
 
     template<typename T>
-    const char *format_number(T &number) {
+    const char* format_number(T &number) {
          int iters = 0;
          while (number >= 1000) {
              number /= 1000;
@@ -134,4 +134,6 @@ namespace std {
              default: return "";
          }
      }
+
+    void to_hex_str(char* buffer, unsigned int number);
 }

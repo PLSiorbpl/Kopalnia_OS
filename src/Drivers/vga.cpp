@@ -1,11 +1,8 @@
-#include "String_common.hpp"
+#include "vga.h"
 
-#include <arch/x86_64/Common/Common.hpp>
-
-#include "std/types.hpp"
 #include "std/mem_common.hpp"
 
-namespace term {
+namespace drivers::vga {
     volatile uint16_t* video = reinterpret_cast<volatile uint16_t* const>(0xB8000);
     int cursor_x = 0;
     int cursor_y = 0;
@@ -89,77 +86,9 @@ namespace term {
         }
     }
 
-    void put_str(const char* text, Color color) {
-        print(text, color);
-        put_char('\n', color);
-    }
-
-    void print_hex(uint32_t value, Color color) {
-        auto hex_chars = "0123456789ABCDEF";
-        char buffer[16];
-
-        buffer[0] = '0';
-        buffer[1] = 'x';
-
-        char *ptr = buffer + 2;
-
-        bool started = false;
-        for (int i = 28; i >= 0; i -= 4) {
-            const uint8_t nibble = (value >> i) & 0xF;
-
-            if (!started) {
-                if (nibble == 0)
-                    continue;
-                started = true;
-            }
-
-            *ptr++ = hex_chars[nibble];
-        }
-
-        if (!started) {
-            *ptr++ = '0';
-        }
-
-        *ptr = '\0';
-
-        print(buffer, color);
-    }
-
-    // Clear whole screen
-    void clear(Color BGcolor) {
-        mem::memset16(video, (static_cast<uint8_t>(BGcolor) << 8) | ' ', VGA_WIDTH * VGA_HEIGHT);
+    void clear(Color color) {
+        mem::memset16(video, (static_cast<uint8_t>(color) << 8) | ' ', VGA_WIDTH * VGA_HEIGHT);
         cursor_x = 0;
         cursor_y = 0;
-    }
-
-    void print_hex_serial(uint32_t value) {
-        auto hex_chars = "0123456789ABCDEF";
-        char buffer[16];
-
-        buffer[0] = '0';
-        buffer[1] = 'x';
-
-        char *ptr = buffer + 2;
-
-        bool started = false;
-        for (int i = 28; i >= 0; i -= 4) {
-            const uint8_t nibble = (value >> i) & 0xF;
-
-            if (!started) {
-                if (nibble == 0)
-                    continue;
-                started = true;
-            }
-
-            *ptr++ = hex_chars[nibble];
-        }
-
-        if (!started) {
-            *ptr++ = '0';
-        }
-
-        *ptr = '\0';
-
-        sys_serial_write(buffer);
     }
 }

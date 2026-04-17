@@ -1,6 +1,7 @@
 #include "syscall.h"
-#include "String_common.hpp"
 #include "arch/x86_64/Common/Common.hpp"
+#include "Drivers/Keyboard.hpp"
+#include "Drivers/vga.h"
 
 extern "C" u64 kernel_rsp = 0;
 extern "C" u64 user_rsp = 0;
@@ -14,7 +15,8 @@ enum class syscall : u64 {
     put_char = 1,
     serial_write = 2,
     serial_put_char = 3,
-    exit = 4,
+    get_char = 4,
+    exit = 5,
 };
 
 extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
@@ -22,10 +24,10 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
         case syscall::write:
             if (!validate_user_ptr(arg1))
                 return static_cast<u64>(-1);
-            term::print(reinterpret_cast<const char*>(arg1), static_cast<term::Color>(arg2));
+            drivers::vga::print(reinterpret_cast<const char*>(arg1), static_cast<Color>(arg2));
             return 0;
         case syscall::put_char:
-            term::put_char(static_cast<char>(arg1), static_cast<term::Color>(arg2));
+            drivers::vga::put_char(static_cast<char>(arg1), static_cast<Color>(arg2));
             return 0;
         case syscall::serial_put_char:
             while (!(x64::inb(0x3F8 + 5) & 0x20)) { }
@@ -41,6 +43,8 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
             }
             return 0;
         }
+        case syscall::get_char:
+            return kb::get_char();
         case syscall::exit:
             return 0;
         default:

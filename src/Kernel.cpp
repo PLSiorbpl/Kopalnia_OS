@@ -1,5 +1,5 @@
+#include "arch/x86_64/syscall/syscall.h"
 #include "libs/std/types.hpp"
-#include "libs/String_common.hpp"
 #include "libs/std/mem_common.hpp"
 #include "std/printf.hpp"
 #include "kernel/system.hpp"
@@ -7,7 +7,9 @@
 #include "kernel/Memory/heap.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
+#include "Drivers/vga.h"
 #include "Drivers/USB/usb.hpp"
+#include "std/string.h"
 
 struct Command {
     const char* name;
@@ -19,7 +21,7 @@ void list_commands();
 Command commands[9] = {
     {"help", list_commands},
     {"clear", [] {
-        term::clear();
+        drivers::vga::clear(Color::Black);
     }},
     {"poweroff", [] {
         std::printf("&c\tShutting down in 5s (press ENTER to cancel!)\n");
@@ -42,7 +44,7 @@ Command commands[9] = {
     }},
     {"size", [] {
         auto size = reinterpret_cast<uint64_t>(&heap::_end - heap::start_);
-        std::printf("&9\tKernel size: &a%i%s\n", size, std::format_size(size));
+        std::printf("&9\tKernel size: &a%i%s\n", std::Output::std_out, size, std::format_size(size));
     }},
     {"usb", [] {
         USB::Test_Ports();
@@ -53,9 +55,9 @@ Command commands[9] = {
 };
 
 void list_commands() {
-    std::printf("&9\tCommands: &9%s", commands[0].name);
+    std::printf("&9\tCommands: &9%s", std::Output::std_out, commands[0].name);
     for (i32 i = 1; i < sizeof(commands) / sizeof(Command); ++i) {
-        std::printf("&9, %s", commands[i].name);
+        std::printf("&9, %s", std::Output::std_out, commands[i].name);
     }
     std::printf("\n");
 }
@@ -65,11 +67,10 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
-
 }
 
 extern "C" void user_space_main() {
-    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x00000666, 'j', 0xffffffffff, 3.146767);
+    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", std::Output::std_out, -6767, 0, "LOL", 0x00000666, 'j', 0xffffffffff, 3.146767);
     std::printf("&f------------ &bPlum OS 64bit &f------------\n\n");
     std::printf("&aHello from user space!\n");
 
@@ -80,7 +81,7 @@ extern "C" void user_space_main() {
     static char buffer[256];
     static int i = 0;
     while (true) {
-        const char c = kb::get_char();
+        const char c = sys_get_char();
 
         if (c == '\b' && i <= 0)
             continue;
@@ -112,7 +113,7 @@ extern "C" void user_space_main() {
                     }
                 }
                 if (!found_command) {
-                    std::printf("&7\tUnknown command: &c%s \n", buffer);
+                    std::printf("&7\tUnknown command: &c%s \n", std::Output::std_out, buffer);
                     Time::Sleep(250); // fake delay so people think lots of stuff is happening fr
                 }
 

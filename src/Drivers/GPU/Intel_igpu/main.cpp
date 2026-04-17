@@ -1,7 +1,5 @@
 #include "main.hpp"
 
-#include <libs/String_common.hpp>
-
 namespace IntelGPU {
     PCI::PCI_Device gpu;
     uint32_t GPU_MMIO_BASE;
