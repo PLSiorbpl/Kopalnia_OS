@@ -86,7 +86,7 @@ set(QEMU_FLAGS
         -serial stdio
         #-d trace:usb_xhci_*
         #-d usb,guest_errors,int
-        -d int,cpu_reset # Debug
+        # -d int,cpu_reset # Debug
         -device virtio-keyboard-pci
 )
 

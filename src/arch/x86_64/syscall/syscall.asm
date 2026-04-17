@@ -23,12 +23,6 @@ handle_syscall:
     push r14
     push r15
 
-    mov cx, 0x20
-    mov ds, cx
-    mov es, cx
-    mov fs, cx
-    mov gs, cx
-
     mov rcx, rdx
     mov rdx, rsi
     mov rsi, rdi
