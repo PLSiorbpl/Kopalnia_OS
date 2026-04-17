@@ -1,15 +1,11 @@
 bits 32
 
 global Elevate
-extern gdt_descriptor
 extern PML4_Table
 extern kernel_main
-
-section .bss
-align 16
-stack_bottom:
-    resb 16384
-stack_top:
+extern gdt_descriptor
+extern stack_top
+extern tss
 
 section .data
 testword: DW 0x55AA
@@ -57,7 +53,7 @@ Elevate:
 nofpu:
     ; Reset FPU to off
     mov eax, cr0
-    or eax, (1 << 31) | (1 << 0) | (1 << 1) | (1 << 2)
+    or eax, (1 << 2)
     mov cr0, eax
 
     popa
@@ -72,12 +68,15 @@ nofpu:
 bits 64
 long_mode_entry:
     cli
-    mov ax, 0x10 ; Set the A-register to the data descriptor.
+    mov ax, 0x20 ; Set the A-register to the data descriptor.
     mov ds, ax   ; Set the data segment to the A-register.
     mov es, ax   ; Set the extra segment to the A-register.
     mov fs, ax   ; Set the F-segment to the A-register.
     mov gs, ax   ; Set the G-segment to the A-register.
     mov ss, ax   ; Set the stack segment to the A-register.
+
+    mov ax, 0x38 ; tss segment
+    ltr ax ; load it
 
     mov rsp, stack_top
     and rsp, ~0xF
@@ -85,5 +84,8 @@ long_mode_entry:
     xor rbp, rbp
 
     jmp kernel_main
+.hang:
+    hlt
+    jmp .hang
 
 section .note.GNU-stack noalloc noexec nowrite progbits

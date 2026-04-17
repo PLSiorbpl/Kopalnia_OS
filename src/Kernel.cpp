@@ -65,8 +65,13 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
+
+}
+
+extern "C" void user_space_main() {
     std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", -6767, 0, "LOL", 0x00000666, 'j', 0xffffffffff, 3.146767);
     std::printf("&f------------ &bPlum OS 64bit &f------------\n\n");
+    std::printf("&aHello from user space!\n");
 
     list_commands();
 
@@ -82,7 +87,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
         if (c) {
             if (i < 254) { // 254 so we allow space for \n
-                term::put_char(c);
+                std::put_char(c);
                 if (c == '\b') {
                     i -= 1;
                     buffer[i] = ' ';
@@ -118,7 +123,7 @@ extern "C" void kernel_main(uint32_t magic, void* mbi) {
 
             if (c == '\b' && i >= 254) {
                 i--;
-                std::printf("\b");
+                std::put_char('\b');
             }
         }
     }

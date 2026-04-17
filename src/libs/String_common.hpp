@@ -1,4 +1,5 @@
 #pragma once
+#include "arch/x86_64/syscall/syscall.h"
 #include "std/types.hpp"
 #include "std/string.h"
 
@@ -48,13 +49,12 @@ namespace term {
     void clear(Color BGcolor = Color::Black);
 
     // Serial
-    void print_serial(const char* text);
     void put_serial(char c);
     void print_hex_serial(uint32_t value);
     template<typename T>
     void print_number_serial(T value) {
         char buf[16];
         std::to_str(buf, value);
-        print_serial(buf);
+        sys_serial_write(buf);
     }
 }

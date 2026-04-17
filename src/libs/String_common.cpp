@@ -132,18 +132,6 @@ namespace term {
         cursor_y = 0;
     }
 
-    void print_serial(const char *text) {
-        for (int i = 0; text[i] != '\0'; i++) {
-            while (!(x64::inb(0x3F8 + 5) & 0x20)) { }
-            x64::outb(0x3F8, text[i]);
-        }
-    }
-
-    void put_serial(const char c) {
-        while (!(x64::inb(0x3F8 + 5) & 0x20)) { }
-        x64::outb(0x3F8, c);
-    }
-
     void print_hex_serial(uint32_t value) {
         auto hex_chars = "0123456789ABCDEF";
         char buffer[16];
@@ -172,6 +160,6 @@ namespace term {
 
         *ptr = '\0';
 
-        print_serial(buffer);
+        sys_serial_write(buffer);
     }
 }

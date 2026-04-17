@@ -35,21 +35,21 @@ namespace Paging {
             if (!(PML4[pml4_i] & Present)) {
                 const uint64_t new_table = alloc_page();
                 mem::memset(reinterpret_cast<void*>(new_table), 0, 4096);
-                PML4[pml4_i] = new_table | Present | Writable;
+                PML4[pml4_i] = new_table | Present | Writable | User;
             }
 
             auto *PDPT = reinterpret_cast<uint64_t *>(PML4[pml4_i] & ~0xFFFULL);
             if (!(PDPT[pdpt_i] & Present)) {
                 const uint64_t new_table = alloc_page();
                 mem::memset(reinterpret_cast<void*>(new_table), 0, 4096);
-                PDPT[pdpt_i] = new_table | Present | Writable;
+                PDPT[pdpt_i] = new_table | Present | Writable | User;
             }
 
             auto *PD = reinterpret_cast<uint64_t *>(PDPT[pdpt_i] & ~0xFFFULL);
             if (!(PD[pd_i] & Present)) {
                 const uint64_t new_table = alloc_page();
                 mem::memset(reinterpret_cast<void*>(new_table), 0, 4096);
-                PD[pd_i] = new_table | Present | Writable;
+                PD[pd_i] = new_table | Present | Writable | User;
             }
 
             auto *PT = reinterpret_cast<uint64_t *>(PD[pd_i] & ~0xFFFULL);
