@@ -34,7 +34,7 @@ Command commands[9] = {
     }},
     {"sleep", [] {
         std::printf("&a\tSleeping for &f5 &aseconds\n");
-        Time::Sleep(5000);
+        sys_sleep(5000);
     }},
     {"heap", [] {
         heap::dump_heap();

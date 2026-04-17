@@ -51,10 +51,10 @@ inline char sys_get_char() {
     return static_cast<char>(ret);
 }
 
-inline void sys_sleep() {
+inline void sys_sleep(u64 milliseconds) {
     u64 ret;
     asm volatile("syscall"
         : "=a"(ret)
-        : "a"(6ULL)
+        : "a"(6ULL), "D"(milliseconds)
         : "rcx", "r11", "memory");
 }
