@@ -4,7 +4,7 @@ extern kernel_rsp
 extern user_rsp
 
 global handle_syscall
-
+section .text
 handle_syscall:
     ; rcx = user RIP (saved by syscall)
     ; r11 = user RFLAGS (saved by syscall)
@@ -49,3 +49,6 @@ handle_syscall:
     mov rsp, [user_rsp]
 
     o64 sysret
+
+
+section .note.GNU-stack noalloc noexec nowrite progbits

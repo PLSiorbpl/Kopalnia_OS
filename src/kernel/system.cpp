@@ -31,7 +31,7 @@ namespace systemPL {
         //USB::PreInit();
 
         // Paging
-        Paging::Map_memory(0x0, 1024*1024*32, User);
+        Paging::Map_memory(0x0, 1024*1024*36, User);
         //Paging::Map_memory(USB::base, USB::base+USB::size, Paging::Profile::MMIO);
 
         Paging::Enable_paging();

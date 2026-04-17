@@ -1,4 +1,7 @@
 #include "syscall.h"
+
+#include <kernel/Sleep.hpp>
+
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/vga.h"
@@ -17,6 +20,7 @@ enum class syscall : u64 {
     serial_put_char = 3,
     get_char = 4,
     exit = 5,
+    sleep = 6,
 };
 
 extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
@@ -43,9 +47,12 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
             }
             return 0;
         }
-        case syscall::get_char:
-            return kb::get_char();
+	    case syscall::get_char:
+                return (u64)kb::get_char();
         case syscall::exit:
+            return 0;
+        case syscall::sleep:
+            Time::Sleep(1000);
             return 0;
         default:
             return static_cast<u64>(-1); // ENOSYS
