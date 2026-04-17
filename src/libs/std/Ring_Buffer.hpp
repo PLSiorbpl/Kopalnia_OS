@@ -23,7 +23,7 @@ namespace mem {
             tail = 0;
         }
 
-        bool push(const T &value) {
+        bool push(const T& value) {
             const uint32_t next = (head + 1) % size;
             if (next == tail) return false;
             data[head] = value;
@@ -31,7 +31,7 @@ namespace mem {
             return true;
         }
 
-        bool pop(T &out) {
+        bool pop(T& out) {
             if (tail == head) return false;
             out = data[tail];
             tail = (tail + 1) % size;

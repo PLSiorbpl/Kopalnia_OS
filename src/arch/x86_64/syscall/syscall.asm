@@ -2,9 +2,11 @@ bits 64
 extern dispatch_syscall
 extern kernel_rsp
 extern user_rsp
+extern user_rcx
+extern user_r11
 
 global handle_syscall
-
+section .text
 handle_syscall:
     ; rcx = user RIP (saved by syscall)
     ; r11 = user RFLAGS (saved by syscall)
@@ -14,8 +16,9 @@ handle_syscall:
     mov [user_rsp], rsp
     mov rsp, [kernel_rsp]
 
-    push rcx
-    push r11
+    mov [user_rcx], rcx    ; save user RIP
+    mov [user_r11], r11    ; save user RFLAGS
+
     push rbp
     push rbx
     push r12
@@ -35,11 +38,12 @@ handle_syscall:
     pop r12
     pop rbx
     pop rbp
-    pop r11
-    pop rcx
+
+    mov rcx, [user_rcx]    ; restore user RIP
+    mov r11, [user_r11]    ; restore user RFLAGS
 
     push rax
-    mov ax, 0x2B
+    mov ax, 0x33
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -49,3 +53,6 @@ handle_syscall:
     mov rsp, [user_rsp]
 
     o64 sysret
+
+
+section .note.GNU-stack noalloc noexec nowrite progbits

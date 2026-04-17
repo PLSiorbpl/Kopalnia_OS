@@ -35,7 +35,7 @@ namespace PCI {
                 if (vendor != 0xFFFF && vendor != 0000) {
                     const uint16_t device = pci_read16(bus, dev, 0, 0x02);
 
-                    std::printf("&fVendor: &a%x&f, Device: &a%x ", vendor, device);
+                    std::printf("&fVendor: &a%x&f, Device: &a%x ", std::Output::std_out, vendor, device);
                     switch (vendor) {
                         case 0x8086: {
                             std::printf("&bIntel ");
@@ -92,7 +92,7 @@ namespace PCI {
                 }
             }
         }
-        std::printf("&ffound &a%u &fPCI Devices\n", devices);
+        std::printf("&ffound &a%u &fPCI Devices\n", std::Output::std_out, devices);
     }
 
     PCI_Device Find(const uint32_t vendor, const uint32_t device_) {

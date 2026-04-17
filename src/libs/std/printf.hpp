@@ -1,20 +1,19 @@
 #pragma once
-#include "String_common.hpp"
+#include "Drivers/types.h"
 
 namespace std {
+    enum class Output {
+        std_out = 0,
+        std_serial = 1,
+    };
+
     namespace kernel {
         void printf(const char* text, ...);
-        void print(const char* text, term::Color color  = term::Color::LightGray);
-        void put_char(char c, term::Color color  = term::Color::LightGray);
+        void print(const char* text, Color color = Color::LightGray);
+        void put_char(char c, Color color = Color::LightGray);
     }
 
-    void printf(const char* text, ...);
-    void print(const char* text, term::Color color  = term::Color::LightGray);
-    void put_char(char c, term::Color color  = term::Color::LightGray);
-
-    namespace serial {
-        void printf(const char* text, ...);
-        void print(const char* text);
-        void put_char(char c);
-    }
+    void printf(const char* text, Output out = Output::std_out, ...);
+    void print(const char* text, Output out = Output::std_out, Color color = Color::LightGray);
+    void put_char(char c, Output out = Output::std_out, Color color = Color::LightGray);
 }

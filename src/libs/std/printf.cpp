@@ -1,58 +1,54 @@
 #include "printf.hpp"
 
+#include "string.h"
 #include "arch/x86_64/syscall/syscall.h"
-#include "libs/String_common.hpp"
+#include "Drivers/vga.h"
 
 namespace std {
     namespace kernel {
-        void printf(const char *text, ...) {
+        void printf(const char* text, ...) {
             __builtin_va_list args;
             __builtin_va_start(args, text);
 
-            auto active_color = term::Color::White;
+            auto active_color = Color::White;
             for (int i = 0; text[i] != '\0'; i++) {
                 const char c = text[i];
+
+                char num_buf[16];
 
                 if (c == '%') {
                     const char arg = text[i + 1];
                     switch (arg) {
                         case 'c':
-                            term::put_char(static_cast<char>(__builtin_va_arg(args, int)), active_color);
+                            put_char(static_cast<char>(__builtin_va_arg(args, int)), active_color);
                             break;
                         case 's':
-                            term::print(__builtin_va_arg(args, const char*), active_color);
+                            print(__builtin_va_arg(args, const char*), active_color);
                             break;
-                        case 'l': {
-                            char buf[16];
-                            std::to_str(buf, __builtin_va_arg(args, long long));
-                            term::print(buf);
+                        case 'l':
+                            std::to_str(num_buf, __builtin_va_arg(args, long long));
+                            print(num_buf, active_color);
                             break;
-                        }
                         case 'i':
-                        case 'd': {
-                            char buf[16];
-                            std::to_str(buf, __builtin_va_arg(args, int));
-                            term::print(buf);
+                        case 'd':
+                            std::to_str(num_buf, __builtin_va_arg(args, int));
+                            print(num_buf, active_color);
                             break;
-                        }
-                        case 'u': {
-                            char buf[16];
-                            std::to_str(buf, __builtin_va_arg(args, unsigned int));
-                            term::print(buf);
+                        case 'u':
+                            std::to_str(num_buf, __builtin_va_arg(args, unsigned int));
+                            print(num_buf, active_color);
                             break;
-                        }
                         case 'x':
-                            // too lazy to port print hex to not use sys calls
+                            std::to_hex_str(num_buf, __builtin_va_arg(args, unsigned int));
+                            print(num_buf, active_color);
                             break;
-                        case 'f': {
-                            char buf[16];
-                            std::to_str(buf, __builtin_va_arg(args, double));
-                            term::print(buf);
-                        }
-                        break;
+                        case 'f':
+                            std::to_str(num_buf, __builtin_va_arg(args, double));
+                            print(num_buf, active_color);
+                            break;
 
                         default: {
-                            term::put_char(c, active_color);
+                            put_char(c, active_color);
                             continue;
                         }
                     }
@@ -65,56 +61,56 @@ namespace std {
                     const char arg = text[i + 1];
                     switch (arg) {
                         case '0':
-                            active_color = term::Color::Black;
+                            active_color = Color::Black;
                             break;
                         case '1':
-                            active_color = term::Color::Blue;
+                            active_color = Color::Blue;
                             break;
                         case '2':
-                            active_color = term::Color::Green;
+                            active_color = Color::Green;
                             break;
                         case '3':
-                            active_color = term::Color::Cyan;
+                            active_color = Color::Cyan;
                             break;
                         case '4':
-                            active_color = term::Color::Red;
+                            active_color = Color::Red;
                             break;
                         case '5':
-                            active_color = term::Color::Magenta;
+                            active_color = Color::Magenta;
                             break;
                         case '6':
-                            active_color = term::Color::Brown;
+                            active_color = Color::Brown;
                             break;
                         case '7':
-                            active_color = term::Color::LightGray;
+                            active_color = Color::LightGray;
                             break;
                         case '8':
-                            active_color = term::Color::DarkGray;
+                            active_color = Color::DarkGray;
                             break;
                         case '9':
-                            active_color = term::Color::LightBlue;
+                            active_color = Color::LightBlue;
                             break;
                         case 'a':
-                            active_color = term::Color::LightGreen;
+                            active_color = Color::LightGreen;
                             break;
                         case 'b':
-                            active_color = term::Color::LightCyan;
+                            active_color = Color::LightCyan;
                             break;
                         case 'c':
-                            active_color = term::Color::LightRed;
+                            active_color = Color::LightRed;
                             break;
                         case 'd':
-                            active_color = term::Color::Pink;
+                            active_color = Color::Pink;
                             break;
                         case 'e':
-                            active_color = term::Color::Yellow;
+                            active_color = Color::Yellow;
                             break;
                         case 'f':
-                            active_color = term::Color::White;
+                            active_color = Color::White;
                             break;
 
                         default: {
-                            term::put_char(c, active_color);
+                            put_char(c, active_color);
                             continue;
                         }
                     }
@@ -123,57 +119,64 @@ namespace std {
                     continue;
                 }
 
-                term::put_char(c, active_color);
+                put_char(c, active_color);
             }
 
             __builtin_va_end(args);
         }
 
-        void print(const char *text, const term::Color color) {
-            term::print(text, color);
+        void print(const char *text, const Color color) {
+            drivers::vga::print(text, color);
         }
 
-        void put_char(const char c, const term::Color color) {
-            term::put_char(c, color);
+        void put_char(const char c, const Color color) {
+            drivers::vga::put_char(c, color);
         }
     }
 
-    void printf(const char* text, ...) {
+    void printf(const char* text, const Output out, ...) {
         __builtin_va_list args;
-        __builtin_va_start(args, text);
+        __builtin_va_start(args, out);
 
-        auto active_color = term::Color::White;
+        auto active_color = Color::White;
         for (int i = 0; text[i] != '\0'; i++) {
             const char c = text[i];
+
+            char num_buf[16];
 
             if (c == '%') {
                 const char arg = text[i + 1];
                 switch (arg) {
                     case 'c':
-                        std::put_char(static_cast<char>(__builtin_va_arg(args, int)), active_color);
+                        std::put_char(static_cast<char>(__builtin_va_arg(args, int)), out, active_color);
                         break;
                     case 's':
-                        std::print(__builtin_va_arg(args, const char*), active_color);
+                        std::print(__builtin_va_arg(args, const char*), out, active_color);
                         break;
                     case 'l':
-                        print_number(__builtin_va_arg(args, long long), active_color);
+                        std::to_str(num_buf, __builtin_va_arg(args, long long));
+                        std::print(num_buf, out, active_color);
                         break;
                     case 'i':
                     case 'd':
-                        print_number(__builtin_va_arg(args, int), active_color);
+                        std::to_str(num_buf, __builtin_va_arg(args, int));
+                        std::print(num_buf, out, active_color);
                         break;
                     case 'u':
-                        print_number(__builtin_va_arg(args, unsigned int), active_color);
+                        std::to_str(num_buf, __builtin_va_arg(args, unsigned int));
+                        std::print(num_buf, out, active_color);
                         break;
                     case 'x':
-                        print_hex(__builtin_va_arg(args, unsigned int), active_color);
+                        std::to_hex_str(num_buf, __builtin_va_arg(args, unsigned int));
+                        std::print(num_buf, out, active_color);
                         break;
                     case 'f':
-                        print_number(__builtin_va_arg(args, double), active_color);
+                        std::to_str(num_buf, __builtin_va_arg(args, double));
+                        std::print(num_buf, out, active_color);
                         break;
 
                     default: {
-                        std::put_char(c, active_color);
+                        std::put_char(c, out, active_color);
                         continue;
                     }
                 }
@@ -186,56 +189,56 @@ namespace std {
                 const char arg = text[i + 1];
                 switch (arg) {
                     case '0':
-                        active_color = term::Color::Black;
+                        active_color = Color::Black;
                         break;
                     case '1':
-                        active_color = term::Color::Blue;
+                        active_color = Color::Blue;
                         break;
                     case '2':
-                        active_color = term::Color::Green;
+                        active_color = Color::Green;
                         break;
                     case '3':
-                        active_color = term::Color::Cyan;
+                        active_color = Color::Cyan;
                         break;
                     case '4':
-                        active_color = term::Color::Red;
+                        active_color = Color::Red;
                         break;
                     case '5':
-                        active_color = term::Color::Magenta;
+                        active_color = Color::Magenta;
                         break;
                     case '6':
-                        active_color = term::Color::Brown;
+                        active_color = Color::Brown;
                         break;
                     case '7':
-                        active_color = term::Color::LightGray;
+                        active_color = Color::LightGray;
                         break;
                     case '8':
-                        active_color = term::Color::DarkGray;
+                        active_color = Color::DarkGray;
                         break;
                     case '9':
-                        active_color = term::Color::LightBlue;
+                        active_color = Color::LightBlue;
                         break;
                     case 'a':
-                        active_color = term::Color::LightGreen;
+                        active_color = Color::LightGreen;
                         break;
                     case 'b':
-                        active_color = term::Color::LightCyan;
+                        active_color = Color::LightCyan;
                         break;
                     case 'c':
-                        active_color = term::Color::LightRed;
+                        active_color = Color::LightRed;
                         break;
                     case 'd':
-                        active_color = term::Color::Pink;
+                        active_color = Color::Pink;
                         break;
                     case 'e':
-                        active_color = term::Color::Yellow;
+                        active_color = Color::Yellow;
                         break;
                     case 'f':
-                        active_color = term::Color::White;
+                        active_color = Color::White;
                         break;
 
                     default: {
-                        std::put_char(c, active_color);
+                        std::put_char(c, out, active_color);
                         continue;
                     }
                 }
@@ -244,107 +247,31 @@ namespace std {
                 continue;
             }
 
-            std::put_char(c, active_color);
+            std::put_char(c, out, active_color);
         }
 
         __builtin_va_end(args);
     }
 
-    void print(const char* text, const term::Color color) {
-        sys_write(text, static_cast<u64>(color));
+    void print(const char* text, const Output out, const Color color) {
+        switch (out) {
+            case Output::std_out:
+                sys_write(text, static_cast<u64>(color));
+                break;
+            case Output::std_serial:
+                sys_serial_write(text);
+                break;
+        }
     }
 
-    void put_char(const char c, const term::Color color) {
-        sys_put_char(c, static_cast<u64>(color));
-    }
-
-    namespace serial {
-        void printf(const char *text, ...) {
-            __builtin_va_list args;
-            __builtin_va_start(args, text);
-
-            for (int i = 0; text[i] != '\0'; i++) {
-                const char c = text[i];
-
-                if (c == '%') {
-                    const char arg = text[i + 1];
-                    switch (arg) {
-                        case 'c':
-                            put_char(static_cast<char>(__builtin_va_arg(args, int)));
-                            break;
-                        case 's':
-                            print(__builtin_va_arg(args, const char*));
-                            break;
-                        case 'l':
-                            term::print_number_serial(__builtin_va_arg(args, long long));
-                            break;
-                        case 'i':
-                        case 'd':
-                            term::print_number_serial(__builtin_va_arg(args, int));
-                            break;
-                        case 'u':
-                            term::print_number_serial(__builtin_va_arg(args, unsigned int));
-                            break;
-                        case 'x':
-                            term::print_hex_serial(__builtin_va_arg(args, unsigned int));
-                            break;
-                        case 'f':
-                            term::print_number_serial(__builtin_va_arg(args, double));
-                            break;
-
-                        default: {
-                            put_char(c);
-                            continue;
-                        }
-                    }
-
-                    i++;
-                    continue;
-                }
-
-                // Discard color
-                if (c == '&') {
-                    const char arg = text[i + 1];
-                    switch (arg) {
-                        case '0':
-                        case '1':
-                        case '2':
-                        case '3':
-                        case '4':
-                        case '5':
-                        case '6':
-                        case '7':
-                        case '8':
-                        case '9':
-                        case 'a':
-                        case 'b':
-                        case 'c':
-                        case 'd':
-                        case 'e':
-                        case 'f':
-                            break;
-
-                        default: {
-                            put_char(c);
-                            continue;
-                        }
-                    }
-                    i++;
-                    continue;
-                }
-
-                put_char(c);
-            }
-
-            __builtin_va_end(args);
-        }
-
-        void print(const char* text) {
-            sys_serial_write(text);
-        }
-
-        void put_char(char c) {
-            sys_serial_put_char(c);
+    void put_char(const char c, const Output out, const Color color) {
+        switch (out) {
+            case Output::std_out:
+                sys_put_char(c, static_cast<u64>(color));
+                break;
+            case Output::std_serial:
+                sys_serial_put_char(c);
+                break;
         }
     }
 }

@@ -1,9 +1,5 @@
 #pragma once
-#include "std/string.h"
 #include "std/types.hpp"
-
-
-inline u64 sys_serial_write(const char* c);
 
 inline u64 sys_write(const char* str, u64 color) {
     u64 ret;
@@ -20,7 +16,7 @@ inline u64 sys_put_char(char c, u64 color) {
     asm volatile("syscall"
         : "=a"(ret)
         : "a"(1ULL), "D"(static_cast<u64>(c)), "S"(color)
-        : "rcx", "r11");
+        : "rcx", "r11", "memory");
 
     return ret;
 }
@@ -30,7 +26,7 @@ inline u64 sys_serial_write(const char* c) {
     asm volatile("syscall"
         : "=a"(ret)
         : "a"(2ULL), "D"(c)
-        : "rcx", "r11");
+        : "rcx", "r11", "memory");
 
     return ret;
 }
@@ -40,7 +36,25 @@ inline u64 sys_serial_put_char(char c) {
     asm volatile("syscall"
         : "=a"(ret)
         : "a"(3ULL), "D"(static_cast<u64>(c))
-        : "rcx", "r11");
+        : "rcx", "r11", "memory");
 
     return ret;
+}
+
+inline char sys_get_char() {
+    u64 ret;
+    asm volatile("syscall"
+        : "=a"(ret)
+        : "a"(4ULL)
+        : "rcx", "r11", "memory");
+
+    return static_cast<char>(ret);
+}
+
+inline void sys_sleep(u64 milliseconds) {
+    u64 ret;
+    asm volatile("syscall"
+        : "=a"(ret)
+        : "a"(6ULL), "D"(milliseconds)
+        : "rcx", "r11", "memory");
 }

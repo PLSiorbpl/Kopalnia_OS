@@ -3,9 +3,10 @@
 #include <arch/x86_64/Common/Common.hpp>
 #include "../libs/std/types.hpp"
 #include "kernel/Sleep.hpp"
+#include "std/string.h"
 
 namespace kb {
-    mem::Ring_Buffer<uint8_t, 256> buf;
+    mem::Ring_Buffer<uint8_t, 256> buf = {};
 
     /*
     Waits for char in buffer
