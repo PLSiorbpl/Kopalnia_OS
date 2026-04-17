@@ -38,7 +38,7 @@ namespace IDT {
     // NOTE do not add [[noreturn]] to this function
     extern "C" void isr_common(const ISR_Registers* regs) {
         if (regs->int_no <= 31) {
-            std::kernel::printf("&4%s &c%i\n&4Caused by line: &e%x", get_exception_name(regs->int_no), regs->error_code, *reinterpret_cast<uint8_t*>(regs->rip));
+            std::kernel::printf("&4%s &c%x\n&4Caused by line: &e%x", get_exception_name(regs->int_no), regs->error_code, *reinterpret_cast<uint8_t*>(regs->rip));
 
             // CPU interrupts (bad so we halt cpu)
             asm volatile("cli; hlt");

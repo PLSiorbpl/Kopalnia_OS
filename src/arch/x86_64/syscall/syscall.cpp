@@ -9,6 +9,9 @@
 extern "C" u64 kernel_rsp = 0;
 extern "C" u64 user_rsp = 0;
 
+extern "C" u64 user_rcx = 0;
+extern "C" u64 user_r11 = 0;
+
 auto validate_user_ptr = [](const u64 ptr) -> bool {
     return ptr != 0 && ptr < 0x800000000000ULL;
 };
@@ -48,7 +51,7 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
             return 0;
         }
 	    case syscall::get_char:
-                return (u64)kb::get_char();
+                return static_cast<u64>(kb::get_char());
         case syscall::exit:
             return 0;
         case syscall::sleep:

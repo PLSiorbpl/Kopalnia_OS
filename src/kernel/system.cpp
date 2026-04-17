@@ -49,8 +49,8 @@ namespace systemPL {
             ".intel_syntax noprefix\n"
 
             "mov ecx, 0xC0000082\n"
-            "mov rax, %0\n"
-            "mov rdx, %1\n"
+            "mov eax, %0\n"
+            "mov edx, %1\n"
             "wrmsr\n"
 
             "mov ecx, 0xC0000080\n"
@@ -58,33 +58,34 @@ namespace systemPL {
             "or eax, 1\n"
             "wrmsr\n"
 
-            "mov ecx, 0xC0000081\n"
-            "rdmsr\n"
-            "mov edx, %4\n"
+            "mov ecx, 0xC0000084\n"
+            "xor edx, edx\n"
+            "mov eax, 0x200\n"
             "wrmsr\n"
 
-            "mov rcx, %2\n"
-            "mov r11, 0x202\n"
-            "mov rsp, %3\n"
+            "mov ecx, 0xC0000081\n"
+            "xor eax, eax\n"
+            "mov edx, %2\n"
+            "wrmsr\n"
 
+            "mov rcx, %3\n"
+            "mov r11, 0x202\n"
+            "mov rsp, %4\n"
             "and rsp, ~0xF\n"
             "sub rsp, 8\n"
-
-            "mov ax, 0x2B\n"
+            "mov ax, 0x33\n"
             "mov ds, ax\n"
             "mov es, ax\n"
             "mov fs, ax\n"
             "mov gs, ax\n"
-
             "sysretq\n"
-
             ".att_syntax prefix\n"
             :
-            : "r"(reinterpret_cast<u64>(handle_syscall) & 0xFFFFFFFF),
-              "r"(reinterpret_cast<u64>(handle_syscall) >> 32),
-              "r"(reinterpret_cast<u64>(user_space_main)),
-              "r"(reinterpret_cast<u64>(&user_stack_top)),
-              "r"(static_cast<u32>(0x00200008))
+            : "r"(static_cast<uint32_t>(reinterpret_cast<uint64_t>(handle_syscall))),
+              "r"(static_cast<uint32_t>(reinterpret_cast<uint64_t>(handle_syscall) >> 32)),
+              "r"(static_cast<uint32_t>(0x00280018)),
+              "r"(reinterpret_cast<uint64_t>(user_space_main)),
+              "r"(reinterpret_cast<uint64_t>(&user_stack_top))
             : "rcx", "r11", "rax", "rdx", "memory"
         );
     }

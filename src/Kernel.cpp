@@ -76,8 +76,6 @@ extern "C" void user_space_main() {
 
     list_commands();
 
-    sys_sleep();
-
     std::printf("&fPlum-OS> ");
 
     static char buffer[256];
