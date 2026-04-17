@@ -114,7 +114,6 @@ extern "C" void user_space_main() {
                 }
                 if (!found_command) {
                     std::printf("&7\tUnknown command: &c%s \n", std::Output::std_out, buffer);
-                    Time::Sleep(250); // fake delay so people think lots of stuff is happening fr
                 }
 
                 std::printf("&fPlum-OS> ");
