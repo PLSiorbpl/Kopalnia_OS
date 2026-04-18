@@ -5,6 +5,7 @@
 #include "xhci_regs.hpp"
 
 namespace USB {
+    struct xhci_capability_registers;
     extern xhci_doorbell_manager m_doorbell_manager;
 
     extern uint64_t base;
@@ -54,20 +55,6 @@ namespace USB {
         uint32_t ring_segment_size;
         uint32_t rsvd;
     } __attribute__((packed));
-
-    struct xhci_capability_registers {
-        const uint8_t caplength;    // Capability Register Length
-        const uint8_t reserved0;
-        const uint16_t hciversion;  // Interface Version Number
-        const uint32_t hcsparams1;  // Structural Parameters 1
-        const uint32_t hcsparams2;  // Structural Parameters 2
-        const uint32_t hcsparams3;  // Structural Parameters 3
-        const uint32_t hccparams1;  // Capability Parameters 1
-        const uint32_t dboff;       // Doorbell Offset
-        const uint32_t rtsoff;      // Runtime Register Space Offset
-        const uint32_t hccparams2;  // Capability Parameters 2
-    };
-    static_assert(sizeof(xhci_capability_registers) == 32);
 
     struct TRB {
         uint32_t data[4];

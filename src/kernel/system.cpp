@@ -7,6 +7,7 @@
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
 #include "kernel.h"
+#include "Drivers/USB/xHCI/xHCI.hpp"
 
 namespace systemPL {
     extern "C" char user_stack_top;
@@ -28,8 +29,6 @@ namespace systemPL {
         // Heap Initialization
         heap::heap_init(1024*1024*32);
 
-        //USB::PreInit();
-
         // Paging
         Paging::Map_memory(0x0, 1024*1024*36, User);
         //Paging::Map_memory(USB::base, USB::base+USB::size, Paging::Profile::MMIO);
@@ -40,7 +39,7 @@ namespace systemPL {
 
         x64::set_INT_flag(true); // Enable interrupts
 
-        //USB::Init();
+        USB::m_xhci_driver.init_device();
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
 

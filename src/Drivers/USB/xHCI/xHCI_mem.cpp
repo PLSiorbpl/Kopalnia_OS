@@ -1,0 +1,50 @@
+#include "xHCI_mem.hpp"
+
+#include <std/mem_common.hpp>
+#include "kernel/Memory/heap.hpp"
+#include "kernel/Paging.hpp"
+#include "std/printf.hpp"
+
+namespace USB {
+    uintptr_t xhci_map_mmio(const uint64_t pci_bar_address, const uint32_t bar_size) {
+        Paging::Map_memory(pci_bar_address, pci_bar_address+bar_size, Paging::Profile::MMIO);
+        return pci_bar_address;
+    }
+
+    void *alloc_xhci_memory(const uint64_t size, const uint64_t alignment, const uint64_t boundary) {
+        if (size == 0) {
+            std::printf("Attempted DMA allocation with size 0!\n");
+            while (true);
+        }
+
+        if (alignment == 0) {
+            std::printf("Attempted DMA allocation with alignment 0!\n");
+            while (true);
+        }
+
+        if (boundary == 0) {
+            std::printf("Attempted DMA allocation with boundary 0!\n");
+            while (true);
+        }
+
+        void* memblock = heap::malloc_aligned(size, alignment, boundary);
+
+        if (!memblock) {
+            std::printf("======= MEMORY ALLOCATION FAILED =======\n");
+            while (true);
+        }
+
+        mem::memset(memblock, 0, size);
+        return memblock;
+    }
+
+    void free_xhci_memory(void *ptr) {
+        // TODO
+        // never frfr
+    }
+
+    uintptr_t xhci_get_physical_addr(void *vaddr) {
+        const auto paddr = reinterpret_cast<uintptr_t>(vaddr);
+        return paddr;
+    }
+}

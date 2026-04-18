@@ -18,7 +18,6 @@ enable_language(ASM_NASM)
 file(GLOB_RECURSE CPP_SOURCES_64 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 file(GLOB_RECURSE ASM_SOURCES_64 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.asm")
 file(GLOB_RECURSE ASM_SOURCES_32 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.asm")
-
 # ISO
 set(ISODIR ${CMAKE_SOURCE_DIR}/isodir)
 
@@ -79,14 +78,15 @@ set(QEMU_FLAGS
         -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso
         -drive file=../disk.img,format=raw
         # USB
-        -device qemu-xhci
+        -device qemu-xhci,id=xhci
         -device usb-storage,drive=usbstick
         -drive if=none,id=usbstick,file=../usb.img,format=raw
         # Debug
         -serial stdio
         #-d trace:usb_xhci_*
         #-d usb,guest_errors,int
-        #-d int,cpu_reset # Debug
+        #-d int # Debug
+        -trace usb_xhci_*
         -device virtio-keyboard-pci
 )
 

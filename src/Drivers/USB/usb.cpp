@@ -9,6 +9,7 @@
 #include "kernel/Sleep.hpp"
 #include "std/mem_common.hpp"
 #include "std/printf.hpp"
+#include "xHCI/xHCI_regs.hpp"
 
 namespace USB {
     xhci_doorbell_manager m_doorbell_manager;
@@ -26,7 +27,7 @@ namespace USB {
     void PreInit() {
         usb = PCI::Find_Class(0x0030030C);
         irq_no = PCI::pci_read8(usb.bus, usb.device, usb.function, 0x3C);
-        std::printf("irq_no = %u\n", std::Output::std_out, irq_no);
+        //std::printf("irq_no = %u\n", irq_no);
         if (usb.vendor_id == 0) {
             std::printf("No USB Device found\n");
             return;
@@ -36,18 +37,21 @@ namespace USB {
         const uint32_t bar1 = usb.bar[1];
 
         if (bar0 & 1) {
-
+            std::printf("xHCI should not use IO BAR");
         } else {
             uint32_t type = (bar0 >> 1) & 0b11;
 
             if (type == 0b00) {
-                std::printf("32-bit MMIO BAR NOT SUPPORTED\n");
+                base = bar0 & ~0xFULL;
+                size = 0x10000;
+                mio.base = base;
             } else if (type == 0b10) {
                 base = (static_cast<uint64_t>(bar1) << 32) | (bar0 & ~0xFULL);
                 size = 0x10000;
                 mio.base = base;
             }
         }
+        std::kernel::printf("%x", base);
     }
 
     uint32_t Info;
@@ -110,12 +114,12 @@ namespace USB {
     #define ERDP 0x18
 
     void Print_OP() {
-        std::printf("USBCMD: %x\n", std::Output::std_out, mio.MMIO_READ32(caplenght + USBCMD));
-        std::printf("USBSTS: %x\n", std::Output::std_out, mio.MMIO_READ32(caplenght + USBSTS));
-        std::printf("DNCTRL: %x\n", std::Output::std_out, mio.MMIO_READ32(caplenght + DNCTRL));
-        std::printf("CRCR: %x\n", std::Output::std_out, mio.MMIO_READ32(caplenght + CRCR));
-        std::printf("DCBAAP: %x\n", std::Output::std_out,mio.MMIO_READ32(caplenght + DCBAAP));
-        std::printf("CONFIG: %x\n", std::Output::std_out, mio.MMIO_READ32(caplenght + CONFIG));
+        std::kernel::printf("USBCMD: %x\n", mio.MMIO_READ32(caplenght + USBCMD));
+        std::kernel::printf("USBSTS: %x\n", mio.MMIO_READ32(caplenght + USBSTS));
+        std::kernel::printf("DNCTRL: %x\n", mio.MMIO_READ32(caplenght + DNCTRL));
+        std::kernel::printf("CRCR: %x\n", mio.MMIO_READ32(caplenght + CRCR));
+        std::kernel::printf("DCBAAP: %x\n",mio.MMIO_READ32(caplenght + DCBAAP));
+        std::kernel::printf("CONFIG: %x\n", mio.MMIO_READ32(caplenght + CONFIG));
     }
 
     void Get_Info() {
@@ -136,7 +140,7 @@ namespace USB {
 
         m_runtime_regs = reinterpret_cast<runtime_registers*>(base + (cap_regs->rtsoff & ~0x1F));
 
-        std::printf("USB INFO: Ver: %u Max Slots: %u Max Ports: %u\n", std::Output::std_out, Version, max_slots, max_ports);
+        std::kernel::printf("&fUSB INFO: Ver: &a%u &fMax Slots: &a%u &fMax Ports: &a%u\n", Version, max_slots, max_ports);
 
         m_doorbell_manager.construct(base + (cap_regs->dboff & ~0x3));
     }
@@ -151,7 +155,7 @@ namespace USB {
             x64::halt();
         }
         Time::Sleep(50); // 50ms additionally
-        std::printf("Controller halted -> ");
+        std::printf("&7Controller halted -> ");
 
         // Reset Controller
         cmd = mio.MMIO_READ32(USBCMD + caplenght);
@@ -175,7 +179,7 @@ namespace USB {
         if (mio.MMIO_READ32(CONFIG + caplenght) != 0)
             return false;
 
-        std::printf("Controller Restarted -> ");
+        std::printf("&7Controller Restarted -> ");
         return true;
     }
 
@@ -300,13 +304,13 @@ namespace USB {
     }
 
     void update_erdp() {
-        uint64_t dequeue_adrress = m_physical_base + (m_dequeue_ptr * sizeof(transfer_request_block));
+        const uint64_t dequeue_adrress = m_physical_base + (m_dequeue_ptr * sizeof(transfer_request_block));
         m_interrupter_regs->erdp = dequeue_adrress;
     }
 
     transfer_request_block *dequeue_trb() {
         if (m_trbs[m_dequeue_ptr].cycle != m_rcs_bit) {
-            std::printf("Event ring attempted dequeue invalid TRB returning nullptr\n");
+            std::printf("&cEvent ring attempted dequeue invalid TRB returning nullptr\n");
             return nullptr;
         }
         transfer_request_block *ret = &m_trbs[m_dequeue_ptr];
@@ -378,16 +382,16 @@ namespace USB {
 
     void log_usbsts() {
         uint32_t status = mio.MMIO_READ32(USBSTS + caplenght);
-        std::printf("===== USBSTS =====\n");
-        if (status & (1 << 0))  std::printf("    Host Controlled Halted\n");
-        if (status & (1 << 2))  std::printf("    Host System Error\n");
-        if (status & (1 << 3)) std::printf("    Event Interrupt\n");
-        if (status & (1 << 4))  std::printf("    Port Change Detect\n");
-        if (status & (1 << 8))  std::printf("    Save State Status\n");
-        if (status & (1 << 9))  std::printf("    Restore State Status\n");
-        if (status & (1 << 10))  std::printf("    Save/Restore Error\n");
-        if (status & (1 << 11))  std::printf("    Controller Not Ready\n");
-        if (status & (1 << 12))  std::printf("    Host Controller Error\n");
+        std::printf("&7===== &fUSBSTS &7=====\n");
+        if (status & (1 << 0))  std::printf("    &cHost Controlled Halted\n");
+        if (status & (1 << 2))  std::printf("    &cHost System Error\n");
+        if (status & (1 << 3)) std::printf("    &aEvent Interrupt\n");
+        if (status & (1 << 4))  std::printf("    &ePort Change Detect\n");
+        if (status & (1 << 8))  std::printf("    &eSave State Status\n");
+        if (status & (1 << 9))  std::printf("    &eRestore State Status\n");
+        if (status & (1 << 10))  std::printf("    &cSave/Restore Error\n");
+        if (status & (1 << 11))  std::printf("    &cController Not Ready\n");
+        if (status & (1 << 12))  std::printf("    &cHost Controller Error\n");
         std::printf("\n");
     }
 
@@ -397,7 +401,7 @@ namespace USB {
         }
 
         for (int i = 0; i < 10; i++) {
-            std::printf("event: %u", std::Output::std_out, trbs_array[i]);
+            //std::printf("event: %u\n", trbs_array[i]);
         }
 
         Acknowladge_irq(0);
@@ -411,30 +415,29 @@ namespace USB {
 
         // Restart
         if (!Restart()) {
-            std::printf("Controller Failed to reset");
+            std::printf("&cController Failed to reset");
         }
 
         // Config
         Configure_Op_Regs();
-        std::printf("Controller Started\n");
-        std::printf("usbsts before: %x\n", std::Output::std_out, mio.MMIO_READ32(USBSTS + caplenght));
+        //std::printf("usbsts before: %x\n", mio.MMIO_READ32(USBSTS + caplenght));
         if (!Start()) {
-            std::printf("Failed to start controller\n");
+            std::printf("&cFailed to start controller\n");
             return;
         }
-        std::printf("usbsts after: %x\n", std::Output::std_out, mio.MMIO_READ32(USBSTS + caplenght));
-
-        log_usbsts();
+        std::printf("&7Controller Started\n\n");
+        //std::printf("usbsts after: %x\n", mio.MMIO_READ32(USBSTS + caplenght));
     }
 
     void Test_Ports() {
         for (uint32_t i = 0; i < max_ports; i++) {
             const uint32_t port = 0x400 + caplenght + i*0x10;
-            uint32_t portsc = mio.MMIO_READ32(port);
+            const uint32_t portsc = mio.MMIO_READ32(port);
             if ((portsc & 1) && (portsc & (1 << 1))) {
-                std::printf("Active Device at Port: %u = %x\n", std::Output::std_out, i, portsc);
+                std::kernel::printf("&aActive &fDevice at Port: &7%u &f= &7%x\n", i, portsc);
             }
         }
+        std::printf("\n");
         log_usbsts();
     }
 }

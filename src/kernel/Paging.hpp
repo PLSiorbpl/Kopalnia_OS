@@ -2,6 +2,8 @@
 #include "../libs/std/types.hpp"
 
 namespace Paging {
+    #define PAGE_SIZE 4096
+
     #define None         0
     #define Present      (1ULL << 0)
     #define Writable     (1ULL << 1)
