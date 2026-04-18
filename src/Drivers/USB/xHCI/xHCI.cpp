@@ -1,6 +1,7 @@
 #include "xHCI.hpp"
 
 #include <kernel/Sleep.hpp>
+#include <kernel/Memory/heap.hpp>
 
 #include "xHCI_common.hpp"
 #include "xHCI_mem.hpp"
@@ -47,7 +48,8 @@ namespace USB {
         //_log_operational_registers();
 
         reset_host_controller();
-        //_log_operational_registers();
+        _configure_operational_register();
+        _log_operational_registers();
 
         return true;
     }
@@ -129,6 +131,7 @@ namespace USB {
                 std::kernel::printf("Host controller did not halt within %ums\n", timeout);
                 return false;
             }
+
             Time::Sleep(10);
         }
 
@@ -166,5 +169,39 @@ namespace USB {
             return false;
 
         return true;
+    }
+
+    void xhci_driver::_configure_operational_register() {
+        m_op_regs->dnctrl = 0xffff;
+
+        m_op_regs->config = static_cast<uint32_t>(m_max_device_slots);
+
+        // Setup DCBAA
+        _setup_dcbaa();
+    }
+
+    void xhci_driver::_setup_dcbaa() {
+        uint64_t dcbaa_size = sizeof(uintptr_t) * (m_max_device_slots + 1);
+
+        m_dcbaa = static_cast<uint64_t *>(alloc_xhci_memory(dcbaa_size, XHCI_DEVICE_CONTEXT_ALIGNMENT, XHCI_DEVICE_CONTEXT_BOUNDARY));
+        m_dcbaa_virtual = static_cast<uint64_t *>(heap::malloc(m_max_device_slots + 1));
+
+        if (m_max_scratchpad_buffers > 0) {
+            uint64_t *scrachpad_array = static_cast<uint64_t *>(
+                alloc_xhci_memory(m_max_scratchpad_buffers * sizeof(uint64_t), XHCI_DEVICE_CONTEXT_ALIGNMENT, XHCI_DEVICE_CONTEXT_BOUNDARY));
+
+            for (uint8_t i = 0; i < m_max_scratchpad_buffers; i++) {
+                void *scrachpad = alloc_xhci_memory(PAGE_SIZE, XHCI_SCRATCHPAD_BUFFERS_ALIGNMENT, XHCI_SCRATCHPAD_BUFFERS_BOUNDARY);
+                uint64_t scrachpad_addr = xhci_get_physical_addr(scrachpad);
+                scrachpad_array[i] = scrachpad_addr;
+            }
+
+            uint64_t scrachpad_array_physical_base = xhci_get_physical_addr(scrachpad_array);
+            m_dcbaa[0] = scrachpad_array_physical_base;
+
+            m_dcbaa_virtual[0] = scrachpad_array_physical_base;
+        };
+
+        m_op_regs->dcbaap = xhci_get_physical_addr(m_dcbaa);
     }
 }

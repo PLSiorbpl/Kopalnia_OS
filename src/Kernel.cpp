@@ -44,7 +44,7 @@ Command commands[9] = {
     }},
     {"size", [] {
         auto size = reinterpret_cast<uint64_t>(&heap::_end - heap::start_);
-        std::printf("&9\tKernel size: &a%i%s\n", std::Output::std_out, size, std::format_size(size));
+        std::printf("&9\tKernel size: &a%u%s\n", std::Output::std_out, size, std::format_size(size));
     }},
     {"usb", [] {
     }},

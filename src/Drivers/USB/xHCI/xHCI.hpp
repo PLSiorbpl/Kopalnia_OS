@@ -39,6 +39,9 @@ namespace USB {
         bool m_light_reset_capability;
         uint32_t m_extended_capabilities_offset;
 
+        uint64_t* m_dcbaa;
+        uint64_t* m_dcbaa_virtual;
+
         bool is_running = false;
 
     private:
@@ -47,6 +50,9 @@ namespace USB {
         void _log_operational_registers();
 
         bool reset_host_controller();
+
+        void _configure_operational_register();
+        void _setup_dcbaa();
     };
 
     extern xhci_driver m_xhci_driver;

@@ -124,7 +124,7 @@ namespace heap {
 
     void dump_heap() {
         int b_count = 0;
-        std::printf("&bHeap Visualization\n");
+        std::kernel::printf("&bHeap Visualization\n");
         for (Block* b = heap_head; b; b = b->next) {
             b_count++;
             std::kernel::printf("&f\tBlock #&a%u &f@ &7%x &fsize: ", b_count, reinterpret_cast<uint64_t>(b));
@@ -132,9 +132,9 @@ namespace heap {
             const char *post_fix = std::format_size(size);
             std::kernel::printf("&a%f&f%s ", size, post_fix);
             if (b->free)
-                std::printf("&afree\n");
+                std::kernel::printf("&afree\n");
             else
-                std::printf("&cused\n");
+                std::kernel::printf("&cused\n");
         }
         std::kernel::printf("&f\tBlock total: &a%u64\n", b_count);
         std::kernel::printf("&fSummary (&cused / &afree / &ball): ");
