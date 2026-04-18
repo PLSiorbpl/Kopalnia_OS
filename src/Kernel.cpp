@@ -47,7 +47,6 @@ Command commands[9] = {
         std::printf("&9\tKernel size: &a%i%s\n", std::Output::std_out, size, std::format_size(size));
     }},
     {"usb", [] {
-        USB::Test_Ports();
     }},
     {"colors", [] {
         std::printf("&0 &&00 &1 &&11 &2 &&22 &3 &&33 &4 &&44 &5 &&55 &6 &&66 &7 &&77 &8 &&88 &9 &&99 &a &&aa &b &&bb &c &&cc &d &&dd &e &&ee &f &&ff\n");
@@ -114,6 +113,7 @@ extern "C" void user_space_main() {
                 }
                 if (!found_command) {
                     std::printf("&7\tUnknown command: &c%s \n", std::Output::std_out, buffer);
+                    sys_sleep(250); // i like that delay :)
                 }
 
                 std::printf("&fPlum-OS> ");

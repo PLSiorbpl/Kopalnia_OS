@@ -1,4 +1,7 @@
 #include "xHCI.hpp"
+
+#include <kernel/Sleep.hpp>
+
 #include "xHCI_common.hpp"
 #include "xHCI_mem.hpp"
 #include "std/printf.hpp"
@@ -37,8 +40,14 @@ namespace USB {
 
         xhci_map_mmio(m_xhci_base, 0x10000);
 
+        Time::Sleep(100);
+
         _parse_capability_registers();
-        _log_capability_registers();
+        //_log_capability_registers();
+        //_log_operational_registers();
+
+        reset_host_controller();
+        //_log_operational_registers();
 
         return true;
     }
@@ -73,6 +82,8 @@ namespace USB {
         m_port_indicators = XHCI_PIND(m_cap_regs);
         m_light_reset_capability = XHCI_LHRC(m_cap_regs);
         m_extended_capabilities_offset = XHCI_XECP(m_cap_regs) * sizeof(uint32_t);
+
+        m_op_regs = reinterpret_cast<volatile xhci_operational_registers*>(m_xhci_base + m_capability_regs_length);
     }
 
     void xhci_driver::_log_capability_registers() {
@@ -91,5 +102,69 @@ namespace USB {
         std::kernel::printf("&f    Port Indicators       : &a%i\n", m_port_indicators);
         std::kernel::printf("&f    Light Reset Available : &a%i\n", m_light_reset_capability);
         std::kernel::printf("\n");
+    }
+
+    void xhci_driver::_log_operational_registers() {
+        std::kernel::printf("&7===== &fXhci Operational Registers (&a0x%llx&f) &7=====\n", (uint64_t)m_op_regs);
+        std::kernel::printf("&f    usbcmd     : &a%x\n", m_op_regs->usbcmd);
+        std::kernel::printf("&f    usbsts     : &a%x\n", m_op_regs->usbsts);
+        std::kernel::printf("&f    pagesize   : &a%x\n", m_op_regs->pagesize);
+        std::kernel::printf("&f    dnctrl     : &a%x\n", m_op_regs->dnctrl);
+        std::kernel::printf("&f    crcr       : &a%x\n", m_op_regs->crcr);
+        std::kernel::printf("&f    dcbaap     : &a%x\n", m_op_regs->dcbaap);
+        std::kernel::printf("&f    config     : &a%x\n", m_op_regs->config);
+        std::kernel::printf("\n");
+    }
+
+    bool xhci_driver::reset_host_controller() {
+        // Clear Run/Stop bit
+        uint32_t usbcmd = m_op_regs->usbcmd;
+        usbcmd &= ~XHCI_USBCMD_RUN_STOP;
+        m_op_regs->usbcmd = usbcmd;
+
+        // Wait for HCHalted bit to be set
+        uint32_t timeout = 20; // 200ms timeout
+        while (!(m_op_regs->usbsts & XHCI_USBSTS_HCH)) {
+            if (--timeout <= 0) {
+                std::kernel::printf("Host controller did not halt within %ums\n", timeout);
+                return false;
+            }
+            Time::Sleep(10);
+        }
+
+        // Set reset bit
+        usbcmd = m_op_regs->usbcmd;
+        usbcmd |= XHCI_USBCMD_HCRESET;
+        m_op_regs->usbcmd = usbcmd;
+
+        // Wait for Reset bit and CNR bit to clear
+        timeout = 100; // 1000ms timeout
+        while (m_op_regs->usbcmd & XHCI_USBCMD_HCRESET || m_op_regs->usbsts & XHCI_USBSTS_CNR) {
+            if (--timeout == 0) {
+                std::kernel::printf("Host controller did not reset within %ums\n", timeout);
+                return false;
+            }
+
+            Time::Sleep(10);
+        }
+
+        Time::Sleep(50);
+
+        if (m_op_regs->usbcmd != 0)
+            return false;
+
+        if (m_op_regs->dnctrl != 0)
+            return false;
+
+        if (m_op_regs->crcr != 0)
+            return false;
+
+        if (m_op_regs->dcbaap != 0)
+            return false;
+
+        if (m_op_regs->config != 0)
+            return false;
+
+        return true;
     }
 }

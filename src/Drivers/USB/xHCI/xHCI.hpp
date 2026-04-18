@@ -44,6 +44,9 @@ namespace USB {
     private:
         void _parse_capability_registers();
         void _log_capability_registers();
+        void _log_operational_registers();
+
+        bool reset_host_controller();
     };
 
     extern xhci_driver m_xhci_driver;
