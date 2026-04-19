@@ -1,6 +1,7 @@
 #include "heap.hpp"
 #include "std/printf.hpp"
 #include "std/string.h"
+#include "kernel/linker_info.hpp"
 
 namespace heap {
     Block* heap_head;
@@ -9,13 +10,13 @@ namespace heap {
     uint64_t heap_ptr;
 
     void heap_init(const uint64_t size) {
-        heap_head = &heap_start_;
+        heap_head = &Linker::__heap_start;
         heap_head->size = size - sizeof(Block);
         heap_head->free = true;
         heap_head->next = nullptr;
         heap_head->prev = nullptr;
 
-        heap_start = reinterpret_cast<uint64_t>(&_end);
+        heap_start = reinterpret_cast<uint64_t>(&Linker::__heap_start);
         heap_end = heap_start + size;
     }
 

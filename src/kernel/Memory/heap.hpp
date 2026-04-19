@@ -2,17 +2,12 @@
 #include "../../libs/std/types.hpp"
 
 namespace heap {
-	extern "C" char _end;
-	extern "C" char start_;
-
 	struct Block {
 		uint64_t size;
 		bool free;
 		Block* next;
 		Block* prev;
 	};
-
-	extern "C" Block heap_start_;
 
 	extern uint64_t heap_start;
 	extern uint64_t heap_end;

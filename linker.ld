@@ -3,14 +3,32 @@ ENTRY(_start)
 SECTIONS
 {
 	. = ALIGN(1M);
-	start_ = .;
+	__kernel_start = .;
 	.text : {
+	    __kernel_text_start = .;
 	    *(.multiboot2)
 	    *(.text*)
+	    __kernel_text_end = .;
 	}
-	.rodata : {*(.rodata*)}
-	.data : {*(.data*)}
-	.bss  : {*(.bss*)}
+
+	.rodata : {
+	    __kernel_rodata_start = .;
+	    *(.rodata*)
+	    __kernel_rodata_end = .;
+	}
+
+	.data : {
+	    __kernel_data_start = .;
+	    *(.data*)
+	    __kernel_data_end = .;
+	}
+
+	.bss  : {
+	__kernel_bss_start = .;
+	    *(.bss*)
+	    __kernel_bss_end = .;
+	}
+
     .stack (NOLOAD) : {
         . = ALIGN(16);
         stack_bottom = .;
@@ -19,6 +37,7 @@ SECTIONS
         . += 16K;
         stack_top = .;
     }
+
     .user_stack (NOLOAD) : {
         . = ALIGN(16);
         user_stack_bottom = .;
@@ -27,6 +46,8 @@ SECTIONS
         . += 16K;
         user_stack_top = .;
     }
-	_end = .;
-	heap_start_ = _end;
+
+	__kernel_end = .;
+	. = ALIGN(16);
+	__heap_start = .;
 }

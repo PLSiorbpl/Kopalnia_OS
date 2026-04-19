@@ -42,13 +42,15 @@ target_compile_options(kopalnia_os PRIVATE
         -fno-pic
         -mcmodel=kernel
         -mno-red-zone
+        -Os
         >
         $<$<COMPILE_LANGUAGE:NASM>:
-        -g -F dwarf
+        #-g -F dwarf
+        -O3
         >
-        -g
+        #-g
         -Wall
-        -O0
+        #-O0
 )
 
 target_compile_options(kopalnia_os PRIVATE

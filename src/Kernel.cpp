@@ -10,11 +10,16 @@
 #include "Drivers/vga.h"
 #include "Drivers/USB/usb.hpp"
 #include "std/string.h"
+#include "kernel/linker_info.hpp"
 
 struct Command {
     const char* name;
     void (*func)();
 };
+
+inline uint64_t range(void* a, void* b) {
+    return reinterpret_cast<uint64_t>(b) - reinterpret_cast<uint64_t>(a);
+}
 
 void list_commands();
 
@@ -43,8 +48,21 @@ Command commands[9] = {
         PCI::Test();
     }},
     {"size", [] {
-        auto size = reinterpret_cast<uint64_t>(&heap::_end - heap::start_);
-        std::printf("&9\tKernel size: &a%u%s\n", std::Output::std_out, size, std::format_size(size));
+        auto kernel_size = range(&Linker::__kernel_start, &Linker::__kernel_end);
+        auto text_size = range(&Linker::__kernel_text_start, &Linker::__kernel_text_end);
+        auto rodata_size = range(&Linker::__kernel_rodata_start, &Linker::__kernel_rodata_end);
+        auto data_size = range(&Linker::__kernel_data_start, &Linker::__kernel_data_end);
+        auto bss_size = range(&Linker::__kernel_bss_start, &Linker::__kernel_bss_end);
+        auto stack_size = range(&Linker::stack_bottom, &Linker::stack_top);
+        auto user_stack_size = range(&Linker::user_stack_bottom, &Linker::user_stack_top);
+
+        auto kernel_code_size = text_size + rodata_size;
+
+        std::printf("&9\t.text &7size: &a%u%s \t&9.rodata &7size: &a%u%s\n", std::Output::std_out, text_size, std::format_size(text_size), rodata_size, std::format_size(rodata_size));
+        std::printf("&9\t.data &7size: &a%u%s \t&9.bss &7size: &a%u%s\n", std::Output::std_out, data_size, std::format_size(data_size), bss_size, std::format_size(bss_size));
+        std::printf("&9\t.stack &7size: &a%u%s \t&9.user_stack &7size: &a%u%s\n", std::Output::std_out, stack_size, std::format_size(stack_size), user_stack_size, std::format_size(user_stack_size));
+        std::printf("&b\tKernel Code &7size: &a%u%s\n\n", std::Output::std_out, kernel_code_size, std::format_size(kernel_code_size));
+        std::printf("&e\tTotal kernel &7size: &a%u%s\n", std::Output::std_out, kernel_size, std::format_size(kernel_size));
     }},
     {"usb", [] {
     }},
