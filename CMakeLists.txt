@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.28)
 # Enable NASM compiler
 set(CMAKE_ASM_NASM_COMPILER nasm)
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
-set(CMAKE_ASM_NASM_FLAGS "${CMAKE_ASM_NASM_FLAGS} -g -F dwarf")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
@@ -32,7 +31,6 @@ target_include_directories(kopalnia_os PUBLIC
 
 target_compile_options(kopalnia_os PRIVATE
         $<$<COMPILE_LANGUAGE:C,CXX>:
-        -g
         -m64
         -ffreestanding
         -fno-exceptions
@@ -45,8 +43,12 @@ target_compile_options(kopalnia_os PRIVATE
         -mcmodel=kernel
         -mno-red-zone
         >
+        $<$<COMPILE_LANGUAGE:NASM>:
+        -g -F dwarf
+        >
+        -g
         -Wall
-        -O2
+        -O0
 )
 
 target_compile_options(kopalnia_os PRIVATE
@@ -81,13 +83,14 @@ set(QEMU_FLAGS
         -device qemu-xhci,id=xhci
         -device usb-storage,drive=usbstick
         -drive if=none,id=usbstick,file=../usb.img,format=raw
+        -device virtio-keyboard-pci
         # Debug
         -serial stdio
         #-d trace:usb_xhci_*
         #-d usb,guest_errors,int
         #-d int # Debug
-        -trace usb_xhci_*
-        -device virtio-keyboard-pci
+        #-trace usb_xhci_*
+        -s
 )
 
 # Make ISO and run it

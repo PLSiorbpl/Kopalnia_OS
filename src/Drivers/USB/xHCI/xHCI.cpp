@@ -107,7 +107,7 @@ namespace USB {
     }
 
     void xhci_driver::_log_operational_registers() {
-        std::kernel::printf("&7===== &fXhci Operational Registers (&a0x%llx&f) &7=====\n", (uint64_t)m_op_regs);
+        std::kernel::printf("&7===== &fXhci Operational Registers (&a%x&f) &7=====\n", reinterpret_cast<uint64_t>(m_op_regs));
         std::kernel::printf("&f    usbcmd     : &a%x\n", m_op_regs->usbcmd);
         std::kernel::printf("&f    usbsts     : &a%x\n", m_op_regs->usbsts);
         std::kernel::printf("&f    pagesize   : &a%x\n", m_op_regs->pagesize);

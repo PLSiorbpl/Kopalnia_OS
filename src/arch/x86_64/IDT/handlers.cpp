@@ -1,5 +1,5 @@
 #include "IDT.hpp"
-#include "../../../libs/std/types.hpp"
+#include "std/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
@@ -38,7 +38,7 @@ namespace IDT {
     // NOTE do not add [[noreturn]] to this function
     extern "C" void isr_common(const ISR_Registers* regs) {
         if (regs->int_no <= 31) {
-            std::kernel::printf("&4%s &c%x\n&4Caused by line: &e%x", get_exception_name(regs->int_no), regs->error_code, *reinterpret_cast<uint8_t*>(regs->rip));
+            std::kernel::printf("&4%s &c%x\n&4Caused by RIP: &e%x", get_exception_name(regs->int_no), regs->error_code, regs->rip);
 
             // CPU interrupts (bad so we halt cpu)
             asm volatile("cli; hlt");
@@ -52,10 +52,10 @@ namespace IDT {
             uint8_t c = x64::inb(0x60);
             kb::buf.push(c);
         }
-        // if (regs->int_no == 32+USB::irq_no) {
-        //     std::printf("yes");
-        //     USB::xhci_irq_handler();
-        // }
+        //if (regs->int_no == 32+USB::irq_no) {
+        //    std::printf("yes");
+        //    USB::xhci_irq_handler();
+        //}
 
         if (regs->int_no >= 32 && regs->int_no <= 47) {
             x64::pic_send_eoi(regs->int_no - 32);
