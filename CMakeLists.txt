@@ -30,6 +30,7 @@ target_include_directories(kopalnia_os PUBLIC
 )
 
 target_compile_options(kopalnia_os PRIVATE
+        # C++/C
         $<$<COMPILE_LANGUAGE:C,CXX>:
         -m64
         -ffreestanding
@@ -42,15 +43,15 @@ target_compile_options(kopalnia_os PRIVATE
         -fno-pic
         -mcmodel=kernel
         -mno-red-zone
-        -Os
         >
+        # NASM (asm)
         $<$<COMPILE_LANGUAGE:NASM>:
-        #-g -F dwarf
-        -O3
+        -g -F dwarf
         >
-        #-g
+        # general
+        -g
         -Wall
-        #-O0
+        -O0
 )
 
 target_compile_options(kopalnia_os PRIVATE
