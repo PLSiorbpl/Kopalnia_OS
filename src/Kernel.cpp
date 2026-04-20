@@ -11,6 +11,7 @@
 #include "Drivers/USB/usb.hpp"
 #include "std/string.h"
 #include "kernel/linker_info.hpp"
+#include "std/vector.hpp"
 
 struct Command {
     const char* name;

@@ -10,7 +10,7 @@ typedef short int16_t;
 typedef int int32_t;
 typedef long long int64_t;
 
-typedef unsigned long long size_t;
+typedef unsigned long size_t;
 typedef unsigned long long uintptr_t;
 
 typedef char i8;

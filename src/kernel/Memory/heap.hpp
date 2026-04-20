@@ -1,8 +1,8 @@
 #pragma once
-#include "../../libs/std/types.hpp"
+#include "libs/std/types.hpp"
 
 namespace heap {
-	struct Block {
+	struct alignas(16) Block {
 		uint64_t size;
 		bool free;
 		Block* next;
@@ -26,4 +26,12 @@ namespace heap {
 	uint64_t check_heap();
 
 	void dump_heap();
+}
+
+inline void* operator new(const size_t size) {
+	return heap::malloc(size);
+}
+
+inline void operator delete(void* ptr) noexcept {
+	heap::free(ptr);
 }
