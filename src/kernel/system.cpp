@@ -6,7 +6,6 @@
 #include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
-#include "kernel.h"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 
 namespace systemPL {
@@ -24,7 +23,11 @@ namespace systemPL {
         heap::heap_init(1024*1024*8);
 
         // Paging
-        Paging::Map_memory(0x0, 1024*1024*36, User);
+        Paging::Map_memory(0x0, 1024*1024*16, Paging::Profile::UserCode);
+        // kinda safer but needs clean build sometimes
+        //Paging::Map_memory(0x0, reinterpret_cast<uint64_t>(&Linker::__heap_start), Paging::Profile::UserCode);
+        //Paging::Map_memory(reinterpret_cast<uint64_t>(&Linker::__heap_start), reinterpret_cast<uint64_t>(&Linker::__heap_start)+(1024*1024*16),
+        //    Paging::Profile::UserData);
 
         Paging::Enable_paging();
 
@@ -33,7 +36,7 @@ namespace systemPL {
         x64::set_INT_flag(true); // Enable interrupts
 
         USB::m_xhci_driver.init_device();
-        //heap::dump_heap();
+        heap::dump_heap();
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
 

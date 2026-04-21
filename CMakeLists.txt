@@ -23,13 +23,13 @@ set(ISODIR ${CMAKE_SOURCE_DIR}/isodir)
 add_executable(kopalnia_os ${ASM_SOURCES_32} ${CPP_SOURCES_64} ${ASM_SOURCES_64})
 
 target_include_directories(kopalnia_os PUBLIC
-        # ig this will be enough
         "${CMAKE_CURRENT_SOURCE_DIR}/src_boot"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/libs"
 )
 
 target_compile_options(kopalnia_os PRIVATE
+        # ---------------------
         # C++/C
         $<$<COMPILE_LANGUAGE:C,CXX>:
         -m64
@@ -43,29 +43,28 @@ target_compile_options(kopalnia_os PRIVATE
         -fno-pic
         -mcmodel=kernel
         -mno-red-zone
-        >
-        # NASM (asm)
-        $<$<COMPILE_LANGUAGE:NASM>:
-        -g -F dwarf
-        >
-        # general
-        -g
-        -Wall
-        -O0
-)
-
-target_compile_options(kopalnia_os PRIVATE
-        $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:
+        # Floats
         -msse2
         -mfpmath=sse
         -mno-avx
         >
+        # ---------------------
+        # NASM
+        $<$<COMPILE_LANGUAGE:NASM>:
+        -g -F dwarf
+        >
+        # ---------------------
+        # General
+        -g
+        -Wall
+        -O0
 )
 
 set_target_properties(kopalnia_os PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/isodir/boot
 )
 
+# Linker
 target_link_options(kopalnia_os PRIVATE
         -m64
         -nostdlib

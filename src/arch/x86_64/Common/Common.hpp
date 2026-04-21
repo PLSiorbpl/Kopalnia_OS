@@ -34,5 +34,6 @@ namespace x64 {
     }
 
     void set_INT_flag(bool flag);
+    bool get_INT_flag();
     void pic_send_eoi(uint8_t irq);
 }

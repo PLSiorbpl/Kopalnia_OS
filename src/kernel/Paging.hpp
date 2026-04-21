@@ -4,18 +4,18 @@
 namespace Paging {
     #define PAGE_SIZE 4096
 
-    #define None         0
-    #define Present      (1ULL << 0)
-    #define Writable     (1ULL << 1)
-    #define User         (1ULL << 2)
-    #define WriteThrough (1ULL << 3)
-    #define CacheDisable (1ULL << 4)
-    #define Accessed     (1ULL << 5)
-    #define Dirty        (1ULL << 6)
-    #define LargePage    (1ULL << 7)
-    #define PAT          (1ULL << 7)
-    #define Global       (1ULL << 8)
-    #define NoExecute    (1ULL << 63)
+    constexpr uint64_t None         = 0;
+    constexpr uint64_t Present      = (1ULL << 0);
+    constexpr uint64_t Writable     = (1ULL << 1);
+    constexpr uint64_t User         = (1ULL << 2);
+    constexpr uint64_t WriteThrough = (1ULL << 3);
+    constexpr uint64_t CacheDisable = (1ULL << 4);
+    constexpr uint64_t Accessed     = (1ULL << 5);
+    constexpr uint64_t Dirty        = (1ULL << 6);
+    constexpr uint64_t LargePage    = (1ULL << 7);
+    constexpr uint64_t PAT          = (1ULL << 7);
+    constexpr uint64_t Global       = (1ULL << 8);
+    constexpr uint64_t NoExecute    = (1ULL << 63);
 
     extern uint64_t PML4[512];
 

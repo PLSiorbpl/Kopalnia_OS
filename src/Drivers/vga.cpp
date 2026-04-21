@@ -1,6 +1,7 @@
 #include "vga.h"
 
 #include "std/mem_common.hpp"
+#include "arch/x86_64/Common/Common.hpp"
 
 namespace drivers::vga {
     volatile uint16_t* video = reinterpret_cast<volatile uint16_t* const>(0xB8000);
@@ -8,8 +9,11 @@ namespace drivers::vga {
     int cursor_y = 0;
 
     void scroll() {
+        const bool old_flag = x64::get_INT_flag();
+        x64::set_INT_flag(false);
         mem::memmove(video, video + 80, 24 * 80 * 2);
         mem::memset16(&video[(VGA_HEIGHT-1) * VGA_WIDTH], (static_cast<uint16_t>(Color::LightGray) << 8) | ' ', VGA_WIDTH);
+        x64::set_INT_flag(old_flag);
     }
 
     void dec_cursor(const int amount) {
