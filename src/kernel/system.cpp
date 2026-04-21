@@ -6,7 +6,6 @@
 #include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
-#include "kernel.h"
 #include "arch/x86_64/gdt/gdt.h"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 
