@@ -1,12 +1,11 @@
 #include "vga.h"
 
+#include "cursor.h"
 #include "std/mem_common.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 
 namespace drivers::vga {
     volatile uint16_t* video = reinterpret_cast<volatile uint16_t* const>(0xB8000);
-    int cursor_x = 0;
-    int cursor_y = 0;
 
     void scroll() {
         const bool old_flag = x64::get_INT_flag();
@@ -14,28 +13,6 @@ namespace drivers::vga {
         mem::memmove(video, video + 80, 24 * 80 * 2);
         mem::memset16(&video[(VGA_HEIGHT-1) * VGA_WIDTH], (static_cast<uint16_t>(Color::LightGray) << 8) | ' ', VGA_WIDTH);
         x64::set_INT_flag(old_flag);
-    }
-
-    void dec_cursor(const int amount) {
-        cursor_x -= amount;
-        if (cursor_x < 0) {
-            cursor_x = VGA_WIDTH - amount - 1;
-            if (cursor_y > 0) {
-                cursor_y--;
-            }
-        }
-    }
-
-    void inc_cursor(const int amount) {
-        cursor_x += amount;
-        if (cursor_x >= VGA_WIDTH) {
-            cursor_x = 0;
-            cursor_y++;
-            if (cursor_y >= VGA_HEIGHT) {
-                scroll();
-                cursor_y = VGA_HEIGHT - 1;
-            }
-        }
     }
 
     inline void put_char_at(const char c, const uint8_t x, const uint8_t y, const Color color) {
@@ -50,38 +27,42 @@ namespace drivers::vga {
 
     void put_char(const char c, const Color color) {
         if (c == '\t') { // Tab
-            inc_cursor(TAB_SIZE);
-            put_char_at('\t', cursor_x, cursor_y, Color::LightGray);
+            cursor::inc_cursor(TAB_SIZE);
+            put_char_at('\t', cursor::cursor_x, cursor::cursor_y, Color::LightGray);
+            cursor::update_cursor();
             return;
         }
         if (c == '\n') { // Return
-            cursor_x = 0;
-            cursor_y++;
-            if (cursor_y >= VGA_HEIGHT) {
+            cursor::cursor_x = 0;
+            cursor::cursor_y++;
+            if (cursor::cursor_y >= VGA_HEIGHT) {
                 scroll();
-                cursor_y = VGA_HEIGHT - 1;
+                cursor::cursor_y = VGA_HEIGHT - 1;
             }
 
+            cursor::update_cursor();
             return;
         }
         if (c == '\b') { // Backspace
-            dec_cursor(1);
-            if (get_char_at(cursor_x, cursor_y) == '\t') {
-                dec_cursor(TAB_SIZE - 1);
+            cursor::dec_cursor(1);
+            if (get_char_at(cursor::cursor_x, cursor::cursor_y) == '\t') {
+                cursor::dec_cursor(TAB_SIZE - 1);
             }
 
-            put_char_at(' ', cursor_x, cursor_y, Color::LightGray);
+            put_char_at(' ', cursor::cursor_x, cursor::cursor_y, Color::LightGray);
 
-            if (get_char_at(cursor_x, cursor_y) == 'a') {
-                put_char_at('9', cursor_x, cursor_y, Color::LightGray);
+            if (get_char_at(cursor::cursor_x, cursor::cursor_y) == 'a') {
+                put_char_at('9', cursor::cursor_x, cursor::cursor_y, Color::LightGray);
             }
 
+            cursor::update_cursor();
             return;
         }
 
-        put_char_at(c, cursor_x, cursor_y, color);
+        put_char_at(c, cursor::cursor_x, cursor::cursor_y, color);
 
-        inc_cursor(1);
+        cursor::inc_cursor(1);
+        cursor::update_cursor();
     }
 
     void print(const char* text, Color color) {
@@ -92,7 +73,7 @@ namespace drivers::vga {
 
     void clear(Color color) {
         mem::memset16(video, (static_cast<uint8_t>(color) << 8) | ' ', VGA_WIDTH * VGA_HEIGHT);
-        cursor_x = 0;
-        cursor_y = 0;
+        cursor::cursor_x = 0;
+        cursor::cursor_y = 0;
     }
 }

@@ -48,6 +48,4 @@ void init_tss() {
         (static_cast<uint64_t>(ACCESS_TSS) << 40);
 
     asm volatile("ltr %0" :: "r"(static_cast<uint16_t>(0x38)));
-
-    std::kernel::printf("gdt[5] access byte: %u\n", (uint32_t)((gdt[5] >> 40) & 0xFF));
 }

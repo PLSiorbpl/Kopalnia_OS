@@ -5,8 +5,6 @@
 namespace drivers::vga {
     // VGA video buffer
     extern volatile uint16_t * video;
-    extern int cursor_x;
-    extern int cursor_y;
 
     // Consts
     constexpr int VGA_WIDTH = 80;
