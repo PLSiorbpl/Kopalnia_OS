@@ -1,5 +1,8 @@
 #include "gdt.h"
 
+#include "kernel/linker_info.hpp"
+#include "std/printf.hpp"
+
 constexpr uint64_t gdt_entry(const uint32_t base, const uint32_t limit, const uint8_t access, const uint8_t flags)
 {
     return
@@ -12,10 +15,8 @@ constexpr uint64_t gdt_entry(const uint32_t base, const uint32_t limit, const ui
 }
 
 extern "C" {
-    extern char stack_top;
-
     tss_entry tss = {
-        .rsp0 = reinterpret_cast<u64>(&stack_top),
+        .rsp0 = reinterpret_cast<u64>(&Linker::stack_top),
     };
 
     __attribute__((aligned(8)))
@@ -28,11 +29,25 @@ extern "C" {
         gdt_entry(0, 0, ACCESS_PRESENT | ACCESS_RING3 | ACCESS_CODE_SEG | ACCESS_READABLE, FLAG_64BIT), // 0x28
         gdt_entry(0, 0, ACCESS_PRESENT | ACCESS_RING3 | ACCESS_DATA_SEG | ACCESS_WRITABLE, FLAG_64BIT), // 0x30
         0, // 0x38, TSS low
-        0, // 0x40, TSS high, both filled by asm
+        0, // 0x40, TSS high (aka always 0 bc we in low addres space), both filled by asm
     };
 
     gdt_descriptor gdt_descriptor = {
         .limit = sizeof(gdt) - 1,
-        .base = 0,
+        .base = static_cast<u32>(reinterpret_cast<uint64_t>(&gdt)),
     };
+}
+
+void init_tss() {
+    uint64_t base = reinterpret_cast<uint64_t>(&tss);
+    uint16_t limit = sizeof(tss_entry) - 1;
+
+    gdt[7] =
+        static_cast<uint64_t>(limit & 0xFFFF) |
+        (static_cast<uint64_t>(base & 0xFFFFFF) << 16) |
+        (static_cast<uint64_t>(ACCESS_TSS) << 40);
+
+    asm volatile("ltr %0" :: "r"(static_cast<uint16_t>(0x38)));
+
+    std::kernel::printf("gdt[5] access byte: %u\n", (uint32_t)((gdt[5] >> 40) & 0xFF));
 }

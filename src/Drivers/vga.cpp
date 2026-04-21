@@ -25,7 +25,7 @@ namespace drivers::vga {
     void inc_cursor(const int amount) {
         cursor_x += amount;
         if (cursor_x >= VGA_WIDTH) {
-            cursor_x = amount - 1;
+            cursor_x = 0;
             cursor_y++;
             if (cursor_y >= VGA_HEIGHT) {
                 scroll();

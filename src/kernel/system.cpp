@@ -7,10 +7,13 @@
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
 #include "kernel.h"
+#include "arch/x86_64/gdt/gdt.h"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 
 namespace systemPL {
     void Init(void* mbi) {
+        init_tss();
+
         //Multiboot::Init(static_cast<uint8_t *>(mbi));
         Paging::Init(); // 4KB page size
 
@@ -33,7 +36,7 @@ namespace systemPL {
         x64::set_INT_flag(true); // Enable interrupts
 
         USB::m_xhci_driver.init_device();
-        //heap::dump_heap();
+        heap::dump_heap();
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
 
