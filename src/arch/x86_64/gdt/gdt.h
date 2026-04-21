@@ -31,3 +31,5 @@ struct tss_entry {
     u16 reserved3;
     u16 iopb_offset;
 } __attribute__((packed));
+
+void init_tss();

@@ -40,21 +40,6 @@ header_end:
 
 align 8
 
-init_gdt_32:
-    mov eax, gdt
-    mov [gdt_descriptor + 2], eax
-    mov eax, tss
-    mov word [gdt + 56], 103  ; limit[15:0]
-    mov word [gdt + 58], ax   ; base[15:0]
-    shr eax, 16
-    mov byte [gdt + 60], al   ; base[23:16]
-    mov byte [gdt + 61], 0x89 ; access
-    mov byte [gdt + 62], 0x00 ; flags
-    mov byte [gdt + 63], ah   ; base[31:24]
-    mov dword [gdt + 64], 0   ; base[63:32] high slot
-    mov dword [gdt + 68], 0
-    ret
-
 section .text
 _start:
     cli
@@ -62,7 +47,6 @@ _start:
     push eax ; Magic
     push ebx ; Mb2 Info
 
-    call init_gdt_32
     call Elevate
 .hang:
     hlt

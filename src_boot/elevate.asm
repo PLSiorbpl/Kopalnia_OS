@@ -6,6 +6,7 @@ extern kernel_main
 extern gdt_descriptor
 extern stack_top
 extern tss
+extern gdt
 
 section .data
 testword: DW 0x55AA
@@ -17,6 +18,9 @@ section .text
 Elevate:
     pusha
     cli
+
+    mov eax, gdt
+    mov [gdt_descriptor + 2], eax
     lgdt [gdt_descriptor]
 
     mov eax, cr4
@@ -74,9 +78,6 @@ long_mode_entry:
     mov fs, ax   ; Set the F-segment to the A-register.
     mov gs, ax   ; Set the G-segment to the A-register.
     mov ss, ax   ; Set the stack segment to the A-register.
-
-    mov ax, 0x38 ; tss segment
-    ltr ax ; load it
 
     mov rsp, stack_top
     and rsp, ~0xF
