@@ -110,7 +110,10 @@ extern "C" void user_space_main() {
                 if (c == '\b') {
                     i -= 1;
                     buffer[i] = ' ';
-                } else {
+                } else if (c == '\t') {
+                    i += drivers::vga::TAB_SIZE;
+                    buffer[i] = c;
+                }else {
                     buffer[i] = c;
                     i += 1;
                 }

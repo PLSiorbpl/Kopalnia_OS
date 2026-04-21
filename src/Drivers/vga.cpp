@@ -44,17 +44,9 @@ namespace drivers::vga {
             return;
         }
         if (c == '\b') { // Backspace
+            put_char_at(' ', cursor::cursor_x, cursor::cursor_y, Color::LightGray); // just in case
             cursor::dec_cursor(1);
-            if (get_char_at(cursor::cursor_x, cursor::cursor_y) == '\t') {
-                cursor::dec_cursor(TAB_SIZE - 1);
-            }
-
             put_char_at(' ', cursor::cursor_x, cursor::cursor_y, Color::LightGray);
-
-            if (get_char_at(cursor::cursor_x, cursor::cursor_y) == 'a') {
-                put_char_at('9', cursor::cursor_x, cursor::cursor_y, Color::LightGray);
-            }
-
             cursor::update_cursor();
             return;
         }
@@ -65,7 +57,7 @@ namespace drivers::vga {
         cursor::update_cursor();
     }
 
-    void print(const char* text, Color color) {
+    void print(const char* text, const Color color) {
         for (int i = 0; text[i] != '\0'; i++) {
             put_char(text[i], color);
         }
