@@ -1,4 +1,5 @@
 #pragma once
+#include "Drivers/Keyboard.hpp"
 #include "std/types.hpp"
 
 inline u64 sys_write(const char* str, u64 color) {
@@ -41,14 +42,14 @@ inline u64 sys_serial_put_char(char c) {
     return ret;
 }
 
-inline char sys_get_char() {
+inline kb::key_code sys_get_key() {
     u64 ret;
     asm volatile("syscall"
         : "=a"(ret)
         : "a"(4ULL)
         : "rcx", "r11", "memory");
 
-    return static_cast<char>(ret);
+    return static_cast<kb::key_code>(ret);
 }
 
 inline void sys_sleep(u64 milliseconds) {

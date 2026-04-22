@@ -24,7 +24,7 @@ namespace Time {
      true -> Cancel
      false -> time passed
     */
-    bool WaitForKey(const uint64_t t, const char key) {
+    bool WaitForKey(const uint64_t t, const kb::key_code key) {
         const uint64_t end = tick + ((t * hz) / 1000);
 
         while (tick < end) {

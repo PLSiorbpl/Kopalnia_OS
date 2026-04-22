@@ -35,6 +35,8 @@ namespace IDT {
         }
     }
 
+    static bool extended = false;
+
     // NOTE do not add [[noreturn]] to this function
     extern "C" void isr_common(const ISR_Registers* regs) {
         if (regs->int_no <= 31) {
@@ -49,8 +51,21 @@ namespace IDT {
             Time::tick++;
         }
         if (regs->int_no == 33) { // Keyboard
-            uint8_t c = x64::inb(0x60);
-            kb::buf.push(c);
+            uint8_t raw = x64::inb(0x60);
+            if (raw == 0xE0) {
+                extended = true;
+                x64::pic_send_eoi(1);
+                return;
+            }
+
+            bool release = (raw & 0x80) != 0;
+            uint8_t sc = raw & 0x7F;
+            uint8_t code = extended ? sc + 0x59 : sc;
+            extended = false;
+
+            if (!release) {
+                kb::buf.push(code);
+            }
         }
         //if (regs->int_no == 32+USB::irq_no) {
         //    std::printf("yes");

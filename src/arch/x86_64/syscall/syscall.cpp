@@ -21,7 +21,7 @@ enum class syscall : u64 {
     put_char = 1,
     serial_write = 2,
     serial_put_char = 3,
-    get_char = 4,
+    get_key = 4,
     exit = 5,
     sleep = 6,
 };
@@ -50,7 +50,7 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
             }
             return 0;
         }
-	    case syscall::get_char:
+	    case syscall::get_key:
                 return static_cast<u64>(kb::get_char());
         case syscall::exit:
             return 0;
