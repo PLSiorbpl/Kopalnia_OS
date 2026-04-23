@@ -7,6 +7,8 @@
 #include "xHCI_mem.hpp"
 #include "std/printf.hpp"
 #include "Drivers/PCI.hpp"
+#include "xHCI_trb.hpp"
+#include "xHCI_rings.hpp"
 
 namespace USB {
     xhci_driver m_xhci_driver;
@@ -178,6 +180,9 @@ namespace USB {
 
         // Setup DCBAA
         _setup_dcbaa();
+
+        m_command_ring = new xhci_command_ring(XHCI_COMMAND_RING_TRB_COUNT);
+        m_op_regs->crcr = m_command_ring->get_physical_base() | m_command_ring->get_cycle_bit();
     }
 
     void xhci_driver::_setup_dcbaa() {

@@ -29,7 +29,7 @@ namespace heap {
 }
 
 inline void* operator new(const size_t size) {
-	return heap::malloc(size);
+	return heap::malloc_aligned(size, 16, 0);
 }
 
 inline void operator delete(void* ptr) noexcept {

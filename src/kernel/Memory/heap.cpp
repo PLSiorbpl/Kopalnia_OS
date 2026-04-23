@@ -127,17 +127,17 @@ namespace heap {
         uint32_t b_count = 0;
         int limit = 10000;
         std::kernel::printf("&bHeap Visualization\n");
-        // for (Block* b = heap_head; b && limit--; b = b->next) {
-        //     b_count += 1;
-        //     std::kernel::printf("&f\tBlock #&a%u &f@ &7%x &fsize: ", b_count, reinterpret_cast<uint64_t>(b));
-        //     auto size = static_cast<double>(b->size);
-        //     const char *post_fix = std::format_size(size);
-        //     std::kernel::printf("&a%f&f%s ", size, post_fix);
-        //     if (b->free)
-        //         std::kernel::printf("&afree\n");
-        //     else
-        //         std::kernel::printf("&cused\n");
-        // }
+        for (Block* b = heap_head; b && limit--; b = b->next) {
+            b_count += 1;
+            std::kernel::printf("&f\tBlock #&a%u &f@ &7%x &fsize: ", b_count, reinterpret_cast<uint64_t>(b));
+            auto size = static_cast<double>(b->size);
+            const char *post_fix = std::format_size(size);
+            std::kernel::printf("&a%f&f%s ", size, post_fix);
+            if (b->free)
+                std::kernel::printf("&afree\n");
+            else
+                std::kernel::printf("&cused\n");
+        }
         std::kernel::printf("&f\tBlock total: &a%u\n", b_count);
         std::kernel::printf("&fSummary (&cused / &afree / &ball&f): ");
         auto used_s = static_cast<double>(check_used_heap());

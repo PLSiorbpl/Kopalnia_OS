@@ -1,6 +1,7 @@
 #pragma once
 #include <std/types.hpp>
 #include "xHCI_regs.hpp"
+#include "xHCI_rings.hpp"
 
 namespace USB {
 
@@ -41,6 +42,8 @@ namespace USB {
 
         uint64_t* m_dcbaa;
         uint64_t* m_dcbaa_virtual;
+
+        xhci_command_ring *m_command_ring = nullptr;
 
         bool is_running = false;
 
