@@ -17,6 +17,7 @@ namespace USB {
 
         volatile xhci_capability_registers *m_cap_regs;
         volatile xhci_operational_registers *m_op_regs;
+        volatile xhci_runtime_registers *m_runtime_regs;
 
         // CAPLENGTH
         uint8_t m_capability_regs_length;
@@ -56,6 +57,9 @@ namespace USB {
 
         void _configure_operational_register();
         void _setup_dcbaa();
+
+        void _configure_runtime_registers();
+        void _acknowledge_irq(uint8_t interrupter);
     };
 
     extern xhci_driver m_xhci_driver;

@@ -29,4 +29,26 @@ namespace USB {
         // Port Register Set offset has to be calculated dynamically based on MAXPORTS
     };
     static_assert(sizeof(xhci_operational_registers) == 256);
+
+    struct xhci_interrupter_registers {
+        uint32_t iman;
+        uint32_t imod;
+        uint32_t erstsz;
+        uint32_t rsvd;
+        uint64_t erstba;
+        union {
+            struct {
+                uint64_t dequeue_erst_segment_index : 3;
+                uint64_t event_handler_busy : 1;
+                uint64_t event_ring_dequeue_pointer : 60;
+            };
+            uint64_t erdp;
+        };
+    };
+
+    struct xhci_runtime_registers {
+        uint32_t mf_index;
+        uint32_t rsvdz[7];
+        xhci_interrupter_registers ir[1024];
+    };
 }

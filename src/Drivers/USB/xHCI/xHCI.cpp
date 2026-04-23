@@ -49,9 +49,14 @@ namespace USB {
         //_log_capability_registers();
         //_log_operational_registers();
 
-        reset_host_controller();
+        if (!reset_host_controller()) {
+            return false;
+        }
+
         _configure_operational_register();
         _log_operational_registers();
+
+        _configure_runtime_registers();
 
         return true;
     }
@@ -88,6 +93,8 @@ namespace USB {
         m_extended_capabilities_offset = XHCI_XECP(m_cap_regs) * sizeof(uint32_t);
 
         m_op_regs = reinterpret_cast<volatile xhci_operational_registers*>(m_xhci_base + m_capability_regs_length);
+
+        m_runtime_regs = reinterpret_cast<volatile xhci_runtime_registers*>(m_xhci_base + m_cap_regs->rtsoff);
     }
 
     void xhci_driver::_log_capability_registers() {
@@ -208,5 +215,26 @@ namespace USB {
         };
 
         m_op_regs->dcbaap = xhci_get_physical_addr(m_dcbaa);
+    }
+
+    void xhci_driver::_configure_runtime_registers() {
+        volatile xhci_interrupter_registers* interrupter_regs = &m_runtime_regs->ir[0];
+
+        // Enable interrupts
+        uint32_t iman = interrupter_regs->iman;
+        iman |= XHCI_IMAN_INTERRUPT_ENABLE;
+        interrupter_regs->iman = iman;
+
+        _acknowledge_irq(0);
+    }
+
+    void xhci_driver::_acknowledge_irq(uint8_t interrupter) {
+        m_op_regs->usbsts = XHCI_USBSTS_EINT;
+
+        volatile xhci_interrupter_registers* interrupter_regs = &m_runtime_regs->ir[interrupter];
+
+        uint32_t iman = interrupter_regs->iman;
+        iman |= XHCI_IMAN_INTERRUPT_PENDING;
+        interrupter_regs->iman = iman;
     }
 }
