@@ -22,11 +22,11 @@ namespace heap {
 
     // Block allocator
     void* malloc(uint64_t size) {
-        size = (size + 15) & ~15ULL;
+        size = (size + 15) & ~15ULL; // align but Block needs to be 16B aligned
         for (Block* block = heap_head; block != nullptr; block = block->next) {
             if (block->free && block->size >= size) {
 
-                if (block->size >= size + sizeof(Block) + 8) {
+                if (block->size >= size + sizeof(Block) + 16) { // 16 is minimum split size
                     // Split
                     const uint64_t new_size = block->size - size - sizeof(Block);
                     auto* new_block = reinterpret_cast<Block *>(reinterpret_cast<uint8_t *>(block) + sizeof(Block) + size);
@@ -100,7 +100,7 @@ namespace heap {
     }
 
     uint64_t check_heap() {
-        uint64_t free_bytes = 1;
+        uint64_t free_bytes = 0;
         for (const Block* b = heap_head; b; b = b->next) {
             free_bytes += b->size;
         }
@@ -108,7 +108,7 @@ namespace heap {
     }
 
     uint64_t check_free_heap() {
-        uint64_t free_bytes = 1;
+        uint64_t free_bytes = 0;
         for (const Block* b = heap_head; b; b = b->next) {
             if (b->free) free_bytes += b->size;
         }
@@ -116,7 +116,7 @@ namespace heap {
     }
 
     uint64_t check_used_heap() {
-        uint64_t free_bytes = 1;
+        uint64_t free_bytes = 0;
         for (const Block* b = heap_head; b; b = b->next) {
             if (!b->free) free_bytes += b->size;
         }
@@ -127,19 +127,23 @@ namespace heap {
         uint32_t b_count = 0;
         int limit = 10000;
         std::kernel::printf("&bHeap Visualization\n");
+
         for (Block* b = heap_head; b && limit--; b = b->next) {
             b_count += 1;
-            std::kernel::printf("&f\tBlock #&a%u &f@ &7%x &fsize: ", b_count, reinterpret_cast<uint64_t>(b));
+            std::kernel::printf("&f\tBlock #&a%u &f@ &7%x ", b_count, reinterpret_cast<uint64_t>(b+1)); // +1 to show real data address
+
             auto size = static_cast<double>(b->size);
             const char *post_fix = std::format_size(size);
-            std::kernel::printf("&a%f&f%s ", size, post_fix);
+            std::kernel::printf("&fsize: &a%f&f%s ", size, post_fix);
             if (b->free)
                 std::kernel::printf("&afree\n");
             else
                 std::kernel::printf("&cused\n");
         }
+
         std::kernel::printf("&f\tBlock total: &a%u\n", b_count);
         std::kernel::printf("&fSummary (&cused / &afree / &ball&f): ");
+
         auto used_s = static_cast<double>(check_used_heap());
         const char *used_p = std::format_size(used_s);
         auto free_s = static_cast<double>(check_free_heap());

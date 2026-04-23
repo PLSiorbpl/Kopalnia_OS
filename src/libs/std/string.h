@@ -12,18 +12,20 @@ namespace std {
     template <typename T>
     static const bool is_floating_point_v = is_floating_point<T>::value;
 
-     template <typename T>
+    template <typename T>
     void to_str(char* buffer, T value) {
         if constexpr (is_floating_point_v<T>) {
+            // ---------------------------------
+            // Floats
             int i = 0;
             bool is_negative = false;
 
-            int int_part = static_cast<int>(value);
+            auto int_part = static_cast<long long>(value);
             double frac_part = value - int_part;
 
             if (frac_part < 0)
                 frac_part = -frac_part;
-            int precision = 6;
+            constexpr int precision = 4;
 
             if (int_part < 0) {
                 int_part = -int_part;
@@ -50,20 +52,29 @@ namespace std {
                 buffer[i - j - 1] = tmp;
             }
 
+            // Float part
             buffer[i++] = '.';
-            int last_non_zero_index = 0;
+            int start_frac = i;
+            int last_digit_index = i - 1;
+
             for (int d = 0; d < precision; d++) {
                 frac_part *= 10;
                 int digit = static_cast<int>(frac_part);
-                if (digit > 0)
-                    last_non_zero_index = i;
                 buffer[i++] = '0' + digit;
+                if (digit != 0) {
+                    last_digit_index = i - 1;
+                }
                 frac_part -= digit;
             }
 
-            buffer[last_non_zero_index + 1] = '\0';
-        }
-        else {
+            if (last_digit_index == start_frac - 1) {
+                buffer[start_frac - 1] = '\0';
+            } else {
+                buffer[last_digit_index + 1] = '\0';
+            }
+        } else {
+            // ---------------------------------
+            // Int
             int i = 0;
             bool is_negative = false;
 

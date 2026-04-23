@@ -1,5 +1,6 @@
 #pragma once
 #include "libs/std/types.hpp"
+#include "std/printf.hpp"
 
 namespace heap {
 	struct alignas(16) Block {
@@ -29,7 +30,7 @@ namespace heap {
 }
 
 inline void* operator new(const size_t size) {
-	return heap::malloc_aligned(size, 16, 0);
+	return heap::malloc(size);
 }
 
 inline void operator delete(void* ptr) noexcept {
