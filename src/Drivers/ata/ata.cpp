@@ -2,6 +2,7 @@
 
 #include "ata_constants.h"
 #include "arch/x86_64/Common/Common.hpp"
+#include "kernel/Sleep.hpp"
 #include "std/printf.hpp"
 
 namespace drivers::ata {
@@ -19,8 +20,21 @@ namespace drivers::ata {
         x64::inb(ALTERNATE_STATUS_REGISTER);
         x64::inb(ALTERNATE_STATUS_REGISTER);
         x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
+        x64::inb(ALTERNATE_STATUS_REGISTER);
 
         x64::outb(DEVICE_CONTROL_REGISTER, 0x0);
+
+        Time::Sleep(2);
 
         if (!check_command(false)) {
             return soft_reset_error::timeout;
@@ -114,7 +128,7 @@ namespace drivers::ata {
     }
 
     bool device::check_command(bool drq) {
-        constexpr int TIMEOUT = 100000;
+        constexpr int TIMEOUT = 40000000;
         for (int i = 0; i < TIMEOUT; ++i) {
             const auto status = x64::inb(ALTERNATE_STATUS_REGISTER);
             if (!(status & BSY_BIT)){
