@@ -34,7 +34,7 @@ namespace drivers::ata {
 
         x64::outb(DEVICE_CONTROL_REGISTER, 0x0);
 
-        Time::Sleep(2);
+        Time::Sleep(10);
 
         if (!check_command(false)) {
             return soft_reset_error::timeout;
