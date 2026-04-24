@@ -43,7 +43,7 @@ namespace systemPL {
 
         USB::m_xhci_driver.init_device();
 
-        drivers::ata::device(true);
+        drivers::ata::device(false);
 
         drivers::vga::cursor::enable_cursor(0, 15);
         //heap::dump_heap();
