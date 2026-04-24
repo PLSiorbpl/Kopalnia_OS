@@ -173,7 +173,6 @@ extern "C" void user_space_main() {
             previous_commands.pop(command);
             mem::memmove(buffer, command.buffer, 256);
             std::print(buffer);
-
         }
 
         if (key_char == 0) {

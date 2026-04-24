@@ -8,6 +8,7 @@
 #include "kernel/Paging.hpp"
 #include "arch/x86_64/gdt/gdt.h"
 #include "Drivers/cursor.h"
+#include "Drivers/ata/ata.h"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 
 namespace systemPL {
@@ -41,6 +42,9 @@ namespace systemPL {
         x64::set_INT_flag(true); // Enable interrupts
 
         USB::m_xhci_driver.init_device();
+
+        drivers::ata::device(true);
+
         drivers::vga::cursor::enable_cursor(0, 15);
         //heap::dump_heap();
 

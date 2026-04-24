@@ -76,11 +76,11 @@ set(QEMU_FLAGS
         # PC
         -cpu max
         -m 512M
-        -M q35
+        -M pc
         -vga std
         # drive
         -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso
-        -drive file=../disk.img,format=raw
+        -drive file=../disk.img,format=raw,if=ide
         # USB
         -device qemu-xhci,id=xhci
         -device usb-storage,drive=usbstick

@@ -54,7 +54,7 @@ namespace USB {
         }
 
         _configure_operational_register();
-        _log_operational_registers();
+        //_log_operational_registers();
 
         _configure_runtime_registers();
 

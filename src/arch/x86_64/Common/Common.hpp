@@ -8,6 +8,9 @@ namespace x64 {
     inline void outl(uint16_t port, uint32_t val) {
         asm volatile("outl %0, %1" : : "a"(val), "Nd"(port));
     }
+    inline void outw(uint16_t port, u16 val) {
+        asm volatile("outw %0, %1" : : "a"(val), "Nd"(port));
+    }
 
     inline void io_wait() {
         outb(0x80, 0);
@@ -26,6 +29,11 @@ namespace x64 {
     inline uint32_t inl(uint16_t port) {
         uint32_t ret;
         asm volatile("inl %1, %0" : "=a"(ret) : "Nd"(port) : "memory");
+        return ret;
+    }
+    inline u16 inw(uint16_t port) {
+        u16 ret;
+        asm volatile("inw %1, %0" : "=a"(ret) : "Nd"(port) : "memory");
         return ret;
     }
 

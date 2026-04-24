@@ -30,7 +30,7 @@ enter_user_space:
     ; STAR
     mov ecx, 0xC0000081
     xor eax, eax
-    mov edx, 0x00280018
+    mov edx, 0x00200018
     wrmsr
 
     ; Preparing user sapace ig
