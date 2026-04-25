@@ -156,4 +156,36 @@ namespace PCI {
         }
         return {};
     }
+
+    PCI_Device find_class_with_sub(const u8 base_class, const u8 sub_class) {
+        for (int bus = 0; bus < 256; bus++) {
+            for (int dev = 0; dev < 32; dev++) {
+                uint16_t vid = pci_read16(bus, dev, 0, 0x00);
+                if (vid == 0xFFFF) continue;
+                const uint8_t header = pci_read8(bus, dev, 0, 0x0E);
+                const int fn_limit = (header & 0x80) ? 8 : 1;
+
+                for (int fn = 0; fn < fn_limit; fn++) {
+                    vid = pci_read16(bus, dev, fn, 0x00);
+                    if (vid == 0xFFFF || vid == 0x0000) continue;
+
+                    const uint8_t base = pci_read8(bus, dev, fn, 0x0B);
+                    const uint8_t sub  = pci_read8(bus, dev, fn, 0x0A);
+
+                    if (base == base_class && sub == sub_class) {
+                        PCI_Device device{};
+                        device.bus = bus;
+                        device.device = dev;
+                        device.function = fn;
+                        device.vendor_id = vid;
+                        device.device_id = pci_read16(bus, dev, fn, 0x02);
+                        for (int i = 0; i < 6; ++i)
+                            device.bar[i] = pci_read32(bus, dev, fn, 0x10 + i * 4);
+                        return device;
+                    }
+                }
+            }
+        }
+        return {};
+    }
 }

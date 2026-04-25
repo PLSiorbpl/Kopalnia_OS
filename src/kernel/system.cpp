@@ -8,6 +8,7 @@
 #include "kernel/Paging.hpp"
 #include "arch/x86_64/gdt/gdt.h"
 #include "Drivers/cursor.h"
+#include "Drivers/achi/ahci.h"
 #include "Drivers/ata/ata.h"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 
@@ -42,6 +43,8 @@ namespace systemPL {
         x64::set_INT_flag(true); // Enable interrupts
 
         USB::m_xhci_driver.init_device();
+
+        drivers::ahci::ahci().init();
 
         drivers::ata::device(false);
 

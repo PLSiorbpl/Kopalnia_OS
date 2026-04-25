@@ -47,11 +47,8 @@ namespace heap {
         return nullptr;
     }
 
-    // TODO
-    // maybe make this not waste space
-    // and maybe store original pointer in aligned-sizeof(Block)?
     void* malloc_aligned(const uint64_t size, uint64_t align, const uint64_t boundry) {
-        if (align == 0) align = 1;
+        if (align == 0) align = 16;
 
         const uint64_t total = size + align + (boundry ? boundry : 0);
 
@@ -64,12 +61,39 @@ namespace heap {
         // boundary check
         if (boundry) {
             const uint64_t start_block = aligned & ~(boundry - 1);
-            const uint64_t end_block   = (aligned + size - 1) & ~(boundry - 1);
+            uint64_t end_block   = (aligned + size - 1) & ~(boundry - 1);
 
             if (start_block != end_block) {
                 aligned = (aligned + boundry) & ~(boundry - 1);
+
+                end_block = (aligned + size - 1) & ~(boundry - 1);
+                if ((aligned & ~(boundry - 1)) != end_block) {
+                    return nullptr;
+                }
             }
         }
+
+        return reinterpret_cast<void *>(aligned);
+    }
+
+    struct AlignHeader {
+        void* raw;
+    };
+
+    void* malloc_align(const uint64_t size, uint64_t align) {
+        if (align == 0) align = 16;
+
+        const uint64_t total = size + align + sizeof(AlignHeader);
+
+        auto* raw = static_cast<uint8_t *>(malloc(total));
+        if (!raw) return nullptr;
+
+        const auto base = reinterpret_cast<uintptr_t>(raw + sizeof(AlignHeader));
+
+        const uintptr_t aligned = (base + align - 1) & ~(align - 1);
+
+        auto* header = reinterpret_cast<AlignHeader *>(aligned - sizeof(AlignHeader));
+        header->raw = raw;
 
         return reinterpret_cast<void *>(aligned);
     }
@@ -97,6 +121,15 @@ namespace heap {
                 old_block->next->prev = old_block->prev;
             old_block = old_block->prev;
         }
+    }
+
+    void free_align(void* ptr) {
+        if (!ptr) return;
+
+        const auto* header =
+            reinterpret_cast<AlignHeader *>(static_cast<uint8_t *>(ptr) - sizeof(AlignHeader));
+
+        free(header->raw);
     }
 
     uint64_t check_heap() {
