@@ -9,6 +9,7 @@
 #include "Drivers/PCI.hpp"
 #include "xHCI_trb.hpp"
 #include "xHCI_rings.hpp"
+#include "arch/x86_64/IDT/IDT.hpp"
 
 namespace USB {
     xhci_driver m_xhci_driver;
@@ -49,7 +50,7 @@ namespace USB {
         //_log_capability_registers();
         //_log_operational_registers();
 
-        if (!reset_host_controller()) {
+        if (!_reset_host_controller()) {
             return false;
         }
 
@@ -62,6 +63,19 @@ namespace USB {
     }
 
     bool xhci_driver::start_device() {
+        std::kernel::printf("usbsts before : &a%x\n", m_op_regs->usbsts);
+        _log_usbsts();
+
+        if (!_start_host_controller()) {
+            std::kernel::printf("Failed to start the host controller\n");
+            return false;
+        }
+
+        std::kernel::printf("Controller started!\n\n");
+
+        std::kernel::printf("usbsts after  : &a%x\n", m_op_regs->usbsts);
+        _log_usbsts();
+
         is_running = true;
         return true;
     }
@@ -127,7 +141,22 @@ namespace USB {
         std::kernel::printf("\n");
     }
 
-    bool xhci_driver::reset_host_controller() {
+    void xhci_driver::_log_usbsts() {
+        const uint32_t status = m_op_regs->usbsts;
+        std::kernel::printf("===== USBSTS =====\n");
+        if (status & XHCI_USBSTS_HCH)  std::kernel::printf("    Host Controlled Halted\n");
+        if (status & XHCI_USBSTS_HSE)  std::kernel::printf("    Host System Error\n");
+        if (status & XHCI_USBSTS_EINT) std::kernel::printf("    Event Interrupt\n");
+        if (status & XHCI_USBSTS_PCD)  std::kernel::printf("    Port Change Detect\n");
+        if (status & XHCI_USBSTS_SSS)  std::kernel::printf("    Save State Status\n");
+        if (status & XHCI_USBSTS_RSS)  std::kernel::printf("    Restore State Status\n");
+        if (status & XHCI_USBSTS_SRE)  std::kernel::printf("    Save/Restore Error\n");
+        if (status & XHCI_USBSTS_CNR)  std::kernel::printf("    Controller Not Ready\n");
+        if (status & XHCI_USBSTS_HCE)  std::kernel::printf("    Host Controller Error\n");
+        std::kernel::printf("\n");
+    }
+
+    bool xhci_driver::_reset_host_controller() {
         // Clear Run/Stop bit
         uint32_t usbcmd = m_op_regs->usbcmd;
         usbcmd &= ~XHCI_USBCMD_RUN_STOP;
@@ -176,6 +205,29 @@ namespace USB {
 
         if (m_op_regs->config != 0)
             return false;
+
+        return true;
+    }
+
+    bool xhci_driver::_start_host_controller() {
+        uint32_t usbcmd = m_op_regs->usbcmd;
+        usbcmd |= XHCI_USBCMD_RUN_STOP;
+        //usbcmd |= XHCI_USBCMD_INTERRUPTER_ENABLE;
+        m_op_regs->usbcmd = usbcmd;
+
+        uint32_t retries = 0;
+        while (m_op_regs->usbsts & XHCI_USBSTS_HCH) {
+            if (retries++ >= 100) {
+                std::kernel::printf("Host controller did not halt within %ums\n", retries);
+                return false;
+            }
+
+            Time::Sleep(10);
+        }
+
+        if (m_op_regs->usbsts & XHCI_USBSTS_CNR) {
+            return false;
+        }
 
         return true;
     }
