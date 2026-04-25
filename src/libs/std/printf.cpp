@@ -39,7 +39,7 @@ namespace std {
                             print(num_buf, active_color);
                             break;
                         case 'x':
-                            std::to_hex_str(num_buf, __builtin_va_arg(args, unsigned int));
+                            std::to_hex_str(num_buf, __builtin_va_arg(args, unsigned long long));
                             print(num_buf, active_color);
                             break;
                         case 'f':
@@ -167,7 +167,7 @@ namespace std {
                         std::print(num_buf, out, active_color);
                         break;
                     case 'x':
-                        std::to_hex_str(num_buf, __builtin_va_arg(args, unsigned int));
+                        std::to_hex_str(num_buf, __builtin_va_arg(args, unsigned long long));
                         std::print(num_buf, out, active_color);
                         break;
                     case 'f':
