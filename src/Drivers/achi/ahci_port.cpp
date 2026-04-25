@@ -17,7 +17,7 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::wait_for_port() const {
-        for (int i = 0; i < 1000000; ++i) {
+        for (int i = 0; i < 10000000; ++i) {
             if ((port->tfd & (ATA_DEV_BUSY_BIT | ATA_DEV_DRQ_BIT)) == 0) {
                 return true;
             }
@@ -28,7 +28,7 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::wait_for_port_completion(const u8 slot) {
-        for (int i = 0; i < 1000000; ++i) {
+        for (int i = 0; i < 10000000; ++i) {
             if (has_errored) {
                 std::kernel::printf("&4Command failed.\n");
                 has_errored = false;
@@ -152,9 +152,7 @@ namespace drivers::ahci {
         fis->lba5 = 0xFF;
         fis->count_lo = 1;
 
-        if (issue_command(slot)) {
-            std::kernel::printf("Failed to simulate error");
-        }
+        issue_command(slot);
     }
 
     void ahci_port::start() const {

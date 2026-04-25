@@ -4,10 +4,7 @@
 #include "../PCI.hpp"
 #include "../../kernel/Paging.hpp"
 #include "../../libs/std/printf.hpp"
-#include "arch/x86_64/Common/Common.hpp"
 #include "kernel/system.hpp"
-#include "kernel/Memory/heap.hpp"
-#include "std/mem_common.hpp"
 
 drivers::ahci::ahci::ahci() {
 
@@ -24,7 +21,7 @@ void drivers::ahci::ahci::init() {
     }
 
     const auto device = PCI::find_class_with_sub(0x01, 0x06);
-    u8 irq = PCI::pci_read8(device.bus, device.device, device.function, 0x3C);
+    const u8 irq = PCI::pci_read8(device.bus, device.device, device.function, 0x3C);
 
     IDT::Install_handler([](const IDT::ISR_Registers* regs) {
         const auto ahci = &systemPL::ahci;
