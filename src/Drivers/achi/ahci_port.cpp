@@ -1,9 +1,6 @@
 #include "ahci_port.h"
-
 #include "ahci.h"
 #include "ahci_helper.h"
-#include "kernel/Paging.hpp"
-#include "kernel/Memory/heap.hpp"
 #include "std/mem_common.hpp"
 #include "std/printf.hpp"
 
@@ -111,6 +108,53 @@ namespace drivers::ahci {
         std::kernel::printf("&a\tModel: %s\n"
                                 "\tFirmware Version: %s\n\n",
                                 model, firmware);
+    }
+
+    void ahci_port::debug_error() {
+        std::kernel::printf("&aSimulating TFD error...");
+
+        has_errored = false;
+        *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
+
+        const auto slot = get_command_slot();
+        if (slot == -1) {
+            return;
+        }
+
+        auto& header = command_list[slot];
+        header.fis_length = 5;
+        header.write = 0;
+        header.prd_table_length = 1;
+        header.prefetchable = 1;
+        header.clear = 1;
+
+        const auto table = cmd_tables[slot];
+        mem::memset(table, 0, sizeof(command_table));
+        table->prdt[0].data_base_address = static_cast<u32>(reinterpret_cast<u64>(buffer));
+        table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
+        table->prdt[0].data_byte_count = 512 - 1;
+        table->prdt[0].interrupt_on_complete = 1;
+
+
+        auto* fis = reinterpret_cast<fis::reg_h2d*>(table->command_fis);
+        mem::memset(fis, 0, sizeof(fis::reg_h2d));
+        fis->fis_type = static_cast<u8>(fis::type::FIS_TYPE_REG_H2D);
+        fis->command_control = 1;
+        fis->command = 0x25; // READ DMA EXT
+        fis->device = 1 << 6; // LBA mode
+
+        // set LBA to max possible value - guaranteed to be out of range
+        fis->lba0 = 0xFF;
+        fis->lba1 = 0xFF;
+        fis->lba2 = 0xFF;
+        fis->lba3 = 0xFF;
+        fis->lba4 = 0xFF;
+        fis->lba5 = 0xFF;
+        fis->count_lo = 1;
+
+        if (issue_command(slot)) {
+            std::kernel::printf("Failed to simulate error");
+        }
     }
 
     void ahci_port::start() const {

@@ -31,25 +31,10 @@ void drivers::ahci::ahci::init() {
         ahci->on_interrupt(regs);
     }, irq);
 
-    const auto name = [&]() -> const char* {
-        switch (device.vendor_id) {
-            case 0x8086: return "Intel";
-            case 0x1022: return "AMD";
-            case 0x10DE: return "NVIDIA";
-            case 0x1B4B: return "Marvell";
-            case 0x1039: return "SiS";
-            case 0x1106: return "VIA";
-            default: return "Unknown";
-        }
-    }();
-
-    std::kernel::printf("AHCI controller: %s (vendor: %x, device: %x)\n\n", name, device.vendor_id, device.device_id);
-
     hba = reinterpret_cast<volatile hba_memory*>(static_cast<u64>(device.bar[5] & 0xFFFFFFF0));
     Paging::Map_memory(reinterpret_cast<u64>(hba), reinterpret_cast<u64>(hba) + sizeof(hba_memory), Paging::Profile::MMIO);
 
     hba->ghc.ahci_enable = true;
-
     while (!hba->ghc.ahci_enable) {}
 
     probe_ports();
@@ -60,6 +45,15 @@ void drivers::ahci::ahci::init() {
     for (auto port: ports) {
         if (port.is_active()) {
             port.debug_print_identify_info();
+        }
+    }
+}
+
+void drivers::ahci::ahci::debug_error() {
+    for (auto port: ports) {
+        if (port.is_active()) {
+            port.debug_error();
+            break;
         }
     }
 }

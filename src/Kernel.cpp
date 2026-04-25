@@ -23,7 +23,7 @@ inline uint64_t range(void *a, void *b) {
 
 void list_commands();
 
-Command commands[9] = {
+Command commands[10] = {
     {"help", list_commands},
     {
         "clear", [] {
@@ -91,7 +91,12 @@ Command commands[9] = {
             std::printf(
                 "&0 &&00 &1 &&11 &2 &&22 &3 &&33 &4 &&44 &5 &&55 &6 &&66 &7 &&77 &8 &&88 &9 &&99 &a &&aa &b &&bb &c &&cc &d &&dd &e &&ee &f &&ff\n");
         }
-    }
+    },
+    {
+        "ahci error", [] {
+            sys_ahci_debug_err();
+        }
+    },
 };
 
 struct TextCommand {

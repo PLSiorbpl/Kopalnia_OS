@@ -154,6 +154,7 @@ namespace drivers::ahci {
         void configure(port_type type, volatile hba_port* port, u8 port_num, const volatile hba_memory* hba);
 
         void debug_print_identify_info();
+        void debug_error();
 
         void start() const;
         void stop() const;
@@ -166,7 +167,7 @@ namespace drivers::ahci {
         [[nodiscard]] i8 get_command_slot() const;
         [[nodiscard]] bool wait_for_port() const;
         [[nodiscard]] bool wait_for_port_completion(u8 slot);
-        [[nodiscard]] bool issue_command(u8 slot);
+        bool issue_command(u8 slot);
 
         command_header* command_list;
         received_fis* received;
