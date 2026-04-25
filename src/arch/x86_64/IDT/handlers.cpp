@@ -37,6 +37,29 @@ namespace IDT {
 
     static bool extended = false;
 
+    isr_t custom_handlers[256] = { nullptr };
+
+    void Install_handler(const isr_t handler, const uint8_t irq_no) {
+        if (!handler) {
+            std::kernel::printf("Install_handler &cERROR&f: &anull handler\n");
+            return;
+        }
+
+        if (irq_no >= 16) { // PIC IRQ 0–15
+            std::kernel::printf("Install_handler &cERROR&f: &cinvalid &firq &e%u\n", irq_no);
+            return;
+        }
+
+        const uint8_t vector = irq_no + 32;
+
+        if (custom_handlers[vector]) {
+            std::kernel::printf("&cWARNING&f: overwriting handler for &eIRQ &a%u\n", irq_no);
+        }
+
+        custom_handlers[vector] = handler;
+        std::kernel::printf("Installed irq: #&a%u &7(&fvector: &a%u&7)&f, function addr: &a%x", irq_no, vector, (void*)handler);
+    }
+
     // NOTE do not add [[noreturn]] to this function
     extern "C" void isr_common(const ISR_Registers* regs) {
         if (regs->int_no <= 31) {
@@ -44,6 +67,10 @@ namespace IDT {
 
             // CPU interrupts (bad so we halt cpu)
             asm volatile("cli; hlt");
+        }
+
+        if (custom_handlers[regs->int_no]) {
+            custom_handlers[regs->int_no](regs);
         }
 
         // Handlers here

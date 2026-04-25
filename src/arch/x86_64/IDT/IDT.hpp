@@ -23,11 +23,17 @@ namespace IDT {
         uint64_t rip, cs, rflags, rsp, ss;
     } __attribute__((packed));
 
+    using isr_t = void(*)(const ISR_Registers*);
+
     extern IDTEntry idt[256];
+
     // Handlers
     extern "C" void* isr_table[256];
 
+    extern isr_t custom_handlers[256];
+
 	void set_IDT_entry(IDTEntry& entry, void* handler);
     void IDT_Install();
+    void Install_handler(isr_t handler, uint8_t irq_no);
     void PIC_Remap(uint8_t offset1, uint8_t offset2);
 }
