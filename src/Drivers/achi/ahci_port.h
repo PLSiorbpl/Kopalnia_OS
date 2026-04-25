@@ -176,6 +176,7 @@ namespace drivers::ahci {
     public:
         void* buffer;
         bool active = false;
+        bool bits_is_64 = false;
         volatile bool has_errored = false;
         port_type type;
         volatile hba_port* port;
