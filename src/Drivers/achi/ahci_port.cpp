@@ -112,7 +112,7 @@ namespace drivers::ahci {
     }
 
     void ahci_port::debug_error() {
-        std::kernel::printf("&aSimulating TFD error...");
+        std::kernel::printf("&aSimulating TFD error...\n");
 
         has_errored = false;
         *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
