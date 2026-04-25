@@ -46,6 +46,7 @@ namespace systemPL {
         x64::set_INT_flag(true); // Enable interrupts
 
         USB::m_xhci_driver.init_device();
+        USB::m_xhci_driver.start_device();
 
         ahci.init();
 

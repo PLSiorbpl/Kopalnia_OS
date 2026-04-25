@@ -53,8 +53,10 @@ namespace USB {
         void _parse_capability_registers();
         void _log_capability_registers();
         void _log_operational_registers();
+        void _log_usbsts();
 
-        bool reset_host_controller();
+        bool _reset_host_controller();
+        bool _start_host_controller();
 
         void _configure_operational_register();
         void _setup_dcbaa();
