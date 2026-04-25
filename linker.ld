@@ -2,7 +2,7 @@ OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(_start)
 SECTIONS
 {
-	. = ALIGN(1M);
+	. = 1M;
 	__kernel_start = .;
 	.text : {
 	    __kernel_text_start = .;

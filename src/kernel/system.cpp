@@ -1,5 +1,6 @@
 #include "system.hpp"
 
+#include "linker_info.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"

@@ -27,7 +27,7 @@ namespace USB {
             while (true);
         }
 
-        void* memblock = heap::malloc_aligned(size, alignment, boundary);
+        void* memblock = heap::malloc_boundry(size, alignment, boundary);
 
         if (!memblock) {
             std::printf("======= MEMORY ALLOCATION FAILED =======\n");

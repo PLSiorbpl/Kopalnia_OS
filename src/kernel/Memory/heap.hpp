@@ -10,6 +10,11 @@ namespace heap {
 		Block* prev;
 	};
 
+	struct AlignHeader {
+		void* raw;
+	};
+	static_assert(sizeof(Block) % 16 == 0);
+
 	extern uint64_t heap_start;
 	extern uint64_t heap_end;
 	extern uint64_t heap_ptr;
@@ -19,10 +24,11 @@ namespace heap {
 
 	void* malloc(uint64_t size);
 	void* malloc_align(uint64_t size, uint64_t align);
-	void* malloc_aligned(uint64_t size, uint64_t align, uint64_t boundry);
+	void* malloc_boundry(uint64_t size, uint64_t align, uint64_t boundry);
 
 	void free(void* ptr);
 	void free_align(void* ptr);
+	void free_boundry(void* ptr);
 
 	uint64_t check_free_heap();
 	uint64_t check_used_heap();

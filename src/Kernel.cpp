@@ -8,10 +8,8 @@
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
 #include "Drivers/vga.h"
-#include "Drivers/USB/usb.hpp"
 #include "std/string.h"
 #include "kernel/linker_info.hpp"
-#include "std/vector.hpp"
 
 struct Command {
     const char *name;

@@ -196,13 +196,13 @@ namespace USB {
         uint64_t dcbaa_size = sizeof(uintptr_t) * (m_max_device_slots + 1);
 
         m_dcbaa = static_cast<uint64_t *>(alloc_xhci_memory(dcbaa_size, XHCI_DEVICE_CONTEXT_ALIGNMENT, XHCI_DEVICE_CONTEXT_BOUNDARY));
-        m_dcbaa_virtual = static_cast<uint64_t *>(heap::malloc(m_max_device_slots + 1));
+        m_dcbaa_virtual = static_cast<uint64_t *>(heap::malloc((m_max_device_slots + 1) * sizeof(uint64_t)));
 
         if (m_max_scratchpad_buffers > 0) {
             uint64_t *scrachpad_array = static_cast<uint64_t *>(
                 alloc_xhci_memory(m_max_scratchpad_buffers * sizeof(uint64_t), XHCI_DEVICE_CONTEXT_ALIGNMENT, XHCI_DEVICE_CONTEXT_BOUNDARY));
 
-            for (uint8_t i = 0; i < m_max_scratchpad_buffers; i++) {
+            for (uint32_t i = 0; i < m_max_scratchpad_buffers; i++) {
                 void *scrachpad = alloc_xhci_memory(PAGE_SIZE, XHCI_SCRATCHPAD_BUFFERS_ALIGNMENT, XHCI_SCRATCHPAD_BUFFERS_BOUNDARY);
                 uint64_t scrachpad_addr = xhci_get_physical_addr(scrachpad);
                 scrachpad_array[i] = scrachpad_addr;
@@ -212,7 +212,7 @@ namespace USB {
             m_dcbaa[0] = scrachpad_array_physical_base;
 
             m_dcbaa_virtual[0] = scrachpad_array_physical_base;
-        };
+        }
 
         m_op_regs->dcbaap = xhci_get_physical_addr(m_dcbaa);
     }

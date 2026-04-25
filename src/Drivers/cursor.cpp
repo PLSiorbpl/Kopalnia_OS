@@ -6,8 +6,7 @@ namespace drivers::vga::cursor {
     int cursor_x;
     int cursor_y;
 
-    void enable_cursor(const u8 cursor_start, const u8 cursor_end)
-    {
+    void enable_cursor(const u8 cursor_start, const u8 cursor_end) {
         x64::outb(0x3D4, 0x0A);
         x64::outb(0x3D5, (x64::inb(0x3D5) & 0xC0) | cursor_start);
 

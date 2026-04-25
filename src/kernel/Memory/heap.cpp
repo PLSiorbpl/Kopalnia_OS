@@ -2,6 +2,8 @@
 #include "std/printf.hpp"
 #include "std/string.h"
 #include "kernel/linker_info.hpp"
+#include "kernel/Sleep.hpp"
+#include "std/mem_common.hpp"
 
 namespace heap {
     Block* heap_head;
@@ -23,13 +25,13 @@ namespace heap {
     // Block allocator
     void* malloc(uint64_t size) {
         size = (size + 15) & ~15ULL; // align but Block needs to be 16B aligned
-        for (Block* block = heap_head; block != nullptr; block = block->next) {
+        for (Block* block = heap_head; block; block = block->next) {
             if (block->free && block->size >= size) {
 
                 if (block->size >= size + sizeof(Block) + 16) { // 16 is minimum split size
                     // Split
                     const uint64_t new_size = block->size - size - sizeof(Block);
-                    auto* new_block = reinterpret_cast<Block *>(reinterpret_cast<uint8_t *>(block) + sizeof(Block) + size);
+                    auto* new_block = reinterpret_cast<Block *>(reinterpret_cast<uint8_t *>(block+1) + size);
                     new_block->size = new_size;
                     new_block->free = true;
                     new_block->next = block->next;
@@ -44,62 +46,10 @@ namespace heap {
                 return block+1;
             }
         }
+        std::kernel::printf("Nullptr in malloc!\n");
         return nullptr;
     }
 
-    void* malloc_aligned(const uint64_t size, uint64_t align, const uint64_t boundry) {
-        if (align == 0) align = 16;
-
-        const uint64_t total = size + align + (boundry ? boundry : 0);
-
-        const auto raw = reinterpret_cast<uint64_t>(malloc(total));
-        if (!raw) return nullptr;
-
-        // align
-        uint64_t aligned = (raw + align - 1) & ~(align - 1);
-
-        // boundary check
-        if (boundry) {
-            const uint64_t start_block = aligned & ~(boundry - 1);
-            uint64_t end_block   = (aligned + size - 1) & ~(boundry - 1);
-
-            if (start_block != end_block) {
-                aligned = (aligned + boundry) & ~(boundry - 1);
-
-                end_block = (aligned + size - 1) & ~(boundry - 1);
-                if ((aligned & ~(boundry - 1)) != end_block) {
-                    return nullptr;
-                }
-            }
-        }
-
-        return reinterpret_cast<void *>(aligned);
-    }
-
-    struct AlignHeader {
-        void* raw;
-    };
-
-    void* malloc_align(const uint64_t size, uint64_t align) {
-        if (align == 0) align = 16;
-
-        const uint64_t total = size + align + sizeof(AlignHeader);
-
-        auto* raw = static_cast<uint8_t *>(malloc(total));
-        if (!raw) return nullptr;
-
-        const auto base = reinterpret_cast<uintptr_t>(raw + sizeof(AlignHeader));
-
-        const uintptr_t aligned = (base + align - 1) & ~(align - 1);
-
-        auto* header = reinterpret_cast<AlignHeader *>(aligned - sizeof(AlignHeader));
-        header->raw = raw;
-
-        return reinterpret_cast<void *>(aligned);
-    }
-
-    // TODO
-    // be able to easly free aligned pointers from function above
     void free(void* ptr) {
         if (!ptr) return;
         Block* old_block = static_cast<Block*>(ptr) - 1;
@@ -123,7 +73,89 @@ namespace heap {
         }
     }
 
+    void* malloc_align(const uint64_t size, uint64_t align) {
+        if (align == 0) align = 1;
+
+        const uint64_t total = size + align + sizeof(AlignHeader);
+
+        auto* raw = static_cast<uint8_t *>(malloc(total));
+        if (!raw) return nullptr;
+
+        const auto base = reinterpret_cast<uintptr_t>(raw + sizeof(AlignHeader));
+
+        const uintptr_t aligned = (base + align - 1) & ~(align - 1);
+
+        auto* header = reinterpret_cast<AlignHeader *>(aligned - sizeof(AlignHeader));
+        header->raw = raw;
+
+        return reinterpret_cast<void *>(aligned);
+    }
+
     void free_align(void* ptr) {
+        if (!ptr) return;
+
+        const auto* header =
+            reinterpret_cast<AlignHeader *>(static_cast<uint8_t *>(ptr) - sizeof(AlignHeader));
+
+        free(header->raw);
+    }
+
+    void* malloc_boundry(const uint64_t size, uint64_t align, const uint64_t boundry) {
+        if (size > ~static_cast<uint64_t>(0x0) - align - boundry - sizeof(AlignHeader)) {
+            std::kernel::printf("&cmalloc_boundry error &e#1\n");
+            return nullptr;
+        }
+
+        if (boundry && (boundry & (boundry - 1))) {
+            std::kernel::printf("&cmalloc_boundry error &e#2\n");
+            return nullptr;
+        }
+
+        if (align == 0) align = 1;
+
+        const uint64_t total = size + align + (boundry ? boundry : 0) + sizeof(AlignHeader);
+
+        const auto raw = static_cast<uint8_t *>(malloc(total));
+        if (!raw) {
+            std::kernel::printf("&cmalloc_boundry error &e#3\n");
+            return nullptr;
+        }
+
+        const auto base = reinterpret_cast<uintptr_t>(raw + sizeof(AlignHeader));
+
+        // align
+        uintptr_t aligned = (base + align - 1) & ~(align - 1);
+
+        // boundary check
+        if (boundry) {
+            const uint64_t start_block = aligned & ~(boundry - 1);
+            uint64_t end_block   = (aligned + size - 1) & ~(boundry - 1);
+
+            if (start_block != end_block) {
+                aligned = (aligned + boundry) & ~(boundry - 1);
+
+                end_block = (aligned + size - 1) & ~(boundry - 1);
+                if ((aligned & ~(boundry - 1)) != end_block) {
+                    std::kernel::printf("&cmalloc_boundry error &e#4\n");
+                    free(raw);
+                    return nullptr;
+                }
+            }
+        }
+
+        if (aligned + size > reinterpret_cast<uintptr_t>(raw) + total) {
+            std::kernel::printf("&cmalloc_boundry error &e#5\n");
+            free(raw);
+            return nullptr;
+        }
+
+        auto* header = reinterpret_cast<AlignHeader *>(aligned - sizeof(AlignHeader));
+        header->raw = raw;
+
+        return reinterpret_cast<void *>(aligned);
+    }
+
+    void free_boundry(void* ptr) {
         if (!ptr) return;
 
         const auto* header =

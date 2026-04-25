@@ -19,6 +19,8 @@ PD_Table:
     dq (0x0000000000000087)
     dq (0x0000000020000087)
     dq (0x0000000040000087)
-    times 509 dq 0
+    dq (0x0000000060000087)
+    dq (0x0000000080000087)
+    times 507 dq 0
 
 section .note.GNU-stack noalloc noexec nowrite progbits
