@@ -1,6 +1,7 @@
 #include "ahci_port.h"
 #include "ahci.h"
 #include "ahci_helper.h"
+#include "arch/x86_64/Common/Common.hpp"
 #include "std/mem_common.hpp"
 #include "std/printf.hpp"
 
@@ -17,7 +18,7 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::wait_for_port() const {
-        for (int i = 0; i < 10000000; ++i) {
+        for (int i = 0; i < 1000000; ++i) {
             if ((port->tfd & (ATA_DEV_BUSY_BIT | ATA_DEV_DRQ_BIT)) == 0) {
                 return true;
             }
@@ -28,7 +29,7 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::wait_for_port_completion(const u8 slot) {
-        for (int i = 0; i < 10000000; ++i) {
+        for (int i = 0; i < 1000000; ++i) {
             if (has_errored) {
                 std::kernel::printf("&4Command failed.\n");
                 has_errored = false;
@@ -234,11 +235,10 @@ namespace drivers::ahci {
     bool ahci_port::issue_command(const u8 slot) {
         if (!wait_for_port())
             return false;
+        x64::set_INT_flag(false);
         port->command_issue = 1 << slot;
-        if (!wait_for_port_completion(slot))
-            return false;
-
-        return true;
+        x64::set_INT_flag(true);
+        return wait_for_port_completion(slot);
     }
 
     bool ahci_port::is_active() const {
