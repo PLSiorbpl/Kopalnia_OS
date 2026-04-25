@@ -15,7 +15,7 @@ namespace USB {
 
     bool xhci_driver::init_device() {
         // Get xHCI device from PCI
-        PCI::PCI_Device usb = PCI::Find_Class(0x0030030C);
+        const PCI::PCI_Device usb = PCI::Find_Class(0x0030030C);
         irq_number = PCI::pci_read8(usb.bus, usb.device, usb.function, 0x3C);
 
         // Get base mmio address
@@ -224,6 +224,8 @@ namespace USB {
         uint32_t iman = interrupter_regs->iman;
         iman |= XHCI_IMAN_INTERRUPT_ENABLE;
         interrupter_regs->iman = iman;
+
+        m_event_ring = new xhci_event_ring(XHCI_EVENT_RING_TRB_COUNT, interrupter_regs);
 
         _acknowledge_irq(0);
     }

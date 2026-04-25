@@ -45,6 +45,7 @@ namespace USB {
         uint64_t* m_dcbaa_virtual;
 
         xhci_command_ring *m_command_ring = nullptr;
+        xhci_event_ring *m_event_ring = nullptr;
 
         bool is_running = false;
 

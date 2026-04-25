@@ -1,6 +1,7 @@
 #pragma once
 #include "types.hpp"
 #include "kernel/Memory/heap.hpp"
+#include "std/mem_common.hpp"
 
 namespace std {
     template<typename T>
