@@ -1,4 +1,5 @@
 #pragma once
+#include "std/types.hpp"
 
 namespace std {
     bool str_cmp(const char* str1, const char* str2);
@@ -146,5 +147,32 @@ namespace std {
          }
      }
 
-    void to_hex_str(char* buffer, unsigned int number);
+    template<typename T>
+    void to_hex_str(char* buffer, T value) {
+        buffer[0] = '0';
+        buffer[1] = 'x';
+
+        char* ptr = buffer + 2;
+
+        bool started = false;
+        auto hex_chars = "0123456789ABCDEF";
+
+        for (int i = (sizeof(T) * 8) - 4; i >= 0; i -= 4) {
+            const uint8_t nibble = (value >> i) & 0xF;
+
+            if (!started) {
+                if (nibble == 0)
+                    continue;
+                started = true;
+            }
+
+            *ptr++ = hex_chars[nibble];
+        }
+
+        if (!started) {
+            *ptr++ = '0';
+        }
+
+        *ptr = '\0';
+    }
 }
