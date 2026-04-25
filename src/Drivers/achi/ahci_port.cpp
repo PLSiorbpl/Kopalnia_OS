@@ -30,30 +30,27 @@ namespace drivers::ahci {
         return false;
     }
 
-    bool ahci_port::wait_for_port_completion(const u8 slot) const {
+    bool ahci_port::wait_for_port_completion(const u8 slot) {
         for (int i = 0; i < 1000000; ++i) {
-            if (port->is & PXIS_TFES) {
+            if (has_errored) {
                 std::kernel::printf("&4Command failed.\n");
+                has_errored = false;
                 return false;
             }
             if ((port->command_issue & (1 << slot)) == 0)
                 return true;
         }
         std::kernel::printf("&4Command timed out.\n");
+        has_errored = false;
         return false;
     }
 
-    void ahci_port::initialize(const port_type type, volatile hba_port* port, u8 port_num, const volatile hba_memory* hba) {
+    void ahci_port::configure(const port_type type, volatile hba_port* port, u8 port_num, const volatile hba_memory* hba) {
         this->type = type;
         this->port_num = port_num;
         this->port = port;
-        this->command_slots = ((hba->capability >> 8) & 0x1F) + 1;
+        this->command_slots = hba->capabilities.num_command_slots;
         active = true;
-    }
-
-    void ahci_port::configure() {
-        if (!active)
-            return;
 
         stop();
 
@@ -70,7 +67,7 @@ namespace drivers::ahci {
         port->fis_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(received) >> 32);
 
         for (int i = 0; i < 32; ++i) {
-            command_list[i].prd_table_length = 8;
+            command_list[i].prd_table_length = 0;
 
             cmd_tables[i] = static_cast<command_table*>(allocate_virtual_memory(sizeof(command_table), 128));
             command_list[i].cmd_table_base_address = static_cast<u32>(reinterpret_cast<u64>(cmd_tables[i]));
@@ -79,6 +76,19 @@ namespace drivers::ahci {
 
         start();
 
+        // Configure which interrupts to enable
+        port->interrupts_enabled.cold_port_detect_interrupt = true;
+        port->interrupts_enabled.task_file_error_interrupt = true;
+        port->interrupts_enabled.host_bus_fatal_error_interrupt = true;
+        port->interrupts_enabled.host_bus_data_error_interrupt = true;
+        port->interrupts_enabled.interface_fatal_error_interrupt = true;
+        port->interrupts_enabled.overflow_interrupt = true;
+        port->interrupts_enabled.incorrect_port_multiplier_interrupt = true;
+        port->interrupts_enabled.unknown_fis_interrupt = true;
+        port->interrupts_enabled.port_connect_change_interrupt = true;
+    }
+
+    void ahci_port::debug_print_identify_info() {
         if (!identify()) {
             std::kernel::printf("&4Port %d: identify failed!\n", port_num);
         }
@@ -99,7 +109,7 @@ namespace drivers::ahci {
         firmware[8] = '\0';
 
         std::kernel::printf("&a\tModel: %s\n"
-                                "\tFirmware Version: %s\n",
+                                "\tFirmware Version: %s\n\n",
                                 model, firmware);
     }
 
@@ -114,7 +124,10 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::identify() {
-        port->is = static_cast<u32>(-1);
+        // clear interrupts & errors
+        has_errored = false;
+        *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
+
         const auto slot = get_command_slot();
         if (slot == -1) {
             return false;
@@ -134,7 +147,7 @@ namespace drivers::ahci {
         table->prdt[0].data_byte_count = 512 - 1;
         table->prdt[0].interrupt_on_complete = 1;
 
-        auto command_fis = reinterpret_cast<fis::reg_h2d*>(table->command_fis);
+        const auto command_fis = reinterpret_cast<fis::reg_h2d*>(table->command_fis);
         mem::memset(command_fis, 0, sizeof(fis::reg_h2d));
         command_fis->fis_type = static_cast<u8>(fis::type::FIS_TYPE_REG_H2D);
         command_fis->command_control = 1;
@@ -143,7 +156,40 @@ namespace drivers::ahci {
         return issue_command(slot);
     }
 
-    bool ahci_port::issue_command(const u8 slot) const {
+    void ahci_port::on_interrupt() {
+        if (port->interrupt_status.cold_port_detect_interrupt)
+            std::kernel::printf("&4AHCI: Device on port %i has been removed or unable to be detected!\n", port_num);
+        if (port->interrupt_status.task_file_error_interrupt) {
+            std::kernel::printf("&4AHCI: task file error (tfd: %x)\n", port->tfd);
+            has_errored = true;
+        }
+        if (port->interrupt_status.host_bus_fatal_error_interrupt) {
+            std::kernel::printf("&4AHCI: host bus fatal error\n");
+            has_errored = true;
+        }
+        if (port->interrupt_status.host_bus_data_error_interrupt) {
+            std::kernel::printf("&4AHCI: host bus data error\n");
+            has_errored = true;
+        }
+        if (port->interrupt_status.interface_fatal_error_interrupt) {
+            std::kernel::printf("&4AHCI: interface fatal error (serr: %x)\n", port->serr);
+            has_errored = true;
+        }
+        if (port->interrupt_status.interface_non_fatal_error_interrupt)
+            std::kernel::printf("&4AHCI: interface non-fatal error (serr: %x)\n", port->serr);
+        if (port->interrupt_status.overflow_interrupt)
+            std::kernel::printf("&4AHCI: overflow error\n");
+        if (port->interrupt_status.incorrect_port_multiplier_interrupt)
+            std::kernel::printf("&4AHCI: incorrect port multiplier\n");
+        if (port->interrupt_status.phy_ready_change_interrupt)
+            std::kernel::printf("&4AHCI: PHY ready change\n");
+        if (port->interrupt_status.port_connect_change_interrupt)
+            std::kernel::printf("&4AHCI: device connected/disconnected on port %i\n", port_num);
+
+        *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
+    }
+
+    bool ahci_port::issue_command(const u8 slot) {
         if (!wait_for_port())
             return false;
         port->command_issue = 1 << slot;

@@ -1,14 +1,44 @@
 #pragma once
 #include "ahci_port.h"
+#include "arch/x86_64/IDT/IDT.hpp"
 #include "std/types.hpp"
 
 namespace drivers::ahci {
     constexpr u64 AHCI_ENABLE_BIT = (1 << 31);
 
     struct hba_memory {
-        volatile u32 capability; // 0x00, Host capability
+        volatile struct capabilities {
+            u32 num_ports : 5;
+            u32 supports_external_sata : 1;
+            u32 enclosure_management_supported : 1;
+            u32 command_completion_coalescing_supported : 1;
+            u32 num_command_slots : 5;
+            u32 partial_state_capable : 1;
+            u32 slumber_state_capable : 1;
+            u32 pio_multiple_drq_block : 1;
+            u32 fis_based_switching_supported : 1;
+            u32 port_multiplier_supported : 1;
+            u32 ahci_mode_only : 1;
+            u32 reserved : 1;
+            u32 interface_speed_support : 4;
+            u32 supports_command_list_override : 1;
+            u32 supports_activity_led : 1;
+            u32 supports_aggressive_link_power_management : 1;
+            u32 supports_staggered_spin_up : 1;
+            u32 supports_mechanical_presence_switch : 1;
+            u32 supports_snotification_register : 1;
+            u32 supports_native_command_queue : 1;
+            u32 supports_64_bit_addressing : 1;
+        } capabilities;
 
-        volatile u32 ghc; // 0x04, Global host control
+        volatile struct ghc_reg {
+            u32 reset_hba : 1;
+            u32 interrupts_enabled : 1;
+            u32 msi_revert_to_single_msg : 1;
+            u32 reserved : 28;
+            u32 ahci_enable : 1;
+        } ghc;
+
         volatile u32 is;	// 0x08, Interrupt status
         volatile u32 pi;	// 0x0C, Port implemented
         volatile u32 vs;	// 0x10, Version
@@ -36,6 +66,7 @@ namespace drivers::ahci {
 
         void init();
     private:
+        void on_interrupt(const IDT::ISR_Registers* isr);
         void probe_ports();
 
         ahci_port ports[32] {};

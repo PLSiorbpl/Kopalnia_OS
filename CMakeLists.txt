@@ -37,6 +37,7 @@ target_compile_options(kopalnia_os PRIVATE
         -fno-exceptions
         -fno-stack-protector
         -fno-omit-frame-pointer
+        -fno-use-cxa-atexit
         -fno-builtin
         -fno-rtti
         -fno-pie

@@ -14,6 +14,8 @@
 #include "Drivers/USB/xHCI/xHCI.hpp"
 
 namespace systemPL {
+    drivers::ahci::ahci ahci;
+
     void Init(void* mbi) {
         init_tss();
 
@@ -45,7 +47,7 @@ namespace systemPL {
 
         USB::m_xhci_driver.init_device();
 
-        drivers::ahci::ahci().init();
+        ahci.init();
 
         drivers::ata::device(false);
 

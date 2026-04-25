@@ -4,6 +4,8 @@
 #include "../PCI.hpp"
 #include "../../kernel/Paging.hpp"
 #include "../../libs/std/printf.hpp"
+#include "arch/x86_64/Common/Common.hpp"
+#include "kernel/system.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "std/mem_common.hpp"
 
@@ -22,6 +24,12 @@ void drivers::ahci::ahci::init() {
     }
 
     const auto device = PCI::find_class_with_sub(0x01, 0x06);
+    u8 irq = PCI::pci_read8(device.bus, device.device, device.function, 0x3C);
+
+    IDT::Install_handler([](const IDT::ISR_Registers* regs) {
+        const auto ahci = &systemPL::ahci;
+        ahci->on_interrupt(regs);
+    }, irq);
 
     const auto name = [&]() -> const char* {
         switch (device.vendor_id) {
@@ -40,10 +48,28 @@ void drivers::ahci::ahci::init() {
     hba = reinterpret_cast<volatile hba_memory*>(static_cast<u64>(device.bar[5] & 0xFFFFFFF0));
     Paging::Map_memory(reinterpret_cast<u64>(hba), reinterpret_cast<u64>(hba) + sizeof(hba_memory), Paging::Profile::MMIO);
 
-    hba->ghc |= AHCI_ENABLE_BIT;
-    while (!(hba->ghc & AHCI_ENABLE_BIT)) {}
+    hba->ghc.ahci_enable = true;
+
+    while (!hba->ghc.ahci_enable) {}
 
     probe_ports();
+
+    hba->ghc.interrupts_enabled = true;
+    while (!hba->ghc.interrupts_enabled) {}
+
+    for (auto port: ports) {
+        if (port.is_active()) {
+            port.debug_print_identify_info();
+        }
+    }
+}
+
+void drivers::ahci::ahci::on_interrupt(const IDT::ISR_Registers *isr) {
+    for (int i = 0; i < 32; ++i) {
+        if (hba->is & (1 << i)) { // port interrupted
+            ports[i].on_interrupt();
+        }
+    }
 }
 
 void drivers::ahci::ahci::probe_ports() {
@@ -55,11 +81,8 @@ void drivers::ahci::ahci::probe_ports() {
             auto port_type = get_port_type(&hba->ports[i]);
             if (port_type == port_type::sata || port_type == port_type::satapi) {
                 std::kernel::printf("&aFound %s on port %d\n", port_type == port_type::sata ? "SATA" : "SATAPI", i);
-
-                ports[i].initialize(port_type, &hba->ports[i], i, hba);
-                ports[i].configure();
+                ports[i].configure(port_type, &hba->ports[i], i, hba);
             }
         }
     }
-    std::kernel::printf("\n");
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "Drivers/achi/ahci.h"
 #include "std/types.hpp"
 
 namespace systemPL {
@@ -9,6 +10,8 @@ namespace systemPL {
     extern "C" void enter_user_space();
 
     extern "C" void handle_syscall();
+
+    extern drivers::ahci::ahci ahci;
 
     void Init(void* mbi);
 }

@@ -78,13 +78,35 @@ namespace drivers::ahci {
         u8 reserved[0x100-0xA0];
     };
 
+    struct interrupts {
+        u32 device_to_host_fis_interrupt : 1;
+        u32 pio_setup_fis_interrupt : 1;
+        u32 dma_setup_fis_interrupt : 1;
+        u32 set_device_bits_fis_interrupt : 1;
+        u32 unknown_fis_interrupt : 1;
+        u32 descriptor_processed_interrupt : 1;
+        u32 port_connect_change_interrupt : 1;
+        u32 device_mechanical_presence_interrupt : 1;
+        u32 reserved : 14;
+        u32 phy_ready_change_interrupt : 1;
+        u32 incorrect_port_multiplier_interrupt : 1;
+        u32 overflow_interrupt : 1;
+        u32 reserved2 : 1;
+        u32 interface_non_fatal_error_interrupt : 1;
+        u32 interface_fatal_error_interrupt : 1;
+        u32 host_bus_data_error_interrupt : 1;
+        u32 host_bus_fatal_error_interrupt : 1;
+        u32 task_file_error_interrupt : 1;
+        u32 cold_port_detect_interrupt : 1;
+    } __attribute__((packed));
+
     struct hba_port {
         volatile u32 command_list_base;		// 0x00, command list base address, 1K-byte aligned
         volatile u32 command_list_base_upper;		// 0x04, command list base address upper 32 bits
         volatile u32 fis_base_address;		// 0x08, FIS base address, 256-byte aligned
         volatile u32 fis_base_address_upper;		// 0x0C, FIS base address upper 32 bits
-        volatile u32 is;		// 0x10, interrupt status
-        volatile u32 ie;		// 0x14, interrupt enable
+        volatile interrupts interrupt_status;
+        volatile interrupts interrupts_enabled;
         volatile u32 command_status;		// 0x18, command and status
         volatile u32 rsv0;		// 0x1C, Reserved
         volatile u32 tfd;		// 0x20, task file data
@@ -129,20 +151,22 @@ namespace drivers::ahci {
         ahci_port() : type(port_type::none), port(nullptr) {}
         ~ahci_port() = default;
 
-        void initialize(port_type type, volatile hba_port* port, u8 port_num, const volatile hba_memory* hba);
-        void configure();
+        void configure(port_type type, volatile hba_port* port, u8 port_num, const volatile hba_memory* hba);
+
+        void debug_print_identify_info();
 
         void start() const;
         void stop() const;
 
         bool identify();
+        void on_interrupt();
 
         [[nodiscard]] bool is_active() const;
     private:
         [[nodiscard]] i8 get_command_slot() const;
         [[nodiscard]] bool wait_for_port() const;
-        [[nodiscard]] bool wait_for_port_completion(u8 slot) const;
-        [[nodiscard]] bool issue_command(u8 slot) const;
+        [[nodiscard]] bool wait_for_port_completion(u8 slot);
+        [[nodiscard]] bool issue_command(u8 slot);
 
         command_header* command_list;
         received_fis* received;
@@ -151,6 +175,7 @@ namespace drivers::ahci {
     public:
         void* buffer;
         bool active = false;
+        bool has_errored = false;
         port_type type;
         volatile hba_port* port;
         u8 port_num = 0;
