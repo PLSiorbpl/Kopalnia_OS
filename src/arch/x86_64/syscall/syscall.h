@@ -59,3 +59,19 @@ inline void sys_sleep(u64 milliseconds) {
         : "a"(6ULL), "D"(milliseconds)
         : "rcx", "r11", "memory");
 }
+
+inline void sys_PCI_TEST() {
+    u64 ret;
+    asm volatile("syscall"
+        : "=a"(ret)
+        : "a"(7ULL)
+        : "rcx", "r11", "memory");
+}
+
+inline void sys_heap_dump() {
+    u64 ret;
+    asm volatile("syscall"
+        : "=a"(ret)
+        : "a"(8ULL)
+        : "rcx", "r11", "memory");
+}

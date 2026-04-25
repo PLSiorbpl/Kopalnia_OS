@@ -50,9 +50,10 @@ namespace systemPL {
         drivers::ata::device(false);
 
         drivers::vga::cursor::enable_cursor(0, 15);
-        //heap::dump_heap();
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
+
+        Time::Sleep(500);
 
         enter_user_space();
     }

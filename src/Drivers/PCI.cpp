@@ -35,64 +35,76 @@ namespace PCI {
                 if (vendor != 0xFFFF && vendor != 0000) {
                     const uint16_t device = pci_read16(bus, dev, 0, 0x02);
 
-                    std::printf("&fVendor: &a%x&f, Device: &a%x ", std::Output::std_out, vendor, device);
+                    std::kernel::printf("&fVendor: &a%x&f, Device: &a%x ", vendor, device);
                     switch (vendor) {
                         case 0x8086: {
-                            std::printf("&bIntel ");
+                            std::kernel::printf("&bIntel ");
                             switch (device) {
                                 case 0x5914: {
-                                    std::printf("&7Xeon E3-1200 Host Bridge");
+                                    std::kernel::printf("&7Xeon E3-1200 Host Bridge");
                                     break;
                                 }
                                 case 0x5917: {
-                                    std::printf("&7UHD Graphics 620");
+                                    std::kernel::printf("&7UHD Graphics 620");
                                     break;
                                 }
                                 case 0x9D4E: {
-                                    std::printf("&7100 Series Chipset Family");
+                                    std::kernel::printf("&7100 Series Chipset Family");
                                     break;
                                 }
                                 case 0x1237: {
-                                    std::printf("&7440FX - 82441FX PMC");
+                                    std::kernel::printf("&7440FX - 82441FX PMC");
                                     break;
                                 }
                                 case 0x7000: {
-                                    std::printf("&782371SB PIIX3 ISA");
+                                    std::kernel::printf("&782371SB PIIX3 ISA");
                                     break;
                                 }
                                 case 0x100E: {
-                                    std::printf("&7Gigabit Ethernet Controller");
+                                    std::kernel::printf("&7Gigabit Ethernet Controller");
                                     break;
                                 }
                             }
                             break;
                         }
                         case 0x10DE: {
-                            std::printf("&aNvidia ");
+                            std::kernel::printf("&aNvidia ");
                             if (device == 0x1d10)
-                                std::printf("&7GeForce MX150");
+                                std::kernel::printf("&7GeForce MX150");
                             break;
                         }
                         case 0x10EC: {
-                            std::printf("&9Realtek ");
+                            std::kernel::printf("&9Realtek ");
                             if (device == 0x5287)
-                                std::printf("&7RTL8411B PCI Express Card Reader");
+                                std::kernel::printf("&7RTL8411B PCI Express Card Reader");
                             break;
                         }
                         case 0x168C: {
-                            std::printf("&dAtheros ");
+                            std::kernel::printf("&dAtheros ");
                             if (device == 0x003e)
-                                std::printf("&7Wireless Network Adapter");
+                                std::kernel::printf("&7Wireless Network Adapter");
                             break;
                         }
-                        default: std::printf("&cUnknown");
+                        case 0x1AF4:
+                        case 0x1B36:
+                        case 0x1234: {
+                            std::kernel::printf("&eQEMU ");
+                            if (device == 0x1052)
+                                std::kernel::printf("&7Virtio input");
+                            if (device == 0x1111)
+                                std::kernel::printf("&7Bochs Graphics Adapter");
+                            if (device == 0xD)
+                                std::kernel::printf("&7XHCI Host Controller");
+                            break;
+                        }
+                        default: std::kernel::printf("&cUnknown");
                     }
-                    std::printf("\n");
+                    std::kernel::printf("\n");
                     devices++;
                 }
             }
         }
-        std::printf("&ffound &a%u &fPCI Devices\n", std::Output::std_out, devices);
+        std::kernel::printf("&ffound &a%u &fPCI Devices\n", devices);
     }
 
     PCI_Device Find(const uint32_t vendor, const uint32_t device_) {

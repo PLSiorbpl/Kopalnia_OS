@@ -50,12 +50,12 @@ Command commands[9] = {
     },
     {
         "heap", [] {
-            heap::dump_heap();
+            sys_heap_dump();
         }
     },
     {
         "pci", [] {
-            PCI::Test();
+            sys_PCI_TEST();
         }
     },
     {

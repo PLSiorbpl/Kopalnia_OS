@@ -4,7 +4,9 @@
 
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/Keyboard.hpp"
+#include "Drivers/PCI.hpp"
 #include "Drivers/vga.h"
+#include "kernel/Memory/heap.hpp"
 
 extern "C" u64 kernel_rsp = 0;
 extern "C" u64 user_rsp = 0;
@@ -24,6 +26,8 @@ enum class syscall : u64 {
     get_key = 4,
     exit = 5,
     sleep = 6,
+    pci = 7,
+    heap = 8
 };
 
 extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
@@ -56,6 +60,12 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
             return 0;
         case syscall::sleep:
             Time::Sleep(arg1);
+            return 0;
+        case syscall::pci:
+            PCI::Test();
+            return 0;
+        case syscall::heap:
+            heap::dump_heap();
             return 0;
         default:
             return static_cast<u64>(-1); // ENOSYS
