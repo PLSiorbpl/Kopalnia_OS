@@ -56,8 +56,13 @@ void drivers::ahci::ahci::debug_error() {
 }
 
 void drivers::ahci::ahci::on_interrupt(const IDT::ISR_Registers* isr) {
+    const u32 global_is = hba->is;
+    if (!global_is)
+        return;
+    hba->is = global_is;
+
     for (int i = 0; i < 32; ++i) {
-        if (hba->is & (1 << i)) { // port interrupted
+        if (global_is & (1 << i)) { // port interrupted
             ports[i].on_interrupt();
         }
     }
