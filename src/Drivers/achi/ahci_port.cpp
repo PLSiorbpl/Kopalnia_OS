@@ -200,6 +200,7 @@ namespace drivers::ahci {
         }
 
         auto& header = command_list[slot];
+        mem::memset(&header, 0, sizeof(command_header));
         header.fis_length = 5;
         header.write = 0;
         header.prd_table_length = 1;
@@ -212,7 +213,7 @@ namespace drivers::ahci {
         if (bits_is_64)
             table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
         table->prdt[0].data_byte_count = 512 - 1;
-        table->prdt[0].interrupt_on_complete = false;
+        table->prdt[0].interrupt_on_complete = true;
 
         const auto command_fis = reinterpret_cast<fis::reg_h2d*>(table->command_fis);
         mem::memset(command_fis, 0, sizeof(fis::reg_h2d));
