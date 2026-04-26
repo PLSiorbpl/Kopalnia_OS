@@ -50,13 +50,13 @@ namespace systemPL {
 
         ahci.init();
 
-        drivers::ata::device(false);
+        //drivers::ata::device(false);
 
         drivers::vga::cursor::enable_cursor(0, 15);
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
 
-        Time::Sleep(500);
+        Time::Sleep(250);
 
         enter_user_space();
     }

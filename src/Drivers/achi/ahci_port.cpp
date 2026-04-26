@@ -8,7 +8,7 @@
 namespace drivers::ahci {
     i8 ahci_port::get_command_slot() const {
         const u32 slots = port->sact | port->command_issue;
-        for (u8 i = 0; i < command_slots; ++i) {
+        for (u8 i = 0; i < num_command_slots; ++i) {
             if ((slots & (1 << i)) == 0)
                 return i;
         }
@@ -47,7 +47,8 @@ namespace drivers::ahci {
         this->type = type;
         this->port_num = port_num;
         this->port = port;
-        this->command_slots = hba->capabilities.num_command_slots;
+        this->num_command_slots = hba->capabilities.num_command_slots;
+        this->bits_is_64 = hba->capabilities.supports_64_bit_addressing;
         active = true;
 
         stop();
@@ -57,19 +58,25 @@ namespace drivers::ahci {
         // Command List
         command_list = static_cast<command_header*>(allocate_virtual_memory(sizeof(command_header) * 32, 1024));
         port->command_list_base = static_cast<u32>(reinterpret_cast<u64>(command_list));
-        port->command_list_base_upper = static_cast<u32>(reinterpret_cast<u64>(command_list) >> 32);
+        if (bits_is_64)
+            port->command_list_base_upper = static_cast<u32>(reinterpret_cast<u64>(command_list) >> 32);
 
         // Received FIS
         received = static_cast<received_fis*>(allocate_virtual_memory(sizeof(received_fis), 256));
         port->fis_base_address = static_cast<u32>(reinterpret_cast<u64>(received));
-        port->fis_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(received) >> 32);
+        if (bits_is_64)
+            port->fis_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(received) >> 32);
 
         for (int i = 0; i < 32; ++i) {
             command_list[i].prd_table_length = 0;
 
-            cmd_tables[i] = static_cast<command_table*>(allocate_virtual_memory(sizeof(command_table), 128));
-            command_list[i].cmd_table_base_address = static_cast<u32>(reinterpret_cast<u64>(cmd_tables[i]));
-            command_list[i].cmd_table_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(cmd_tables[i]) >> 32);
+            command_slots[i].table = static_cast<command_table*>(allocate_virtual_memory(sizeof(command_table), 128));
+            command_slots[i].complete = false;
+            command_slots[i].error = false;
+
+            command_list[i].cmd_table_base_address = static_cast<u32>(reinterpret_cast<u64>(command_slots[i].table));
+            if (bits_is_64)
+                command_list[i].cmd_table_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(command_slots[i].table) >> 32);
         }
 
         start();
@@ -112,7 +119,7 @@ namespace drivers::ahci {
     }
 
     void ahci_port::debug_error() {
-        std::kernel::printf("&aSimulating TFD error...");
+        std::kernel::printf("&aSimulating TFD error...\n");
 
         has_errored = false;
         *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
@@ -129,7 +136,7 @@ namespace drivers::ahci {
         header.prefetchable = 1;
         header.clear = 1;
 
-        const auto table = cmd_tables[slot];
+        const auto table = command_slots[slot].table;
         mem::memset(table, 0, sizeof(command_table));
         table->prdt[0].data_base_address = static_cast<u32>(reinterpret_cast<u64>(buffer));
         table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
@@ -162,8 +169,23 @@ namespace drivers::ahci {
     }
 
     void ahci_port::stop() const {
-        port->command_status &= ~(CMD_FRE_BIT | CMD_ST_BIT);
-        while ((port->command_status & CMD_FR_BIT) || (port->command_status & CMD_CR_BIT)) {}
+        port->command_status &= ~CMD_ST_BIT;
+        while (port->command_status & CMD_CR_BIT) {}
+        port->command_status &= ~CMD_FRE_BIT;
+        while (port->command_status & CMD_FR_BIT) {}
+    }
+
+    void ahci_port::comreset() const {
+        port->sctl = (port->sctl & ~0xF) | 0x1;
+        for (volatile int i = 0; i < 100000; i++) {}
+        port->sctl = port->sctl & ~0xF;
+
+        for (int i = 0; i < 1000000; i++) {
+            if ((port->ssts & 0xF) == 3)
+                break;
+        }
+
+        port->serr = 0xFFFFFFFF;
     }
 
     bool ahci_port::identify() {
@@ -180,15 +202,16 @@ namespace drivers::ahci {
         header.fis_length = 5;
         header.write = 0;
         header.prd_table_length = 1;
-        header.prefetchable = 1;
-        header.clear = 1;
+        header.prefetchable = true;
+        header.clear = true;
 
-        const auto table = cmd_tables[slot];
+        const auto table = command_slots[slot].table;
         mem::memset(table, 0, sizeof(command_table));
         table->prdt[0].data_base_address = static_cast<u32>(reinterpret_cast<u64>(buffer));
-        table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
+        if (bits_is_64)
+            table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
         table->prdt[0].data_byte_count = 512 - 1;
-        table->prdt[0].interrupt_on_complete = 1;
+        table->prdt[0].interrupt_on_complete = false;
 
         const auto command_fis = reinterpret_cast<fis::reg_h2d*>(table->command_fis);
         mem::memset(command_fis, 0, sizeof(fis::reg_h2d));
@@ -229,7 +252,25 @@ namespace drivers::ahci {
         if (port->interrupt_status.port_connect_change_interrupt)
             std::kernel::printf("&4AHCI: device connected/disconnected on port %i\n", port_num);
 
-        *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
+        if (has_errored) { // fatal error so do error recovery
+            const u8 error_slot = (port->command_status >> 8) & 0x1F;
+            const u32 pending = port->command_issue;
+
+            stop();
+            *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
+            port->serr = 0xFFFFFFFF;
+            if ((port->tfd & ATA_DEV_BUSY_BIT) || (port->tfd & ATA_DEV_DRQ_BIT)) {
+                comreset();
+            }
+
+            start();
+
+            command_slots[error_slot].error = true;
+            for (int i = 0; i < num_command_slots; i++) {
+                if ((pending & (1 << i)) && i != error_slot)
+                    port->command_issue |= (1 << i);
+            }
+        }
     }
 
     bool ahci_port::issue_command(const u8 slot) {
