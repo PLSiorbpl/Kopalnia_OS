@@ -1,4 +1,5 @@
 #pragma once
+#include "std/types.hpp"
 
 namespace USB {
     struct xhci_capability_registers {
@@ -50,5 +51,30 @@ namespace USB {
         uint32_t mf_index;
         uint32_t rsvdz[7];
         xhci_interrupter_registers ir[1024];
+    };
+
+    struct xhci_doorbell_register {
+    union {
+        struct {
+            uint8_t db_target;
+            uint8_t rsvd;
+            uint16_t db_stream_id;
+        };
+        uint32_t raw;
+    };
+    };
+
+    class xhci_doorbell_manager {
+    public:
+        xhci_doorbell_manager(uint64_t base);
+
+        void ring_doorbell(uint8_t doorbell, uint8_t target) const;
+
+        void ring_command_doorbell() const;
+        void ring_control_endpoint_doorbell(uint8_t doorbell) const;
+
+    private:
+        xhci_doorbell_register *m_doorbell_registers;
+
     };
 }

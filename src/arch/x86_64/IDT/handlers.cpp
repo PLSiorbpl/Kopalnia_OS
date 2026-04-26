@@ -4,6 +4,7 @@
 #include "Drivers/Keyboard.hpp"
 #include "kernel/Sleep.hpp"
 #include "std/printf.hpp"
+#include "std/vector.hpp"
 
 namespace IDT {
     const char* get_exception_name(const uint64_t int_no) {
@@ -37,7 +38,8 @@ namespace IDT {
 
     static bool extended = false;
 
-    isr_t custom_handlers[256] = { nullptr };
+    isr_t custom_handlers[256][4] = {{nullptr}};
+    uint8_t custom_handlers_count[256] = {0};
 
     void Install_handler(const isr_t handler, const uint8_t irq_no) {
         if (!handler) {
@@ -52,12 +54,19 @@ namespace IDT {
 
         const uint8_t vector = irq_no + 32;
 
-        if (custom_handlers[vector]) {
-            std::kernel::printf("&cWARNING&f: overwriting handler for &eIRQ &a%u\n", irq_no);
+        if (custom_handlers_count[vector] >= 4) {
+            std::kernel::printf("Install_handler &cERROR&f: Max handlers for IRQ: %u\n", irq_no);
+            return;
         }
 
-        custom_handlers[vector] = handler;
-        std::kernel::printf("Installed irq: #&a%u &7(&fvector: &a%u&7)&f, function addr: &a%x", irq_no, vector, (void*)handler);
+        if (custom_handlers_count[vector] == 0) {
+            std::kernel::printf("&7Installed &afirst &7handler for IRQ &a%u\n", irq_no);
+        } else {
+            std::kernel::printf("&aAdded shared &7handler for IRQ &a%u\n", irq_no);
+        }
+
+        custom_handlers[vector][custom_handlers_count[vector]] = handler;
+        custom_handlers_count[vector]++;
     }
 
     // NOTE do not add [[noreturn]] to this function
@@ -69,8 +78,8 @@ namespace IDT {
             asm volatile("cli; hlt");
         }
 
-        if (custom_handlers[regs->int_no]) {
-            custom_handlers[regs->int_no](regs);
+        for (int i = 0; i < custom_handlers_count[regs->int_no]; i++) {
+            custom_handlers[regs->int_no][i](regs);
         }
 
         // Handlers here

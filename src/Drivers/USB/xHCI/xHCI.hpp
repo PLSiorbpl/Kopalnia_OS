@@ -2,6 +2,7 @@
 #include <std/types.hpp>
 #include "xHCI_regs.hpp"
 #include "xHCI_rings.hpp"
+#include "arch/x86_64/IDT/IDT.hpp"
 
 namespace USB {
 
@@ -46,10 +47,13 @@ namespace USB {
 
         xhci_command_ring *m_command_ring = nullptr;
         xhci_event_ring *m_event_ring = nullptr;
+        xhci_doorbell_manager *m_doorbell_manager = nullptr;
 
         bool is_running = false;
 
     private:
+        static void _xhci_irq_handler(const IDT::ISR_Registers *regs);
+
         void _parse_capability_registers();
         void _log_capability_registers();
         void _log_operational_registers();

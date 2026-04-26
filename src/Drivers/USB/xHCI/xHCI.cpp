@@ -59,13 +59,14 @@ namespace USB {
 
         _configure_runtime_registers();
 
+        if (irq_number != 0) {
+            IDT::Install_handler(_xhci_irq_handler, irq_number);
+        }
+
         return true;
     }
 
     bool xhci_driver::start_device() {
-        std::kernel::printf("usbsts before : &a%x\n", m_op_regs->usbsts);
-        _log_usbsts();
-
         if (!_start_host_controller()) {
             std::kernel::printf("Failed to start the host controller\n");
             return false;
@@ -73,8 +74,13 @@ namespace USB {
 
         std::kernel::printf("Controller started!\n\n");
 
-        std::kernel::printf("usbsts after  : &a%x\n", m_op_regs->usbsts);
-        _log_usbsts();
+        xhci_trb_t trb = {};
+        mem::memset(&trb, 0, sizeof(xhci_trb_t));
+        trb.trb_type = XHCI_TRB_TYPE_ENABLE_SLOT_CMD;
+
+        m_command_ring->enqueue(&trb);
+
+        m_doorbell_manager->ring_command_doorbell();
 
         is_running = true;
         return true;
@@ -83,6 +89,23 @@ namespace USB {
     bool xhci_driver::shutdown_device() {
         is_running = false;
         return true;
+    }
+
+    void xhci_driver::_xhci_irq_handler(const IDT::ISR_Registers *regs) {
+        std::vector<xhci_trb_t*> events;
+        if (m_xhci_driver.m_event_ring->has_unprocessed_events()) {
+            m_xhci_driver.m_event_ring->dequeue_events(events);
+        } else {
+            m_xhci_driver._acknowledge_irq(0);
+            return;
+        }
+
+        for (size_t i = 0; i < events.size; i++) {
+            std::kernel::printf("EventsRing[%u].status = %x\n", i, events.data[i]->status);
+        }
+        std::kernel::printf("\n");
+
+        m_xhci_driver._acknowledge_irq(0);
     }
 
     void xhci_driver::_parse_capability_registers() {
@@ -109,6 +132,8 @@ namespace USB {
         m_op_regs = reinterpret_cast<volatile xhci_operational_registers*>(m_xhci_base + m_capability_regs_length);
 
         m_runtime_regs = reinterpret_cast<volatile xhci_runtime_registers*>(m_xhci_base + m_cap_regs->rtsoff);
+
+        m_doorbell_manager = new xhci_doorbell_manager(m_xhci_base + m_cap_regs->dboff);
     }
 
     void xhci_driver::_log_capability_registers() {
@@ -212,7 +237,7 @@ namespace USB {
     bool xhci_driver::_start_host_controller() {
         uint32_t usbcmd = m_op_regs->usbcmd;
         usbcmd |= XHCI_USBCMD_RUN_STOP;
-        //usbcmd |= XHCI_USBCMD_INTERRUPTER_ENABLE;
+        usbcmd |= XHCI_USBCMD_INTERRUPTER_ENABLE;
         m_op_regs->usbcmd = usbcmd;
 
         uint32_t retries = 0;
