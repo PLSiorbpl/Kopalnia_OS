@@ -94,9 +94,13 @@ namespace drivers::ahci {
     }
 
     void ahci_port::debug_print_identify_info() {
-        if (!identify()) {
+        std::kernel::printf("64bit: %d buffer: %x%x\n", bits_is_64,static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32), static_cast<u32>(reinterpret_cast<u64>(buffer)));
+        auto result = !identify();
+        if (!result) {
             std::kernel::printf("&4Port %d: identify failed!\n", port_num);
         }
+
+        std::kernel::printf("identify returned: %d\n", result);
         const auto* data = static_cast<u16*>(buffer);
 
         char model[41];
