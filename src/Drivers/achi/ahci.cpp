@@ -4,6 +4,7 @@
 #include "../PCI.hpp"
 #include "../../kernel/Paging.hpp"
 #include "../../libs/std/printf.hpp"
+#include "kernel/Sleep.hpp"
 #include "kernel/system.hpp"
 
 drivers::ahci::ahci::ahci() {
@@ -31,6 +32,8 @@ void drivers::ahci::ahci::init() {
     hba = reinterpret_cast<volatile hba_memory*>(static_cast<u64>(device.bar[5] & 0xFFFFFFF0));
     Paging::Map_memory(reinterpret_cast<u64>(hba), reinterpret_cast<u64>(hba) + sizeof(hba_memory), Paging::Profile::MMIO);
 
+    Time::Sleep(100);
+
     hba->ghc.ahci_enable = true;
     while (!hba->ghc.ahci_enable) {}
 
@@ -38,6 +41,8 @@ void drivers::ahci::ahci::init() {
 
     hba->ghc.interrupts_enabled = true;
     while (!hba->ghc.interrupts_enabled) {}
+
+    Time::Sleep(100);
 
     for (auto& port: ports) {
         if (port.is_active()) {

@@ -2,6 +2,7 @@
 #include "ahci.h"
 #include "ahci_helper.h"
 #include "arch/x86_64/Common/Common.hpp"
+#include "kernel/Sleep.hpp"
 #include "std/mem_common.hpp"
 #include "std/printf.hpp"
 
@@ -18,7 +19,7 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::wait_for_port() const {
-        for (int i = 0; i < 1000000; ++i) {
+        for (int i = 0; i < 100000000; ++i) {
             if ((port->tfd & (ATA_DEV_BUSY_BIT | ATA_DEV_DRQ_BIT)) == 0) {
                 return true;
             }
@@ -29,7 +30,7 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::wait_for_port_completion(const u8 slot) {
-        for (int i = 0; i < 1000000; ++i) {
+        for (int i = 0; i < 100000000; ++i) {
             if (command_slots[slot].error) {
                 std::kernel::printf("&4Command failed.\n");
                 command_slots[slot].error = false;
@@ -98,6 +99,9 @@ namespace drivers::ahci {
             std::kernel::printf("&4Port %d: identify failed!\n", port_num);
             return;
         }
+
+        Time::Sleep(100);
+
         const auto* data = static_cast<u16*>(buffer);
 
         char model[41];
