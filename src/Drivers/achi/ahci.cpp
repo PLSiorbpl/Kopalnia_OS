@@ -39,7 +39,7 @@ void drivers::ahci::ahci::init() {
     hba->ghc.interrupts_enabled = true;
     while (!hba->ghc.interrupts_enabled) {}
 
-    for (auto port: ports) {
+    for (auto& port: ports) {
         if (port.is_active()) {
             port.debug_print_identify_info();
         }
@@ -47,7 +47,7 @@ void drivers::ahci::ahci::init() {
 }
 
 void drivers::ahci::ahci::debug_error() {
-    for (auto port: ports) {
+    for (auto& port: ports) {
         if (port.is_active()) {
             port.debug_error();
             break;
