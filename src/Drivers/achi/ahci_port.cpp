@@ -43,7 +43,7 @@ namespace drivers::ahci {
         return false;
     }
 
-    void ahci_port::configure(const port_type type, volatile hba_port* port, u8 port_num, const volatile hba_memory* hba) {
+    void ahci_port::configure(const port_type type, volatile hba_port* port, u8 port_num, volatile hba_memory* hba) {
         this->type = type;
         this->port_num = port_num;
         this->port = port;

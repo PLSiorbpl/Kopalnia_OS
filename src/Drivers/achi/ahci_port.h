@@ -156,7 +156,7 @@ namespace drivers::ahci {
         ahci_port() : type(port_type::none), port(nullptr) {}
         ~ahci_port() = default;
 
-        void configure(port_type type, volatile hba_port* port, u8 port_num, const volatile hba_memory* hba);
+        void configure(port_type type, volatile hba_port *port, u8 port_num, volatile hba_memory *hba);
 
         void debug_print_identify_info();
         void debug_error();
