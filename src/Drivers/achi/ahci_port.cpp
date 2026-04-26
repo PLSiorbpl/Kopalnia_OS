@@ -223,6 +223,8 @@ namespace drivers::ahci {
     }
 
     void ahci_port::on_interrupt() {
+        std::kernel::printf("&aInterrupted!");
+
         if (port->interrupt_status.cold_port_detect_interrupt)
             std::kernel::printf("&4AHCI: Device on port %i has been removed or unable to be detected!\n", port_num);
         if (port->interrupt_status.task_file_error_interrupt) {
@@ -253,23 +255,32 @@ namespace drivers::ahci {
             std::kernel::printf("&4AHCI: device connected/disconnected on port %i\n", port_num);
 
         if (has_errored) { // fatal error so do error recovery
+            std::kernel::printf("&aStarting Error Recovery");
+
             const u8 error_slot = (port->command_status >> 8) & 0x1F;
             const u32 pending = port->command_issue;
 
             stop();
+            std::kernel::printf("&aStopping port...");
+
             *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
             port->serr = 0xFFFFFFFF;
+            std::kernel::printf("&aCleared error bits");
             if ((port->tfd & ATA_DEV_BUSY_BIT) || (port->tfd & ATA_DEV_DRQ_BIT)) {
                 comreset();
+                std::kernel::printf("&aDoing a comreset");
             }
 
+            std::kernel::printf("&aStarting port...");
             start();
 
+            std::kernel::printf("&aFinishing up...");
             command_slots[error_slot].error = true;
             for (int i = 0; i < num_command_slots; i++) {
                 if ((pending & (1 << i)) && i != error_slot)
                     port->command_issue |= (1 << i);
             }
+            std::kernel::printf("&aError recovery finished");
         }
     }
 
