@@ -54,7 +54,6 @@ namespace Paging {
 
             auto *PT = reinterpret_cast<uint64_t *>(PD[pd_i] & ~0xFFFULL);
             PT[pt_i] = addr | Present | Writable | flags; // Physical == Virtual (identity mapping)
-            asm volatile("invlpg (%0)" :: "r"(addr) : "memory");
         }
     }
 
