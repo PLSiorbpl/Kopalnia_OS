@@ -222,7 +222,14 @@ namespace drivers::ahci {
         command_fis->command_control = 1;
         command_fis->command = ATA_CMD_IDENTIFY;
 
-        return issue_command(slot);
+        bool result = issue_command(slot);
+
+        // flush cache lines for buffer
+        for (u64 i = 0; i < 512; i += 64) {
+            asm volatile("clflush (%0)" :: "r"(reinterpret_cast<u8*>(buffer) + i) : "memory");
+        }
+
+        return result;
     }
 
     void ahci_port::on_interrupt() {
