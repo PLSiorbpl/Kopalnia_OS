@@ -53,7 +53,7 @@ namespace drivers::ahci {
 
         stop();
 
-        buffer = allocate_virtual_memory(PORT_BUFFER_SIZE, 2);
+        buffer = allocate_virtual_memory(PORT_BUFFER_SIZE, 4);
 
         // Command List
         command_list = static_cast<command_header*>(allocate_virtual_memory(sizeof(command_header) * 32, 1024));

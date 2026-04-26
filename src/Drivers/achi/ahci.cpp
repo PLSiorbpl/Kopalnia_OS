@@ -36,14 +36,14 @@ void drivers::ahci::ahci::init() {
 
     probe_ports();
 
+    hba->ghc.interrupts_enabled = true;
+    while (!hba->ghc.interrupts_enabled) {}
+
     for (auto& port: ports) {
         if (port.is_active()) {
             port.debug_print_identify_info();
         }
     }
-
-    hba->ghc.interrupts_enabled = true;
-    while (!hba->ghc.interrupts_enabled) {}
 }
 
 void drivers::ahci::ahci::debug_error() {
