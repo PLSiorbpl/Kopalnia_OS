@@ -99,8 +99,6 @@ namespace drivers::ahci {
             return;
         }
         const auto* data = static_cast<u16*>(buffer);
-        std::kernel::printf("w27: %x w28: %x w29: %x\n", data[27], data[28], data[29]);
-        std::kernel::printf("w0: %x w1: %x\n", data[0], data[1]);
 
         char model[41];
         for (int j = 0; j < 20; j++) {
@@ -222,14 +220,7 @@ namespace drivers::ahci {
         command_fis->command_control = 1;
         command_fis->command = ATA_CMD_IDENTIFY;
 
-        bool result = issue_command(slot);
-
-        // flush cache lines for buffer
-        for (u64 i = 0; i < 512; i += 64) {
-            asm volatile("clflush (%0)" :: "r"(reinterpret_cast<u8*>(buffer) + i) : "memory");
-        }
-
-        return result;
+        return issue_command(slot);
     }
 
     void ahci_port::on_interrupt() {
