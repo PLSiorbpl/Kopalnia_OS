@@ -14,7 +14,6 @@ namespace drivers::ahci {
     constexpr u64 CMD_FRE_BIT = 0x0010;
     constexpr u64 CMD_FR_BIT = 0x4000;
     constexpr u64 CMD_ST_BIT = 0x0001;
-    constexpr u32 PXIS_TFES = (1 << 30);
 
     constexpr u8 MAX_PRDT_SIZE = 8;
     constexpr u32 PORT_BUFFER_SIZE = 128 * 1024;
@@ -146,6 +145,12 @@ namespace drivers::ahci {
         prdt_entry prdt[MAX_PRDT_SIZE];	// Physical region descriptor table entries, 0 ~ 65535
     };
 
+    struct command_slot {
+        command_table* table {};
+        volatile bool complete = false;
+        volatile bool error = false;
+    };
+
     class ahci_port {
     public:
         ahci_port() : type(port_type::none), port(nullptr) {}
@@ -158,6 +163,8 @@ namespace drivers::ahci {
 
         void start() const;
         void stop() const;
+
+        void comreset() const;
 
         bool identify();
         void on_interrupt();
@@ -172,7 +179,8 @@ namespace drivers::ahci {
         command_header* command_list;
         received_fis* received;
 
-        command_table* cmd_tables[32];
+        //command_table* cmd_tables[32];
+        command_slot command_slots[32];
     public:
         void* buffer;
         bool active = false;
@@ -181,6 +189,6 @@ namespace drivers::ahci {
         port_type type;
         volatile hba_port* port;
         u8 port_num = 0;
-        u8 command_slots;
+        u8 num_command_slots;
     };
 }
