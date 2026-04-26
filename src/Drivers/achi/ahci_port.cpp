@@ -190,14 +190,14 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::identify() {
-        // clear interrupts & errors
         has_errored = false;
         *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
 
+        std::kernel::printf("tfd: %x ssts: %x cmd: %x\n",
+            port->tfd, port->ssts, port->command_status);
+
         const auto slot = get_command_slot();
-        if (slot == -1) {
-            return false;
-        }
+        if (slot == -1) return false;
 
         auto& header = command_list[slot];
         header.fis_length = 5;
@@ -209,8 +209,7 @@ namespace drivers::ahci {
         const auto table = command_slots[slot].table;
         mem::memset(table, 0, sizeof(command_table));
         table->prdt[0].data_base_address = static_cast<u32>(reinterpret_cast<u64>(buffer));
-        if (bits_is_64)
-            table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
+        table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
         table->prdt[0].data_byte_count = 512 - 1;
         table->prdt[0].interrupt_on_complete = false;
 
@@ -219,6 +218,13 @@ namespace drivers::ahci {
         command_fis->fis_type = static_cast<u8>(fis::type::FIS_TYPE_REG_H2D);
         command_fis->command_control = 1;
         command_fis->command = ATA_CMD_IDENTIFY;
+
+        std::kernel::printf("clb: %x fis: %x\n",
+            port->command_list_base, port->fis_base_address);
+        std::kernel::printf("ctba: %x prdt_base: %x buf: %x\n",
+            command_list[slot].cmd_table_base_address,
+            table->prdt[0].data_base_address,
+            reinterpret_cast<u64>(buffer));
 
         return issue_command(slot);
     }
