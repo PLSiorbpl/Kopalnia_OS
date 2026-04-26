@@ -30,16 +30,16 @@ namespace drivers::ahci {
 
     bool ahci_port::wait_for_port_completion(const u8 slot) {
         for (int i = 0; i < 1000000; ++i) {
-            if (has_errored) {
+            if (command_slots[slot].error) {
                 std::kernel::printf("&4Command failed.\n");
-                has_errored = false;
+                command_slots[slot].error = false;
                 return false;
             }
             if ((port->command_issue & (1 << slot)) == 0)
                 return true;
         }
         std::kernel::printf("&4Command timed out.\n");
-        has_errored = false;
+        command_slots[slot].error = false;
         return false;
     }
 
@@ -280,6 +280,7 @@ namespace drivers::ahci {
                 if ((pending & (1 << i)) && i != error_slot)
                     port->command_issue |= (1 << i);
             }
+            has_errored = false;
             std::kernel::printf("&aError recovery finished\n");
         }
     }
