@@ -206,6 +206,9 @@ namespace drivers::ahci {
         header.prd_table_length = 1;
         header.prefetchable = true;
         header.clear = true;
+        header.cmd_table_base_address = static_cast<u32>(reinterpret_cast<u64>(command_slots[slot].table));
+        if (bits_is_64)
+            header.cmd_table_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(command_slots[slot].table) >> 32);
 
         const auto table = command_slots[slot].table;
         mem::memset(table, 0, sizeof(command_table));
