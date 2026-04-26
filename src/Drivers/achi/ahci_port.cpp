@@ -94,13 +94,9 @@ namespace drivers::ahci {
     }
 
     void ahci_port::debug_print_identify_info() {
-        std::kernel::printf("64bit: %d buffer: %x%x\n", bits_is_64,static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32), static_cast<u32>(reinterpret_cast<u64>(buffer)));
-        auto result = !identify();
-        if (!result) {
+        if (!identify()) {
             std::kernel::printf("&4Port %d: identify failed!\n", port_num);
         }
-
-        std::kernel::printf("identify returned: %d\n", result);
         const auto* data = static_cast<u16*>(buffer);
 
         char model[41];
@@ -290,12 +286,19 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::issue_command(const u8 slot) {
-        if (!wait_for_port())
+        std::kernel::printf("waiting for port...\n");
+        if (!wait_for_port()) {
+            std::kernel::printf("wait_for_port failed\n");
             return false;
+        }
+        std::kernel::printf("issuing command on slot %d\n", slot);
         x64::set_INT_flag(false);
         port->command_issue = 1 << slot;
         x64::set_INT_flag(true);
-        return wait_for_port_completion(slot);
+        std::kernel::printf("waiting for completion...\n");
+        const bool result = wait_for_port_completion(slot);
+        std::kernel::printf("completion result: %d\n", result);
+        return result;
     }
 
     bool ahci_port::is_active() const {
