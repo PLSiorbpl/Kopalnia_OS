@@ -49,10 +49,15 @@ namespace USB {
         xhci_event_ring *m_event_ring = nullptr;
         xhci_doorbell_manager *m_doorbell_manager = nullptr;
 
+        std::vector<xhci_command_completion_trb_t*> m_command_completion_events;
+
+        volatile uint8_t m_command_irq_completion = 0;
+
         bool is_running = false;
 
     private:
         static void _xhci_irq_handler(const IDT::ISR_Registers *regs);
+        static void _process_events();
 
         void _parse_capability_registers();
         void _log_capability_registers();
@@ -67,6 +72,8 @@ namespace USB {
 
         void _configure_runtime_registers();
         void _acknowledge_irq(uint8_t interrupter);
+
+        xhci_command_completion_trb_t *_send_command_trb(xhci_trb_t* cmd_trb, uint32_t timeout = 200);
     };
 
     extern xhci_driver m_xhci_driver;

@@ -78,9 +78,13 @@ namespace USB {
         mem::memset(&trb, 0, sizeof(xhci_trb_t));
         trb.trb_type = XHCI_TRB_TYPE_ENABLE_SLOT_CMD;
 
-        m_command_ring->enqueue(&trb);
-
-        m_doorbell_manager->ring_command_doorbell();
+        for (int i = 0; i < 1; i++) {
+            xhci_command_completion_trb_t *completion_trb = _send_command_trb(&trb);
+            if (completion_trb) {
+                std::kernel::printf("Completion TRB, completion code:&a%x  &fslot_id:&a%u\n",
+                    completion_trb->completion_code, completion_trb->slot_id);
+            }
+        }
 
         is_running = true;
         return true;
@@ -92,20 +96,32 @@ namespace USB {
     }
 
     void xhci_driver::_xhci_irq_handler(const IDT::ISR_Registers *regs) {
+        _process_events();
+
+        m_xhci_driver._acknowledge_irq(0);
+    }
+
+    void xhci_driver::_process_events() {
         std::vector<xhci_trb_t*> events;
         if (m_xhci_driver.m_event_ring->has_unprocessed_events()) {
             m_xhci_driver.m_event_ring->dequeue_events(events);
-        } else {
-            m_xhci_driver._acknowledge_irq(0);
-            return;
         }
+
+        uint8_t command_completion_status = 0;
 
         for (size_t i = 0; i < events.size; i++) {
-            std::kernel::printf("EventsRing[%u].status = %x\n", i, events.data[i]->status);
-        }
-        std::kernel::printf("\n");
+            xhci_trb_t *event = events.data[i];
+            switch (event->trb_type) {
+                case XHCI_TRB_TYPE_CMD_COMPLETION_EVENT: {
+                    command_completion_status = 1;
+                    m_xhci_driver.m_command_completion_events.push_back(reinterpret_cast<xhci_command_completion_trb_t *>(event));
+                    break;
+                }
 
-        m_xhci_driver._acknowledge_irq(0);
+                default: break;
+            }
+        }
+        m_xhci_driver.m_command_irq_completion = command_completion_status;
     }
 
     void xhci_driver::_parse_capability_registers() {
@@ -307,7 +323,7 @@ namespace USB {
         _acknowledge_irq(0);
     }
 
-    void xhci_driver::_acknowledge_irq(uint8_t interrupter) {
+    void xhci_driver::_acknowledge_irq(const uint8_t interrupter) {
         m_op_regs->usbsts = XHCI_USBSTS_EINT;
 
         volatile xhci_interrupter_registers* interrupter_regs = &m_runtime_regs->ir[interrupter];
@@ -315,5 +331,37 @@ namespace USB {
         uint32_t iman = interrupter_regs->iman;
         iman |= XHCI_IMAN_INTERRUPT_PENDING;
         interrupter_regs->iman = iman;
+    }
+
+    xhci_command_completion_trb_t *xhci_driver::_send_command_trb(xhci_trb_t* cmd_trb, const uint32_t timeout) {
+        m_command_ring->enqueue(cmd_trb);
+        m_doorbell_manager->ring_command_doorbell();
+
+        uint64_t sleep_passed = 0;
+        while (!m_command_irq_completion) {
+            Time::Sleep(10);
+            sleep_passed += 10;
+            if (sleep_passed >= timeout) {
+                std::kernel::printf("Timeout\n");
+                break;
+            }
+        }
+
+        xhci_command_completion_trb_t* completion_trb = m_command_completion_events.size ? m_command_completion_events.data[0] : nullptr;
+
+        m_command_completion_events.clear();
+        m_command_irq_completion = 0;
+
+        if (!completion_trb) {
+            std::kernel::printf("Failed to find completion TRB for command %i\n", cmd_trb->trb_type);
+            return nullptr;
+        }
+
+        if (completion_trb->completion_code != XHCI_TRB_COMPLETION_CODE_SUCCESS) {
+            std::kernel::printf("Command TRB failed with error: %s\n", trb_completion_code_to_string(completion_trb->completion_code));
+            return nullptr;
+        }
+
+        return completion_trb;
     }
 }
