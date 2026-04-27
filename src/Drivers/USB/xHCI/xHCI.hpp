@@ -20,6 +20,8 @@ namespace USB {
         volatile xhci_operational_registers *m_op_regs;
         volatile xhci_runtime_registers *m_runtime_regs;
 
+        xhci_extended_capability *m_extended_capabilities_head = nullptr;
+
         // CAPLENGTH
         uint8_t m_capability_regs_length;
 
@@ -53,6 +55,8 @@ namespace USB {
 
         volatile uint8_t m_command_irq_completion = 0;
 
+        std::vector<uint8_t> m_usb3_ports;
+
         bool is_running = false;
 
     private:
@@ -60,9 +64,20 @@ namespace USB {
         static void _process_events();
 
         void _parse_capability_registers();
+        void _parse_extended_capability_registers();
+
         void _log_capability_registers();
         void _log_operational_registers();
+
         void _log_usbsts();
+
+        // port number is 0-based
+        xhci_portsc_register _read_portsc_reg(uint8_t port_num);
+
+        // port number is 0-based
+        void _write_portsc_reg(xhci_portsc_register reg, uint8_t port_num);
+
+        bool _is_usb3_port(uint8_t port_id);
 
         bool _reset_host_controller();
         bool _start_host_controller();
@@ -74,6 +89,11 @@ namespace USB {
         void _acknowledge_irq(uint8_t interrupter);
 
         xhci_command_completion_trb_t *_send_command_trb(xhci_trb_t* cmd_trb, uint32_t timeout = 200);
+
+        // port number is 0-based
+        bool _reset_port(uint8_t port_num);
+
+        const char* _usb_speed_to_string(uint8_t speed);
     };
 
     extern xhci_driver m_xhci_driver;
