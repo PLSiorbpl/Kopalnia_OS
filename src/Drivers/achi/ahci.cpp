@@ -1,5 +1,6 @@
 #include "ahci.h"
 
+#include "ahci_device.h"
 #include "ahci_helper.h"
 #include "../PCI.hpp"
 #include "../../kernel/Paging.hpp"
@@ -48,6 +49,10 @@ void drivers::ahci::ahci::init() {
             port.debug_print_identify_info();
         }
     }
+}
+
+drivers::ahci::ahci_device drivers::ahci::ahci::request_device(const u32 id) {
+    return ahci_device(&ports[id]);
 }
 
 void drivers::ahci::ahci::on_interrupt(const IDT::ISR_Registers* isr) {

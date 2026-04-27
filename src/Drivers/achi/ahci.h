@@ -4,6 +4,7 @@
 #include "std/types.hpp"
 
 namespace drivers::ahci {
+    class ahci_device;
     constexpr u64 AHCI_ENABLE_BIT = (1 << 31);
 
     struct hba_memory {
@@ -65,6 +66,8 @@ namespace drivers::ahci {
         ~ahci();
 
         void init();
+
+        ahci_device request_device(u32 id);
     private:
         void on_interrupt(const IDT::ISR_Registers* isr);
         void probe_ports();

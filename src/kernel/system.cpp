@@ -10,8 +10,10 @@
 #include "arch/x86_64/gdt/gdt.h"
 #include "Drivers/cursor.h"
 #include "Drivers/achi/ahci.h"
+#include "Drivers/achi/ahci_device.h"
 #include "Drivers/ata/ata.h"
 #include "Drivers/USB/xHCI/xHCI.hpp"
+#include "std/string.h"
 
 namespace systemPL {
     drivers::ahci::ahci ahci;
@@ -49,6 +51,14 @@ namespace systemPL {
         //USB::m_xhci_driver.start_device();
 
         ahci.init();
+
+        auto device = ahci.request_device(0);
+        device.initialize();
+        auto size = static_cast<double>(device.get_sector_count() * device.get_sector_size());
+        std::kernel::printf("Device Info for device 0: \n"
+                            "\tModel: %s\n"
+                            "\tFirmware version: %s\n"
+                            "\tSize: %f%s\n\n", device.get_model(), device.get_firmware(), size, std::format_size(size));
 
         //drivers::ata::device(false);
 

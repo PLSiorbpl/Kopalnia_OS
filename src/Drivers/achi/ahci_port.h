@@ -19,6 +19,10 @@ namespace drivers::ahci {
     constexpr u32 PORT_BUFFER_SIZE = 128 * 1024;
 
     constexpr u32 ATA_CMD_IDENTIFY = 0xEC;
+    constexpr u32 ATA_CMD_READ_DMA = 0xC8;
+    constexpr u32 ATA_CMD_READ_DMA_EX = 0x25;
+    constexpr u32 ATA_CMD_WRITE_DMA = 0xCA;
+    constexpr u32 ATA_CMD_WRITE_DMA_EX = 0x35;
 
     constexpr u32 ATA_DEV_BUSY_BIT = 0x80;
     constexpr u32 ATA_DEV_DRQ_BIT =  0x08;
@@ -153,13 +157,13 @@ namespace drivers::ahci {
 
     class ahci_port {
     public:
-        ahci_port() : command_list(nullptr), received(nullptr), buffer(nullptr), type(port_type::none), port(nullptr),
+        ahci_port() : command_list(nullptr), received(nullptr), type(port_type::none), port(nullptr),
                       num_command_slots(0) {
         }
 
         ~ahci_port() = default;
 
-        void configure(port_type type, volatile hba_port *port, u8 port_num, volatile hba_memory *hba);
+        void configure(port_type type, volatile hba_port *port, u8 port_num, volatile hba_memory* hba);
 
         void debug_print_identify_info();
 
@@ -168,7 +172,8 @@ namespace drivers::ahci {
 
         void comreset() const;
 
-        bool identify();
+        bool read(u64 start, u32 count, u16* buffer, u16 sector_size);
+        bool identify(const u16* buffer);
         void on_interrupt();
 
         [[nodiscard]] bool is_active() const;
@@ -185,7 +190,6 @@ namespace drivers::ahci {
         //command_table* cmd_tables[32];
         command_slot command_slots[32];
     public:
-        void* buffer;
         bool active = false;
         bool bits_is_64 = false;
         volatile bool has_errored = false;
