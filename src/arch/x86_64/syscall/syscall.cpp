@@ -29,7 +29,6 @@ enum class syscall : u64 {
     sleep = 6,
     pci = 7,
     heap = 8,
-    ahci_error = 9,
 };
 
 extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
@@ -68,9 +67,6 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
             return 0;
         case syscall::heap:
             heap::dump_heap();
-            return 0;
-        case syscall::ahci_error:
-            systemPL::ahci.debug_error();
             return 0;
         default:
             return static_cast<u64>(-1); // ENOSYS

@@ -75,11 +75,3 @@ inline void sys_heap_dump() {
         : "a"(8ULL)
         : "rcx", "r11", "memory");
 }
-
-inline void sys_ahci_debug_err() {
-    u64 ret;
-    asm volatile("syscall"
-        : "=a"(ret)
-        : "a"(9ULL)
-        : "rcx", "r11", "memory");
-}

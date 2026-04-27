@@ -123,51 +123,6 @@ namespace drivers::ahci {
                                 model, firmware);
     }
 
-    void ahci_port::debug_error() {
-        std::kernel::printf("&aSimulating TFD error...\n");
-
-        has_errored = false;
-        *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
-
-        const auto slot = get_command_slot();
-        if (slot == -1) {
-            return;
-        }
-
-        auto& header = command_list[slot];
-        header.fis_length = 5;
-        header.write = 0;
-        header.prd_table_length = 1;
-        header.prefetchable = 1;
-        header.clear = 1;
-
-        const auto table = command_slots[slot].table;
-        mem::memset(table, 0, sizeof(command_table));
-        table->prdt[0].data_base_address = static_cast<u32>(reinterpret_cast<u64>(buffer));
-        table->prdt[0].data_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(buffer) >> 32);
-        table->prdt[0].data_byte_count = 512 - 1;
-        table->prdt[0].interrupt_on_complete = 1;
-
-
-        auto* fis = reinterpret_cast<fis::reg_h2d*>(table->command_fis);
-        mem::memset(fis, 0, sizeof(fis::reg_h2d));
-        fis->fis_type = static_cast<u8>(fis::type::FIS_TYPE_REG_H2D);
-        fis->command_control = 1;
-        fis->command = 0x25; // READ DMA EXT
-        fis->device = 1 << 6; // LBA mode
-
-        // set LBA to max possible value - guaranteed to be out of range
-        fis->lba0 = 0xFF;
-        fis->lba1 = 0xFF;
-        fis->lba2 = 0xFF;
-        fis->lba3 = 0xFF;
-        fis->lba4 = 0xFF;
-        fis->lba5 = 0xFF;
-        fis->count_lo = 1;
-
-        issue_command(slot);
-    }
-
     void ahci_port::start() const {
         while (port->command_status & CMD_CR_BIT) {}
         port->command_status |= CMD_FRE_BIT | CMD_ST_BIT;
@@ -194,25 +149,22 @@ namespace drivers::ahci {
     }
 
     bool ahci_port::identify() {
-        // clear interrupts & errors
-        has_errored = false;
-        *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
-
+        clear_interrupt_errors();
         const auto slot = get_command_slot();
         if (slot == -1) {
             return false;
         }
 
         auto& header = command_list[slot];
-        mem::memset(&header, 0, sizeof(command_header));
+        //mem::memset(&header, 0, sizeof(command_header));
         header.fis_length = 5;
         header.write = 0;
         header.prd_table_length = 1;
         header.prefetchable = true;
         header.clear = true;
-        header.cmd_table_base_address = static_cast<u32>(reinterpret_cast<u64>(command_slots[slot].table));
-        if (bits_is_64)
-            header.cmd_table_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(command_slots[slot].table) >> 32);
+        // header.cmd_table_base_address = static_cast<u32>(reinterpret_cast<u64>(command_slots[slot].table));
+        // if (bits_is_64)
+        //     header.cmd_table_base_address_upper = static_cast<u32>(reinterpret_cast<u64>(command_slots[slot].table) >> 32);
 
         const auto table = command_slots[slot].table;
         mem::memset(table, 0, sizeof(command_table));
@@ -264,33 +216,22 @@ namespace drivers::ahci {
             std::kernel::printf("&4AHCI: device connected/disconnected on port %i\n", port_num);
 
         if (has_errored) { // fatal error so do error recovery
-            std::kernel::printf("&aStarting Error Recovery\n");
-
             const u8 error_slot = (port->command_status >> 8) & 0x1F;
             const u32 pending = port->command_issue;
 
             stop();
-            std::kernel::printf("&aStopping port...\n");
-
-            *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
-            port->serr = 0xFFFFFFFF;
-            std::kernel::printf("&aCleared error bits\n");
+            clear_interrupt_errors();
             if ((port->tfd & ATA_DEV_BUSY_BIT) || (port->tfd & ATA_DEV_DRQ_BIT)) {
                 comreset();
                 std::kernel::printf("&aDoing a comreset\n");
             }
-
-            std::kernel::printf("&aStarting port...\n");
             start();
 
-            std::kernel::printf("&aFinishing up...\n");
             command_slots[error_slot].error = true;
             for (int i = 0; i < num_command_slots; i++) {
                 if ((pending & (1 << i)) && i != error_slot)
                     port->command_issue |= (1 << i);
             }
-            has_errored = false;
-            std::kernel::printf("&aError recovery finished\n");
         }
     }
 
@@ -301,6 +242,12 @@ namespace drivers::ahci {
         port->command_issue = 1 << slot;
         x64::set_INT_flag(true);
         return wait_for_port_completion(slot);
+    }
+
+    void ahci_port::clear_interrupt_errors() {
+        *reinterpret_cast<volatile u32*>(&port->interrupt_status) = 0xFFFFFFFF;
+        port->serr = 0xFFFFFFFF;
+        has_errored = false;
     }
 
     bool ahci_port::is_active() const {

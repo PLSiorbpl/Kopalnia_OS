@@ -93,9 +93,6 @@ Command commands[10] = {
         }
     },
     {
-        "ahci error", [] {
-            sys_ahci_debug_err();
-        }
     },
 };
 

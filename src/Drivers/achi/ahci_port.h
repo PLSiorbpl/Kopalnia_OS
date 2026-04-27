@@ -153,13 +153,15 @@ namespace drivers::ahci {
 
     class ahci_port {
     public:
-        ahci_port() : type(port_type::none), port(nullptr) {}
+        ahci_port() : command_list(nullptr), received(nullptr), buffer(nullptr), type(port_type::none), port(nullptr),
+                      num_command_slots(0) {
+        }
+
         ~ahci_port() = default;
 
         void configure(port_type type, volatile hba_port *port, u8 port_num, volatile hba_memory *hba);
 
         void debug_print_identify_info();
-        void debug_error();
 
         void start() const;
         void stop() const;
@@ -175,6 +177,7 @@ namespace drivers::ahci {
         [[nodiscard]] bool wait_for_port() const;
         [[nodiscard]] bool wait_for_port_completion(u8 slot);
         bool issue_command(u8 slot);
+        void clear_interrupt_errors();
 
         command_header* command_list;
         received_fis* received;

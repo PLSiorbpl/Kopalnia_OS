@@ -65,7 +65,6 @@ namespace drivers::ahci {
         ~ahci();
 
         void init();
-        void debug_error();
     private:
         void on_interrupt(const IDT::ISR_Registers* isr);
         void probe_ports();

@@ -32,7 +32,6 @@ void drivers::ahci::ahci::init() {
     hba = reinterpret_cast<volatile hba_memory*>(static_cast<u64>(device.bar[5] & 0xFFFFFFF0));
     Paging::Map_memory(reinterpret_cast<u64>(hba), reinterpret_cast<u64>(hba) + sizeof(hba_memory), Paging::Profile::MMIO);
 
-    Time::Sleep(100);
 
     hba->ghc.ahci_enable = true;
     while (!hba->ghc.ahci_enable) {}
@@ -47,15 +46,6 @@ void drivers::ahci::ahci::init() {
     for (auto& port: ports) {
         if (port.is_active()) {
             port.debug_print_identify_info();
-        }
-    }
-}
-
-void drivers::ahci::ahci::debug_error() {
-    for (auto& port: ports) {
-        if (port.is_active()) {
-            port.debug_error();
-            break;
         }
     }
 }
