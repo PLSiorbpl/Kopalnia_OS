@@ -10,6 +10,7 @@
 #include "xHCI_trb.hpp"
 #include "xHCI_rings.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
+#include "xHCI_ext_cap.hpp"
 
 namespace USB {
     xhci_driver m_xhci_driver;
@@ -50,6 +51,8 @@ namespace USB {
         //_log_capability_registers();
         //_log_operational_registers();
 
+        _parse_extended_capability_registers();
+
         if (!_reset_host_controller()) {
             return false;
         }
@@ -74,15 +77,17 @@ namespace USB {
 
         std::kernel::printf("Controller started!\n\n");
 
-        xhci_trb_t trb = {};
-        mem::memset(&trb, 0, sizeof(xhci_trb_t));
-        trb.trb_type = XHCI_TRB_TYPE_ENABLE_SLOT_CMD;
+        for (uint8_t port = 0; port < m_max_ports; port++) {
+            xhci_portsc_register portsc = _read_portsc_reg(port);
 
-        for (int i = 0; i < 1; i++) {
-            xhci_command_completion_trb_t *completion_trb = _send_command_trb(&trb);
-            if (completion_trb) {
-                std::kernel::printf("Completion TRB, completion code:&a%x  &fslot_id:&a%u\n",
-                    completion_trb->completion_code, completion_trb->slot_id);
+            if (portsc.csc && portsc.ccs) {
+                bool reset_successful = _reset_port(port);
+
+                if (reset_successful) {
+                    std::kernel::printf("Device connected on port #&a%u &f- %s\n", port, _usb_speed_to_string(portsc.port_speed));
+                } else {
+                    std::kernel::printf("&cFailed &f to reset port #&a%u &fafter connection detection\n", port);
+                }
             }
         }
 
@@ -152,6 +157,34 @@ namespace USB {
         m_doorbell_manager = new xhci_doorbell_manager(m_xhci_base + m_cap_regs->dboff);
     }
 
+    void xhci_driver::_parse_extended_capability_registers() {
+        volatile uint32_t* head_cap_ptr = reinterpret_cast<volatile uint32_t*>(
+            m_xhci_base + m_extended_capabilities_offset
+        );
+
+        m_extended_capabilities_head = new xhci_extended_capability(head_cap_ptr);
+
+        auto node = m_extended_capabilities_head;
+
+        while (node) {
+            if (node->id() == xhci_extended_capability_code::supported_protocol) {
+                xhci_usb_supported_protocol_capability cap(node->base());
+
+                uint8_t first_port = cap.compatible_port_offset - 1;
+                uint8_t last_port = first_port + cap.compatible_port_count - 1;
+
+                if (cap.major_revision_version == 3) {
+                    for (uint8_t port = first_port; port <= last_port; port++) {
+                        m_usb3_ports.push_back(port);
+                    }
+                }
+            }
+
+
+            node = node->next();
+        }
+    }
+
     void xhci_driver::_log_capability_registers() {
         std::kernel::printf("&f===== Xhci Capability Registers (&a%x&f) =====\n", reinterpret_cast<uint64_t>(m_cap_regs));
         std::kernel::printf("&f    Length                : &a%i\n", m_capability_regs_length);
@@ -195,6 +228,29 @@ namespace USB {
         if (status & XHCI_USBSTS_CNR)  std::kernel::printf("    Controller Not Ready\n");
         if (status & XHCI_USBSTS_HCE)  std::kernel::printf("    Host Controller Error\n");
         std::kernel::printf("\n");
+    }
+
+    xhci_portsc_register xhci_driver::_read_portsc_reg(uint8_t port_num) {
+        uint64_t reg_base = reinterpret_cast<uint64_t>(m_op_regs) + (0x400 + (0x10 * port_num));
+
+        xhci_portsc_register reg;
+        reg.raw = *reinterpret_cast<volatile uint32_t *>(reg_base);
+
+        return reg;
+    }
+
+    void xhci_driver::_write_portsc_reg(xhci_portsc_register reg, uint8_t port_num) {
+        uint64_t reg_base = reinterpret_cast<uint64_t>(m_op_regs) + (0x400 + (0x10 * port_num));
+        *reinterpret_cast<volatile uint32_t *>(reg_base) = reg.raw;
+    }
+
+    bool xhci_driver::_is_usb3_port(uint8_t port_id) {
+        for (size_t i = 0; i < m_usb3_ports.size; i++) {
+            if (m_usb3_ports.data[i] == port_id) {
+                return true;
+            }
+        }
+        return false;
     }
 
     bool xhci_driver::_reset_host_controller() {
@@ -363,5 +419,81 @@ namespace USB {
         }
 
         return completion_trb;
+    }
+
+    bool xhci_driver::_reset_port(uint8_t port_num) {
+        xhci_portsc_register portsc = _read_portsc_reg(port_num);
+
+        bool is_usb_3_port = _is_usb3_port(port_num);
+
+        if (portsc.pp == 0) {
+            portsc.pp = 1;
+            _write_portsc_reg(portsc, port_num);
+            Time::Sleep(20);
+            portsc = _read_portsc_reg(port_num);
+
+            if (portsc.pp == 0) {
+                std::kernel::printf("&cPort #&a%u &cFailed to power\n", port_num);
+                return false;
+            }
+        }
+
+        portsc.csc = 1;
+        portsc.pec = 1;
+        portsc.prc = 1;
+        _write_portsc_reg(portsc, port_num);
+        if (is_usb_3_port) {
+            portsc.wpr = 1; // Usb 3 warm port reset (faster)
+        } else {
+            portsc.pr = 1; // Usb 2 port reset (slower)
+        }
+        _write_portsc_reg(portsc, port_num);
+        int timeout = 10;
+        while (timeout > 0) {
+            portsc = _read_portsc_reg(port_num);
+
+            if ((is_usb_3_port && portsc.wrc) || (!is_usb_3_port && portsc.prc)) {
+                break;
+            }
+            timeout--;
+            Time::Sleep(10);
+        }
+
+        if (timeout == 0) {
+            std::kernel::printf("Port #%au Port reset failed timed out\n", port_num);
+            return false;
+        }
+        Time::Sleep(10); // to stabilize controller
+
+        portsc.prc = 1; // Clear port reset change
+        portsc.wrc = 1; // Clear warm reset change (USB 3.0)
+        portsc.csc = 1; // Clear connect status change
+        portsc.pec = 1; // Clear port enable/disable change
+        portsc.ped = 0; // Don't clear the PED bit
+        _write_portsc_reg(portsc, port_num);
+
+        Time::Sleep(10); // to stabilize controller
+
+        portsc = _read_portsc_reg(port_num);
+
+        if (portsc.ped == 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    const char *xhci_driver::_usb_speed_to_string(uint8_t speed) {
+        static const char* speed_string[7] = {
+            "Invalid",
+            "Full Speed (12 MB/s - USB2.0)",
+            "Low Speed (1.5 Mb/s - USB 2.0)",
+            "High Speed (480 Mb/s - USB 2.0)",
+            "Super Speed (5 Gb/s - USB3.0)",
+            "Super Speed Plus (10 Gb/s - USB 3.1)",
+            "Undefined"
+        };
+
+        return speed_string[speed];
     }
 }

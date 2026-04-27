@@ -19,4 +19,17 @@ namespace USB {
     void xhci_doorbell_manager::ring_control_endpoint_doorbell(const uint8_t doorbell) const {
         ring_doorbell(doorbell, XHCI_DOORBELL_TARGET_CONTROL_EP_RING);
     }
+
+    xhci_extended_capability::xhci_extended_capability(volatile uint32_t *cap_ptr) : m_base(cap_ptr) {
+        m_entry.raw = *m_base;
+        _read_next_ext_caps();
+    }
+
+    void xhci_extended_capability::_read_next_ext_caps() {
+        m_next = nullptr;
+        if (m_entry.next) {
+            const auto next_cap_ptr = XHCI_NEXT_EXT_CAP_PTR(m_base, m_entry.next);
+            m_next = new xhci_extended_capability(next_cap_ptr);
+        }
+    }
 }
