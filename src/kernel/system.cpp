@@ -63,6 +63,18 @@ namespace systemPL {
                                 "\tModel: %s\n"
                                 "\tFirmware version: %s\n"
                                 "\tSize: %f%s\n\n", i, device.get_model(), device.get_firmware(), size, std::format_size(size));
+
+            // auto buffer = static_cast<u16*>(heap::malloc_align(device.get_sector_size(), 4));
+            // mem::memset(buffer, 0, device.get_sector_size());
+            // const auto value = "Hello World!\n";
+            // mem::memmove(buffer, value, std::strlen(value));
+            // device.write(0, 1, buffer);
+            // heap::free_align(buffer);
+            //
+            // buffer = static_cast<u16*>(heap::malloc_align(device.get_sector_size(), 4));
+            // device.read(0, 1, buffer);
+            // std::kernel::printf("Read output: %s", buffer);
+            // heap::free_align(buffer);
         }
 
         //drivers::ata::device(false);

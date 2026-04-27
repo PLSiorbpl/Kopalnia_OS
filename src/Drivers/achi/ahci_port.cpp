@@ -147,7 +147,7 @@ namespace drivers::ahci {
         return issue_command(slot);
     }
 
-    bool ahci_port::read(u64 start, u32 count, u16* buffer, u16 sector_size) {
+    bool ahci_port::read(const u64 start, u32 count, u16* buffer, const u16 sector_size) {
         clear_interrupt_errors();
 
         const auto slot = get_command_slot();
@@ -196,6 +196,71 @@ namespace drivers::ahci {
         command_fis->fis_type = static_cast<u8>(fis::type::FIS_TYPE_REG_H2D);
         command_fis->command_control = 1;
         command_fis->command = ATA_CMD_READ_DMA_EX;
+
+        command_fis->lba0 = static_cast<u8>(start_lo);
+        command_fis->lba1 = static_cast<u8>(start_lo >> 8);
+        command_fis->lba2 = static_cast<u8>(start_lo >> 16);
+        command_fis->device = 1 << 6; // set lba mode
+
+        command_fis->lba3 = static_cast<u8>(start_lo >> 24);
+        command_fis->lba4 = static_cast<u8>(start_hi);
+        command_fis->lba5 = static_cast<u8>(start_hi >> 8);
+
+        command_fis->count_lo = original_count & 0xFF;
+        command_fis->count_hi = (original_count >> 8) & 0xFF;
+
+        return issue_command(slot);
+    }
+
+    bool ahci_port::write(const u64 start, u32 count, const u16* buffer, const u16 sector_size) {
+        clear_interrupt_errors();
+
+        const auto slot = get_command_slot();
+        if (slot == -1)
+            return false;
+
+        const u32 start_lo = static_cast<u32>(start);
+        const u32 start_hi = static_cast<u32>(start >> 32);
+        const u32 original_count = count;
+        const u32 sectors_per_prdt = (8 * 1024) / sector_size;
+
+        auto& header = command_list[slot];
+        header.fis_length = sizeof(fis::reg_h2d) / sizeof(uint32_t);
+        header.write = 1;
+        header.prd_table_length = static_cast<uint16_t>((count - 1) / sectors_per_prdt) + 1;
+        header.prefetchable = false;
+        header.clear = true;
+
+        if (header.prd_table_length > MAX_PRDT_SIZE)
+            return false;
+
+        const auto table = command_slots[slot].table;
+        mem::memset(table, 0, sizeof(command_table));
+
+        // 8K bytes (16 sectors) per PRDT
+        for (int i = 0; i < header.prd_table_length - 1; i++)
+        {
+            table->prdt[i].data_base_address = static_cast<uint32_t>(reinterpret_cast<u64>(buffer));
+            if (bits_is_64)
+                table->prdt[i].data_base_address_upper = static_cast<uint32_t>(reinterpret_cast<u64>(buffer) >> 32);
+            table->prdt[i].data_byte_count = 8 * 1024 - 1; // 8K bytes (this value should always be set to 1 less than the actual value)
+            table->prdt[i].interrupt_on_complete = true;
+            buffer += 4 * 1024;	// 4K words
+            count -= sectors_per_prdt; // 16 sectors
+        }
+
+        // Last entry
+        table->prdt[header.prd_table_length - 1].data_base_address = static_cast<uint32_t>(reinterpret_cast<u64>(buffer));
+        if (bits_is_64)
+            table->prdt[header.prd_table_length - 1].data_base_address_upper = static_cast<uint32_t>(reinterpret_cast<u64>(buffer) >> 32);
+        table->prdt[header.prd_table_length - 1].data_byte_count = count * sector_size - 1; // 512 bytes per sector
+        table->prdt[header.prd_table_length - 1].interrupt_on_complete = true;
+
+        const auto command_fis = reinterpret_cast<fis::reg_h2d*>(table->command_fis);
+        mem::memset(command_fis, 0, sizeof(fis::reg_h2d));
+        command_fis->fis_type = static_cast<u8>(fis::type::FIS_TYPE_REG_H2D);
+        command_fis->command_control = 1;
+        command_fis->command = ATA_CMD_WRITE_DMA_EX;
 
         command_fis->lba0 = static_cast<u8>(start_lo);
         command_fis->lba1 = static_cast<u8>(start_lo >> 8);

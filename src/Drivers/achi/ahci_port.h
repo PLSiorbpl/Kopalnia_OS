@@ -171,6 +171,8 @@ namespace drivers::ahci {
         void comreset() const;
 
         bool read(u64 start, u32 count, u16* buffer, u16 sector_size);
+        bool write(u64 start, u32 count, const u16* buffer, u16 sector_size);
+
         bool identify(const u16* buffer);
         void on_interrupt();
 

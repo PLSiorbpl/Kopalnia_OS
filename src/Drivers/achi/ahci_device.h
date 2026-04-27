@@ -14,6 +14,10 @@ namespace drivers::ahci {
             return port->read(start, count, buffer, sector_size);
         }
 
+        bool write(const u64 start, const u32 count, const u16* buffer) const {
+            return port->write(start, count, buffer, sector_size);
+        }
+
         [[nodiscard]] const char* get_model() const { return model; }
         [[nodiscard]] const char* get_firmware() const { return firmware; }
         [[nodiscard]] u64 get_sector_count() const { return sector_count; }
