@@ -36,23 +36,19 @@ void drivers::ahci::ahci::init() {
 
     hba->ghc.ahci_enable = true;
     while (!hba->ghc.ahci_enable) {}
-
     probe_ports();
-
     hba->ghc.interrupts_enabled = true;
     while (!hba->ghc.interrupts_enabled) {}
 
     Time::Sleep(100);
-
-    for (auto& port: ports) {
-        if (port.is_active()) {
-            port.debug_print_identify_info();
-        }
-    }
 }
 
 drivers::ahci::ahci_device drivers::ahci::ahci::request_device(const u32 id) {
-    return ahci_device(&ports[id]);
+    if (id >= 32) {
+        std::kernel::printf("&4Attempted to request non existant device!");
+        return ahci_device(nullptr, false);
+    }
+    return ahci_device(&ports[id], ports[id].is_active());
 }
 
 void drivers::ahci::ahci::on_interrupt(const IDT::ISR_Registers* isr) {

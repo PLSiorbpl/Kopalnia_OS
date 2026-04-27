@@ -6,7 +6,7 @@
 namespace drivers::ahci {
     class ahci_device {
     public:
-        explicit ahci_device(ahci_port* port) : port(port) { }
+        explicit ahci_device(ahci_port* port, const bool is_active) : port(port), active(is_active) { }
         ~ahci_device() = default;
 
         bool initialize();
@@ -18,6 +18,7 @@ namespace drivers::ahci {
         [[nodiscard]] const char* get_firmware() const { return firmware; }
         [[nodiscard]] u64 get_sector_count() const { return sector_count; }
         [[nodiscard]] u64 get_sector_size() const { return sector_size; }
+        [[nodiscard]] bool is_active() const { return active; }
     private:
         ahci_port* port = nullptr;
 
@@ -25,5 +26,6 @@ namespace drivers::ahci {
         char firmware[9] = {};
         u64 sector_count = 0;
         u32 sector_size = 512;
+        bool active = false;
     };
 }

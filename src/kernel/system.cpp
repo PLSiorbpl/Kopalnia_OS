@@ -52,13 +52,18 @@ namespace systemPL {
 
         ahci.init();
 
-        auto device = ahci.request_device(0);
-        device.initialize();
-        auto size = static_cast<double>(device.get_sector_count() * device.get_sector_size());
-        std::kernel::printf("Device Info for device 0: \n"
-                            "\tModel: %s\n"
-                            "\tFirmware version: %s\n"
-                            "\tSize: %f%s\n\n", device.get_model(), device.get_firmware(), size, std::format_size(size));
+        for (int i = 0; i < 32; ++i) {
+            auto device = ahci.request_device(i);
+            if (!device.is_active())
+                continue;
+
+            device.initialize();
+            auto size = static_cast<double>(device.get_sector_count() * device.get_sector_size());
+            std::kernel::printf("Device info for device %i: \n"
+                                "\tModel: %s\n"
+                                "\tFirmware version: %s\n"
+                                "\tSize: %f%s\n\n", i, device.get_model(), device.get_firmware(), size, std::format_size(size));
+        }
 
         //drivers::ata::device(false);
 
@@ -71,4 +76,3 @@ namespace systemPL {
         enter_user_space();
     }
 }
-

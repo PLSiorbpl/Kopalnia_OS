@@ -92,35 +92,6 @@ namespace drivers::ahci {
         port->interrupts_enabled.port_connect_change_interrupt = true;
     }
 
-    void ahci_port::debug_print_identify_info() {
-        auto buffer = static_cast<u16*>(allocate_virtual_memory(PORT_BUFFER_SIZE, 4));
-
-        if (!identify(buffer)) {
-            std::kernel::printf("&4Port %d: identify failed!\n", port_num);
-            return;
-        }
-
-        Time::Sleep(100);
-
-        char model[41];
-        for (int j = 0; j < 20; j++) {
-            model[j * 2] = static_cast<char>(buffer[27 + j] >> 8);
-            model[j * 2 + 1] = static_cast<char>(buffer[27 + j] & 0xFF);
-        }
-        model[40] = '\0';
-
-        char firmware[9];
-        for (int i = 0; i < 4; i++) {
-            firmware[i * 2] = static_cast<char>(buffer[23 + i] >> 8);
-            firmware[i * 2 + 1] = static_cast<char>(buffer[23 + i] & 0xFF);
-        }
-        firmware[8] = '\0';
-
-        std::kernel::printf("&a\tModel: %s\n"
-                                "\tFirmware Version: %s\n\n",
-                                model, firmware);
-    }
-
     void ahci_port::start() const {
         while (port->command_status & CMD_CR_BIT) {}
         port->command_status |= CMD_FRE_BIT | CMD_ST_BIT;

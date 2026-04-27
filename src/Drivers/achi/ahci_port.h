@@ -165,8 +165,6 @@ namespace drivers::ahci {
 
         void configure(port_type type, volatile hba_port *port, u8 port_num, volatile hba_memory* hba);
 
-        void debug_print_identify_info();
-
         void start() const;
         void stop() const;
 
