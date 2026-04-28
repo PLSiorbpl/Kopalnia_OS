@@ -72,7 +72,7 @@ namespace USB {
         void _log_usbsts();
 
         // port number is 0-based
-        xhci_portsc_register _read_portsc_reg(uint8_t port_num);
+        static xhci_portsc_register _read_portsc_reg(uint8_t port_num);
 
         // port number is 0-based
         void _write_portsc_reg(xhci_portsc_register reg, uint8_t port_num);
@@ -94,6 +94,15 @@ namespace USB {
         bool _reset_port(uint8_t port_num);
 
         const char* _usb_speed_to_string(uint8_t speed);
+        uint8_t _get_port_speed(uint8_t port);
+
+        uint8_t _enable_device_slot();
+
+        // Creates a device context buffer and inserts it into DCBAA
+        bool _create_device_context(uint8_t slot_id);
+
+        // port is 0-based
+        void _setup_device(uint8_t port);
     };
 
     extern xhci_driver m_xhci_driver;

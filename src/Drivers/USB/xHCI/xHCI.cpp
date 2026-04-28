@@ -11,6 +11,8 @@
 #include "xHCI_rings.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "xHCI_ext_cap.hpp"
+#include "xHCI_device_ctx.hpp"
+#include "xHCI_device.hpp"
 
 namespace USB {
     xhci_driver m_xhci_driver;
@@ -85,8 +87,9 @@ namespace USB {
 
                 if (reset_successful) {
                     std::kernel::printf("Device connected on port #&a%u &f- %s\n", port, _usb_speed_to_string(portsc.port_speed));
+                    _setup_device(port);
                 } else {
-                    std::kernel::printf("&cFailed &f to reset port #&a%u &fafter connection detection\n", port);
+                    std::kernel::printf("&cFailed &fto reset port #&a%u &fafter connection detection\n", port);
                 }
             }
         }
@@ -231,7 +234,7 @@ namespace USB {
     }
 
     xhci_portsc_register xhci_driver::_read_portsc_reg(uint8_t port_num) {
-        uint64_t reg_base = reinterpret_cast<uint64_t>(m_op_regs) + (0x400 + (0x10 * port_num));
+        uint64_t reg_base = reinterpret_cast<uint64_t>(m_xhci_driver.m_op_regs) + (0x400 + (0x10 * port_num));
 
         xhci_portsc_register reg;
         reg.raw = *reinterpret_cast<volatile uint32_t *>(reg_base);
@@ -483,7 +486,7 @@ namespace USB {
         return true;
     }
 
-    const char *xhci_driver::_usb_speed_to_string(uint8_t speed) {
+    const char *xhci_driver::_usb_speed_to_string(const uint8_t speed) {
         static const char* speed_string[7] = {
             "Invalid",
             "Full Speed (12 MB/s - USB2.0)",
@@ -495,5 +498,66 @@ namespace USB {
         };
 
         return speed_string[speed];
+    }
+
+    uint8_t xhci_driver::_get_port_speed(const uint8_t port) {
+        const xhci_portsc_register portsc = _read_portsc_reg(port);
+        return static_cast<uint8_t>(portsc.port_speed);
+    }
+
+    uint8_t xhci_driver::_enable_device_slot() {
+        xhci_trb_t enable_slot_trb;
+        mem::memset(&enable_slot_trb, 0, sizeof(xhci_trb_t));
+
+        enable_slot_trb.trb_type = XHCI_TRB_TYPE_ENABLE_SLOT_CMD;
+
+        const auto completion_trb = _send_command_trb(&enable_slot_trb);
+        if (!completion_trb) {
+            return 0;
+        }
+
+        return completion_trb->slot_id;
+    }
+
+    bool xhci_driver::_create_device_context(uint8_t slot_id) {
+        const uint64_t device_context_size = m_64byte_context_size ? sizeof(xhci_device_context64) : sizeof(xhci_device_context32);
+
+        void* ctx = alloc_xhci_memory(device_context_size,XHCI_DEVICE_CONTEXT_ALIGNMENT,XHCI_DEVICE_CONTEXT_BOUNDARY);
+
+        if (!ctx) {
+            std::kernel::printf("Failed to allocate memory for a device context\n");
+            return false;
+        }
+
+        m_dcbaa[slot_id] = xhci_get_physical_addr(ctx);
+
+        m_dcbaa_virtual[slot_id] = reinterpret_cast<uint64_t>(ctx);
+
+        return true;
+    }
+
+    void xhci_driver::_setup_device(uint8_t port) {
+        uint8_t port_speed = _get_port_speed(port);
+        uint8_t port_id = port + 1;
+
+        uint8_t slot_id = _enable_device_slot();
+        if (!slot_id) {
+            std::kernel::printf("Failed to enable device slot for port &a%i\n", port);
+            return;
+        }
+
+        if (!_create_device_context(slot_id)) {
+            std::kernel::printf("Failed to create device context for slot &a%i\n", slot_id);
+            return;
+        }
+
+        xhci_device* device = new xhci_device(port_id, slot_id, port_speed, m_64byte_context_size);
+
+        std::kernel::printf("Allocated device:\n");
+        std::kernel::printf("  port  - &a%i\n", device->get_port());
+        std::kernel::printf("  slot  - &a%i\n", device->get_slot());
+        std::kernel::printf("  speed - &a%s\n", _usb_speed_to_string(device->get_speed()));
+        std::kernel::printf("  inctx - &a%x\n", device->get_input_ctx_dma());
+        std::kernel::printf("\n");
     }
 }
