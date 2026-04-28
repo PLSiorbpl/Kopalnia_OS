@@ -1,5 +1,6 @@
 #pragma once
 #include "Drivers/achi/ahci.h"
+#include "Drivers/GPU/framebuffer.hpp"
 #include "std/types.hpp"
 
 namespace systemPL {
@@ -12,6 +13,7 @@ namespace systemPL {
     extern "C" void handle_syscall();
 
     extern drivers::ahci::ahci ahci;
+    extern framebuffer::framebuffer fb;
 
     void Init(void* mbi);
 }

@@ -6,6 +6,7 @@
 #include "Drivers/Keyboard.hpp"
 #include "Drivers/PCI.hpp"
 #include "Drivers/vga.h"
+#include "Drivers/GPU/framebuffer.hpp"
 #include "kernel/system.hpp"
 #include "kernel/Memory/heap.hpp"
 
@@ -29,6 +30,7 @@ enum class syscall : u64 {
     sleep = 6,
     pci = 7,
     heap = 8,
+    swap_framebuffer = 9,
 };
 
 extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
@@ -36,10 +38,12 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
         case syscall::write:
             if (!validate_user_ptr(arg1))
                 return static_cast<u64>(-1);
-            drivers::vga::print(reinterpret_cast<const char*>(arg1), static_cast<Color>(arg2));
+            for (int i = 0; reinterpret_cast<const char*>(arg1)[i] != '\0'; i++) {
+                systemPL::fb.put_char(reinterpret_cast<const char*>(arg1)[i], color_to_rgb(static_cast<Color>(arg2)));
+            }
             return 0;
         case syscall::put_char:
-            drivers::vga::put_char(static_cast<char>(arg1), static_cast<Color>(arg2));
+            systemPL::fb.put_char(static_cast<char>(arg1), color_to_rgb(static_cast<Color>(arg2)));
             return 0;
         case syscall::serial_put_char:
             while (!(x64::inb(0x3F8 + 5) & 0x20)) { }
@@ -67,6 +71,9 @@ extern "C" u64 dispatch_syscall(u64 id, u64 arg1, u64 arg2, u64 arg3) {
             return 0;
         case syscall::heap:
             heap::dump_heap();
+            return 0;
+        case syscall::swap_framebuffer:
+            systemPL::fb.swap();
             return 0;
         default:
             return static_cast<u64>(-1); // ENOSYS

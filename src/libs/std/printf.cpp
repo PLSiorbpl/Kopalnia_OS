@@ -3,6 +3,8 @@
 #include "string.h"
 #include "arch/x86_64/syscall/syscall.h"
 #include "Drivers/vga.h"
+#include "Drivers/GPU/framebuffer.hpp"
+#include "kernel/system.hpp"
 
 namespace std {
     namespace kernel {
@@ -126,11 +128,14 @@ namespace std {
         }
 
         void print(const char *text, const Color color) {
-            drivers::vga::print(text, color);
+            for (int i = 0; text[i] != '\0'; i++) {
+                systemPL::fb.put_char(text[i], color_to_rgb(color));
+            }
         }
 
         void put_char(const char c, const Color color) {
-            drivers::vga::put_char(c, color);
+            //drivers::vga::put_char(c, color);
+            systemPL::fb.put_char(c, color_to_rgb(color));
         }
     }
 

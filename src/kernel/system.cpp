@@ -2,6 +2,7 @@
 
 #include "linker_info.hpp"
 #include "log.h"
+#include "multiboot2.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
@@ -13,13 +14,17 @@
 #include "Drivers/achi/ahci.h"
 #include "Drivers/achi/ahci_device.h"
 #include "Drivers/ata/ata.h"
+#include "Drivers/GPU/framebuffer.hpp"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 #include "std/string.h"
 
 namespace systemPL {
     drivers::ahci::ahci ahci;
+    framebuffer::framebuffer fb;
 
     void Init(void* mbi) {
+        Multiboot::Init(static_cast<uint8_t*>(mbi));
+
         init_tss();
 
         //Multiboot::Init(static_cast<uint8_t *>(mbi));
@@ -44,6 +49,8 @@ namespace systemPL {
 
         Paging::Enable_paging();
 
+        fb.init();
+
         kb::flush_keyboard();
 
         x64::set_INT_flag(true); // Enable interrupts
@@ -52,7 +59,6 @@ namespace systemPL {
         USB::m_xhci_driver.start_device();
 
         ahci.init();
-
         for (int i = 0; i < 32; ++i) {
             auto device = ahci.request_device(i);
             if (!device.is_active())
@@ -80,7 +86,7 @@ namespace systemPL {
 
         //drivers::ata::device(false);
 
-        drivers::vga::cursor::enable_cursor(0, 15);
+        //drivers::vga::cursor::enable_cursor(0, 15);
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
 

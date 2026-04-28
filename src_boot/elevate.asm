@@ -7,6 +7,9 @@ extern gdt_descriptor
 extern stack_top
 extern tss
 extern gdt
+extern mb2_info
+extern mb2_magic_number
+
 
 section .data
 testword: DW 0x55AA
@@ -84,6 +87,8 @@ long_mode_entry:
     sub rsp, 8
     xor rbp, rbp
 
+    mov rdi, [mb2_magic_number]
+    mov rsi, [mb2_info]
     jmp kernel_main
 .hang:
     hlt

@@ -1,9 +1,7 @@
 #include "Keyboard.hpp"
-
 #include <arch/x86_64/Common/Common.hpp>
-#include "../libs/std/types.hpp"
-#include "kernel/Sleep.hpp"
-#include "std/string.h"
+#include "std/types.hpp"
+#include "kernel/system.hpp"
 
 namespace kb {
     mem::Ring_Buffer<uint8_t, 256> buf = {};
@@ -12,8 +10,10 @@ namespace kb {
     Waits for char in buffer
      */
     key_code get_char() {
-        while (buf.empty())
-            x64::halt(); // so it doesnt use 100% cpu
+        while (buf.empty()) {
+            systemPL::fb.swap();
+            asm volatile("sti; hlt; cli");
+        }
 
         uint8_t sc;
         buf.pop(sc);
