@@ -1,9 +1,10 @@
 #include "xHCI_mem.hpp"
 
 #include <std/mem_common.hpp>
+
+#include "kernel/log.h"
 #include "kernel/Memory/heap.hpp"
 #include "kernel/Paging.hpp"
-#include "std/printf.hpp"
 
 namespace USB {
     uintptr_t xhci_map_mmio(const uint64_t pci_bar_address, const uint32_t bar_size) {
@@ -13,24 +14,24 @@ namespace USB {
 
     void *alloc_xhci_memory(const uint64_t size, const uint64_t alignment, const uint64_t boundary) {
         if (size == 0) {
-            std::printf("Attempted DMA allocation with size 0!\n");
+            log::error("Attempted DMA allocation with size 0!\n");
             while (true);
         }
 
         if (alignment == 0) {
-            std::printf("Attempted DMA allocation with alignment 0!\n");
+            log::error("Attempted DMA allocation with alignment 0!\n");
             while (true);
         }
 
         if (boundary == 0) {
-            std::printf("Attempted DMA allocation with boundary 0!\n");
+            log::error("Attempted DMA allocation with boundary 0!\n");
             while (true);
         }
 
         void* memblock = heap::malloc_boundry(size, alignment, boundary);
 
         if (!memblock) {
-            std::printf("======= MEMORY ALLOCATION FAILED =======\n");
+            log::error("======= MEMORY ALLOCATION FAILED =======\n");
             while (true);
         }
 

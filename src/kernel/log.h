@@ -3,7 +3,7 @@
 #include "std/string.h"
 
 namespace log {
-    constexpr u32 MAX_LOG_LEVEL = 0; // 0 = error, 1 = warnings and above, 2 = success and above, 3 = info and above
+    constexpr u32 MAX_LOG_LEVEL = 3; // 0 = error, 1 = warnings and above, 2 = success and above, 3 = info and above
 
     template<typename... Args>
     void error(const char* text, Args&&... args) {
@@ -12,7 +12,7 @@ namespace log {
 
         char buf[1024];
         int n = 0;
-        n += std::strcpy(buf + n, "&4[KERNEL ERROR] ");
+        n += std::strcpy(buf + n, "&4[E] ");
         n += std::strcpy(buf + n , text);
         n += std::strcpy(buf + n, "\n");
 
@@ -26,7 +26,7 @@ namespace log {
 
         char buf[1024];
         int n = 0;
-        n += std::strcpy(buf + n, "&e[KERNEL WARN] ");
+        n += std::strcpy(buf + n, "&e[W] ");
         n += std::strcpy(buf + n , text);
         n += std::strcpy(buf + n, "\n");
 
@@ -40,7 +40,7 @@ namespace log {
 
         char buf[1024];
         int n = 0;
-        n += std::strcpy(buf + n, "&7[KERNEL INFO] ");
+        n += std::strcpy(buf + n, "&7[I] ");
         n += std::strcpy(buf + n , text);
         n += std::strcpy(buf + n, "\n");
 
@@ -54,7 +54,7 @@ namespace log {
 
         char buf[1024];
         int n = 0;
-        n += std::strcpy(buf + n, "&a[KERNEL SUCCESS] ");
+        n += std::strcpy(buf + n, "&a[S] ");
         n += std::strcpy(buf + n , text);
         n += std::strcpy(buf + n, "\n");
 

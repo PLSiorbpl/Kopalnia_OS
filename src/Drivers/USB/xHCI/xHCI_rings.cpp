@@ -2,6 +2,7 @@
 
 #include "xHCI_common.hpp"
 #include "xHCI_mem.hpp"
+#include "kernel/log.h"
 #include "std/types.hpp"
 #include "std/printf.hpp"
 
@@ -100,7 +101,7 @@ namespace USB {
 
     xhci_trb_t *xhci_event_ring::_dequeue_trb() {
         if (m_trbs[m_dequeue_ptr].cycle_bit != m_rcs_bit) {
-            std::kernel::printf("Event Ring attempted to dequeue an invalid TRB, returning nullptr!\n");
+            log::error("Event Ring attempted to dequeue an invalid TRB, returning nullptr!\n");
             return nullptr;
         }
 

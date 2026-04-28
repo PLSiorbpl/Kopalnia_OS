@@ -13,6 +13,7 @@
 #include "xHCI_ext_cap.hpp"
 #include "xHCI_device_ctx.hpp"
 #include "xHCI_device.hpp"
+#include "kernel/log.h"
 
 namespace USB {
     xhci_driver m_xhci_driver;
@@ -24,7 +25,7 @@ namespace USB {
 
         // Get base mmio address
         if (usb.vendor_id == 0) {
-            std::printf("No xHCI Device found\n");
+            log::error("No xHCI Device found");
             return false;
         }
 
@@ -32,7 +33,7 @@ namespace USB {
         const uint32_t bar1 = usb.bar[1];
 
         if (bar0 & 1) {
-            std::kernel::printf("xHCI should not use IO BAR");
+            log::error("xHCI should not use IO BAR");
             return false;
         }
         const uint32_t type = (bar0 >> 1) & 0b11;
@@ -73,11 +74,11 @@ namespace USB {
 
     bool xhci_driver::start_device() {
         if (!_start_host_controller()) {
-            std::kernel::printf("Failed to start the host controller\n");
+            log::error("Failed to start the host controller");
             return false;
         }
 
-        std::kernel::printf("Controller started!\n\n");
+        log::success("Controller started!\n");
 
         for (uint8_t port = 0; port < m_max_ports; port++) {
             xhci_portsc_register portsc = _read_portsc_reg(port);
@@ -86,10 +87,10 @@ namespace USB {
                 bool reset_successful = _reset_port(port);
 
                 if (reset_successful) {
-                    std::kernel::printf("Device connected on port #&a%u &f- %s\n", port, _usb_speed_to_string(portsc.port_speed));
+                    log::success("Device connected on port #&a%u &f- %s", port, _usb_speed_to_string(portsc.port_speed));
                     _setup_device(port);
                 } else {
-                    std::kernel::printf("&cFailed &fto reset port #&a%u &fafter connection detection\n", port);
+                    log::error("&cFailed &fto reset port #&a%u &fafter connection detection", port);
                 }
             }
         }
@@ -189,48 +190,48 @@ namespace USB {
     }
 
     void xhci_driver::_log_capability_registers() {
-        std::kernel::printf("&f===== Xhci Capability Registers (&a%x&f) =====\n", reinterpret_cast<uint64_t>(m_cap_regs));
-        std::kernel::printf("&f    Length                : &a%i\n", m_capability_regs_length);
-        std::kernel::printf("&f    Max Device Slots      : &a%i\n", m_max_device_slots);
-        std::kernel::printf("&f    Max Interrupters      : &a%i\n", m_max_interrupters);
-        std::kernel::printf("&f    Max Ports             : &a%i\n", m_max_ports);
-        std::kernel::printf("&f    IST                   : &a%i\n", m_isochronous_scheduling_threshold);
-        std::kernel::printf("&f    ERST Max Size         : &a%i\n", m_erst_max);
-        std::kernel::printf("&f    Scratchpad Buffers    : &a%i\n", m_max_scratchpad_buffers);
-        std::kernel::printf("&f    64-bit Addressing     : &e%s\n", m_64bit_addressing_capability ? "yes" : "no");
-        std::kernel::printf("&f    Bandwidth Negotiation : &a%i\n", m_bandwidth_negotiation_capability);
-        std::kernel::printf("&f    64-byte Context Size  : &e%s\n", m_64byte_context_size ? "yes" : "no");
-        std::kernel::printf("&f    Port Power Control    : &a%i\n", m_port_power_control);
-        std::kernel::printf("&f    Port Indicators       : &a%i\n", m_port_indicators);
-        std::kernel::printf("&f    Light Reset Available : &a%i\n", m_light_reset_capability);
-        std::kernel::printf("\n");
+        log::info("&f===== Xhci Capability Registers (&a%x&f) =====", reinterpret_cast<uint64_t>(m_cap_regs));
+        log::info("&f    Length                : &a%i", m_capability_regs_length);
+        log::info("&f    Max Device Slots      : &a%i", m_max_device_slots);
+        log::info("&f    Max Interrupters      : &a%i", m_max_interrupters);
+        log::info("&f    Max Ports             : &a%i", m_max_ports);
+        log::info("&f    IST                   : &a%i", m_isochronous_scheduling_threshold);
+        log::info("&f    ERST Max Size         : &a%i", m_erst_max);
+        log::info("&f    Scratchpad Buffers    : &a%i", m_max_scratchpad_buffers);
+        log::info("&f    64-bit Addressing     : &e%s", m_64bit_addressing_capability ? "yes" : "no");
+        log::info("&f    Bandwidth Negotiation : &a%i", m_bandwidth_negotiation_capability);
+        log::info("&f    64-byte Context Size  : &e%s", m_64byte_context_size ? "yes" : "no");
+        log::info("&f    Port Power Control    : &a%i", m_port_power_control);
+        log::info("&f    Port Indicators       : &a%i", m_port_indicators);
+        log::info("&f    Light Reset Available : &a%i\n", m_light_reset_capability);
+        //log::info("\n");
     }
 
     void xhci_driver::_log_operational_registers() {
-        std::kernel::printf("&7===== &fXhci Operational Registers (&a%x&f) &7=====\n", reinterpret_cast<uint64_t>(m_op_regs));
-        std::kernel::printf("&f    usbcmd     : &a%x\n", m_op_regs->usbcmd);
-        std::kernel::printf("&f    usbsts     : &a%x\n", m_op_regs->usbsts);
-        std::kernel::printf("&f    pagesize   : &a%x\n", m_op_regs->pagesize);
-        std::kernel::printf("&f    dnctrl     : &a%x\n", m_op_regs->dnctrl);
-        std::kernel::printf("&f    crcr       : &a%x\n", m_op_regs->crcr);
-        std::kernel::printf("&f    dcbaap     : &a%x\n", m_op_regs->dcbaap);
-        std::kernel::printf("&f    config     : &a%x\n", m_op_regs->config);
-        std::kernel::printf("\n");
+        log::info("&7===== &fXhci Operational Registers (&a%x&f) &7=====", reinterpret_cast<uint64_t>(m_op_regs));
+        log::info("&f    usbcmd     : &a%x", m_op_regs->usbcmd);
+        log::info("&f    usbsts     : &a%x", m_op_regs->usbsts);
+        log::info("&f    pagesize   : &a%x", m_op_regs->pagesize);
+        log::info("&f    dnctrl     : &a%x", m_op_regs->dnctrl);
+        log::info("&f    crcr       : &a%x", m_op_regs->crcr);
+        log::info("&f    dcbaap     : &a%x", m_op_regs->dcbaap);
+        log::info("&f    config     : &a%x\n", m_op_regs->config);
+        //log::info("\n");
     }
 
     void xhci_driver::_log_usbsts() {
         const uint32_t status = m_op_regs->usbsts;
-        std::kernel::printf("===== USBSTS =====\n");
-        if (status & XHCI_USBSTS_HCH)  std::kernel::printf("    Host Controlled Halted\n");
-        if (status & XHCI_USBSTS_HSE)  std::kernel::printf("    Host System Error\n");
-        if (status & XHCI_USBSTS_EINT) std::kernel::printf("    Event Interrupt\n");
-        if (status & XHCI_USBSTS_PCD)  std::kernel::printf("    Port Change Detect\n");
-        if (status & XHCI_USBSTS_SSS)  std::kernel::printf("    Save State Status\n");
-        if (status & XHCI_USBSTS_RSS)  std::kernel::printf("    Restore State Status\n");
-        if (status & XHCI_USBSTS_SRE)  std::kernel::printf("    Save/Restore Error\n");
-        if (status & XHCI_USBSTS_CNR)  std::kernel::printf("    Controller Not Ready\n");
-        if (status & XHCI_USBSTS_HCE)  std::kernel::printf("    Host Controller Error\n");
-        std::kernel::printf("\n");
+        log::info("===== USBSTS =====");
+        if (status & XHCI_USBSTS_HCH)  log::info("    Host Controlled Halted");
+        if (status & XHCI_USBSTS_HSE)  log::info("    Host System Error");
+        if (status & XHCI_USBSTS_EINT) log::info("    Event Interrupt");
+        if (status & XHCI_USBSTS_PCD)  log::info("    Port Change Detect");
+        if (status & XHCI_USBSTS_SSS)  log::info("    Save State Status");
+        if (status & XHCI_USBSTS_RSS)  log::info("    Restore State Status");
+        if (status & XHCI_USBSTS_SRE)  log::info("    Save/Restore Error");
+        if (status & XHCI_USBSTS_CNR)  log::info("    Controller Not Ready");
+        if (status & XHCI_USBSTS_HCE)  log::info("    Host Controller Error\n");
+        //log::info("\n");
     }
 
     xhci_portsc_register xhci_driver::_read_portsc_reg(uint8_t port_num) {
@@ -266,7 +267,7 @@ namespace USB {
         uint32_t timeout = 20; // 200ms timeout
         while (!(m_op_regs->usbsts & XHCI_USBSTS_HCH)) {
             if (--timeout <= 0) {
-                std::kernel::printf("Host controller did not halt within %ums\n", timeout);
+                log::error("Host controller did not halt within %ums", timeout);
                 return false;
             }
 
@@ -282,7 +283,7 @@ namespace USB {
         timeout = 100; // 1000ms timeout
         while (m_op_regs->usbcmd & XHCI_USBCMD_HCRESET || m_op_regs->usbsts & XHCI_USBSTS_CNR) {
             if (--timeout == 0) {
-                std::kernel::printf("Host controller did not reset within %ums\n", timeout);
+                log::error("Host controller did not reset within %ums", timeout);
                 return false;
             }
 
@@ -318,7 +319,7 @@ namespace USB {
         uint32_t retries = 0;
         while (m_op_regs->usbsts & XHCI_USBSTS_HCH) {
             if (retries++ >= 100) {
-                std::kernel::printf("Host controller did not halt within %ums\n", retries);
+                log::error("Host controller did not halt within %ums", retries);
                 return false;
             }
 
@@ -401,7 +402,7 @@ namespace USB {
             Time::Sleep(10);
             sleep_passed += 10;
             if (sleep_passed >= timeout) {
-                std::kernel::printf("Timeout\n");
+                log::error("Timeout");
                 break;
             }
         }
@@ -412,12 +413,12 @@ namespace USB {
         m_command_irq_completion = 0;
 
         if (!completion_trb) {
-            std::kernel::printf("Failed to find completion TRB for command %i\n", cmd_trb->trb_type);
+            std::kernel::printf("Failed to find completion TRB for command %i", cmd_trb->trb_type);
             return nullptr;
         }
 
         if (completion_trb->completion_code != XHCI_TRB_COMPLETION_CODE_SUCCESS) {
-            std::kernel::printf("Command TRB failed with error: %s\n", trb_completion_code_to_string(completion_trb->completion_code));
+            log::error("Command TRB failed with error: %s", trb_completion_code_to_string(completion_trb->completion_code));
             return nullptr;
         }
 
@@ -436,7 +437,7 @@ namespace USB {
             portsc = _read_portsc_reg(port_num);
 
             if (portsc.pp == 0) {
-                std::kernel::printf("&cPort #&a%u &cFailed to power\n", port_num);
+                log::error("&cPort #&a%u &cFailed to power", port_num);
                 return false;
             }
         }
@@ -463,7 +464,7 @@ namespace USB {
         }
 
         if (timeout == 0) {
-            std::kernel::printf("Port #%au Port reset failed timed out\n", port_num);
+            log::error("Port #%au Port reset failed timed out", port_num);
             return false;
         }
         Time::Sleep(10); // to stabilize controller
@@ -525,7 +526,7 @@ namespace USB {
         void* ctx = alloc_xhci_memory(device_context_size,XHCI_DEVICE_CONTEXT_ALIGNMENT,XHCI_DEVICE_CONTEXT_BOUNDARY);
 
         if (!ctx) {
-            std::kernel::printf("Failed to allocate memory for a device context\n");
+            log::error("Failed to allocate memory for a device context");
             return false;
         }
 
@@ -542,22 +543,22 @@ namespace USB {
 
         uint8_t slot_id = _enable_device_slot();
         if (!slot_id) {
-            std::kernel::printf("Failed to enable device slot for port &a%i\n", port);
+            log::error("Failed to enable device slot for port &a%i", port);
             return;
         }
 
         if (!_create_device_context(slot_id)) {
-            std::kernel::printf("Failed to create device context for slot &a%i\n", slot_id);
+            log::error("Failed to create device context for slot &a%i", slot_id);
             return;
         }
 
         xhci_device* device = new xhci_device(port_id, slot_id, port_speed, m_64byte_context_size);
 
-        std::kernel::printf("Allocated device:\n");
-        std::kernel::printf("  port  - &a%i\n", device->get_port());
-        std::kernel::printf("  slot  - &a%i\n", device->get_slot());
-        std::kernel::printf("  speed - &a%s\n", _usb_speed_to_string(device->get_speed()));
-        std::kernel::printf("  inctx - &a%x\n", device->get_input_ctx_dma());
-        std::kernel::printf("\n");
+        log::info("Allocated device:");
+        log::info("  port  - &a%i", device->get_port());
+        log::info("  slot  - &a%i", device->get_slot());
+        log::info("  speed - &a%s", _usb_speed_to_string(device->get_speed()));
+        log::info("  inctx - &a%x\n", device->get_input_ctx_dma());
+        //log::info("");
     }
 }
