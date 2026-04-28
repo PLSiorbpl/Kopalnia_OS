@@ -5,6 +5,7 @@
 #include "../PCI.hpp"
 #include "../../kernel/Paging.hpp"
 #include "../../libs/std/printf.hpp"
+#include "kernel/log.h"
 #include "kernel/Sleep.hpp"
 #include "kernel/system.hpp"
 
@@ -18,7 +19,7 @@ drivers::ahci::ahci::~ahci() {
 
 void drivers::ahci::ahci::init() {
     if (hba != nullptr) {
-        std::kernel::printf("&4ACHI was already initialized.");
+        log::warn("ACHI was already initialized.");
         return;
     }
 
@@ -45,7 +46,7 @@ void drivers::ahci::ahci::init() {
 
 drivers::ahci::ahci_device drivers::ahci::ahci::request_device(const u32 id) {
     if (id >= 32) {
-        std::kernel::printf("&4Attempted to request non existant device!");
+        log::warn("Attempted to request non existant device!");
         return ahci_device(nullptr, false);
     }
     return ahci_device(&ports[id], ports[id].is_active());
@@ -66,15 +67,11 @@ void drivers::ahci::ahci::on_interrupt(const IDT::ISR_Registers* isr) {
 
 void drivers::ahci::ahci::probe_ports() {
     const u32 ports_implemented = hba->pi;
-    std::kernel::printf("ports: %i\n\n", ports_implemented);
-
     for (int i = 0; i < 32; ++i) {
         if (ports_implemented & (1 << i)) {
             auto port_type = get_port_type(&hba->ports[i]);
-            if (port_type == port_type::sata || port_type == port_type::satapi) {
-                std::kernel::printf("&aFound %s on port %d\n", port_type == port_type::sata ? "SATA" : "SATAPI", i);
+            if (port_type == port_type::sata || port_type == port_type::satapi)
                 ports[i].configure(port_type, &hba->ports[i], i, hba);
-            }
         }
     }
 }

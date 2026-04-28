@@ -4,6 +4,7 @@
 namespace std {
     bool str_cmp(const char* str1, const char* str2);
     int strlen(const char* text);
+    i32 strcpy(char* dst, const char* src);
 
     template <typename T> struct is_floating_point             { static const bool value = false; };
     template <>           struct is_floating_point<float>      { static const bool value = true;  };

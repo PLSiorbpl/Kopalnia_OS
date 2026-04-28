@@ -1,5 +1,7 @@
 #include "Sleep.hpp"
 #include <arch/x86_64/Common/Common.hpp>
+
+#include "log.h"
 #include "arch/x86_64/IDT/PIT.hpp"
 #include "Drivers/Keyboard.hpp"
 
@@ -40,6 +42,7 @@ namespace Time {
     10hz <-> 10khz  (100hz recomended)
     */
     void Set_PIT(const uint64_t freq) {
+        log::info("Setting PIT Frequency to %l...", freq);
         PIT::timer_set_frequency(freq);
         hz = freq;
     }

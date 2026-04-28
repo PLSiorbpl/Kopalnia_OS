@@ -1,6 +1,7 @@
 #include "system.hpp"
 
 #include "linker_info.hpp"
+#include "log.h"
 #include "kernel/Memory/heap.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
@@ -59,10 +60,10 @@ namespace systemPL {
 
             device.initialize();
             auto size = static_cast<double>(device.get_sector_count() * device.get_sector_size());
-            std::kernel::printf("Device info for device %i: \n"
+            log::info("Device info for device %i: \n"
                                 "\tModel: %s\n"
                                 "\tFirmware version: %s\n"
-                                "\tSize: %f%s\n\n", i, device.get_model(), device.get_firmware(), size, std::format_size(size));
+                                "\tSize: %f%s\n", i, device.get_model(), device.get_firmware(), size, std::format_size(size));
 
             //auto buffer = static_cast<u16*>(heap::malloc_align(device.get_sector_size(), 4));
             //mem::memset(buffer, 0, device.get_sector_size());

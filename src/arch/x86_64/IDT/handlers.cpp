@@ -2,6 +2,7 @@
 #include "std/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/Keyboard.hpp"
+#include "kernel/log.h"
 #include "kernel/Sleep.hpp"
 #include "std/printf.hpp"
 #include "std/vector.hpp"
@@ -43,26 +44,26 @@ namespace IDT {
 
     void Install_handler(const isr_t handler, const uint8_t irq_no) {
         if (!handler) {
-            std::kernel::printf("Install_handler &cERROR&f: &anull handler\n");
+            log::error("Install_handler &cERROR&f: &anull handler");
             return;
         }
 
         if (irq_no >= 16) { // PIC IRQ 0–15
-            std::kernel::printf("Install_handler &cERROR&f: &cinvalid &firq &e%u\n", irq_no);
+            log::error("Install_handler &cERROR&f: &cinvalid &firq &e%u", irq_no);
             return;
         }
 
         const uint8_t vector = irq_no + 32;
 
         if (custom_handlers_count[vector] >= 4) {
-            std::kernel::printf("Install_handler &cERROR&f: Max handlers for IRQ: %u\n", irq_no);
+            log::error("Install_handler &cERROR&f: Max handlers for IRQ: %u", irq_no);
             return;
         }
 
         if (custom_handlers_count[vector] == 0) {
-            std::kernel::printf("&7Installed &afirst &7handler for IRQ &a%u\n", irq_no);
+            log::info("Installed &afirst &7handler for IRQ &a%u", irq_no);
         } else {
-            std::kernel::printf("&aAdded shared &7handler for IRQ &a%u\n", irq_no);
+            log::success("&aAdded shared &7handler for IRQ &a%u", irq_no);
         }
 
         custom_handlers[vector][custom_handlers_count[vector]] = handler;
@@ -72,7 +73,7 @@ namespace IDT {
     // NOTE do not add [[noreturn]] to this function
     extern "C" void isr_common(const ISR_Registers* regs) {
         if (regs->int_no <= 31) {
-            std::kernel::printf("&4%s &c%x\n&4Caused by RIP: &e%x", get_exception_name(regs->int_no), regs->error_code, regs->rip);
+            log::error("%s &c%x\n&4Caused by RIP: &e%x", get_exception_name(regs->int_no), regs->error_code, regs->rip);
 
             // CPU interrupts (bad so we halt cpu)
             asm volatile("cli; hlt");

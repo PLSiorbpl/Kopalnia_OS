@@ -2,6 +2,7 @@
 #include "ahci.h"
 #include "ahci_helper.h"
 #include "arch/x86_64/Common/Common.hpp"
+#include "kernel/log.h"
 #include "kernel/Sleep.hpp"
 #include "std/mem_common.hpp"
 #include "std/printf.hpp"
@@ -14,7 +15,7 @@ namespace drivers::ahci {
                 return i;
         }
 
-        std::kernel::printf("&4Failed to find free command slot.\n");
+        log::warn("Failed to find free command slot.");
         return -1;
     }
 
@@ -25,21 +26,21 @@ namespace drivers::ahci {
             }
         }
 
-        std::kernel::printf("&4Port is hung.\n");
+        log::error("Port is hung.");
         return false;
     }
 
     bool ahci_port::wait_for_port_completion(const u8 slot) {
         for (int i = 0; i < 100000000; ++i) {
             if (command_slots[slot].error) {
-                std::kernel::printf("&4Command failed.\n");
+                log::error("&4Command failed.");
                 command_slots[slot].error = false;
                 return false;
             }
             if ((port->command_issue & (1 << slot)) == 0)
                 return true;
         }
-        std::kernel::printf("&4Command timed out.\n");
+        log::error("Command timed out.");
         command_slots[slot].error = false;
         return false;
     }
@@ -278,36 +279,34 @@ namespace drivers::ahci {
     }
 
     void ahci_port::on_interrupt() {
-        std::kernel::printf("&aInterrupted!\n");
-
         if (port->interrupt_status.cold_port_detect_interrupt)
-            std::kernel::printf("&4AHCI: Device on port %i has been removed or unable to be detected!\n", port_num);
+            log::warn("AHCI: Device on port %i has been removed or unable to be detected!", port_num);
         if (port->interrupt_status.task_file_error_interrupt) {
-            std::kernel::printf("&4AHCI: task file error (tfd: %x)\n", port->tfd);
+            log::error("AHCI: task file error (tfd: %x)", port->tfd);
             has_errored = true;
         }
         if (port->interrupt_status.host_bus_fatal_error_interrupt) {
-            std::kernel::printf("&4AHCI: host bus fatal error\n");
+            log::error("AHCI: host bus fatal error");
             has_errored = true;
         }
         if (port->interrupt_status.host_bus_data_error_interrupt) {
-            std::kernel::printf("&4AHCI: host bus data error\n");
+            log::error("AHCI: host bus data error");
             has_errored = true;
         }
         if (port->interrupt_status.interface_fatal_error_interrupt) {
-            std::kernel::printf("&4AHCI: interface fatal error (serr: %x)\n", port->serr);
+            log::error("AHCI: interface fatal error (serr: %x)", port->serr);
             has_errored = true;
         }
         if (port->interrupt_status.interface_non_fatal_error_interrupt)
-            std::kernel::printf("&4AHCI: interface non-fatal error (serr: %x)\n", port->serr);
+            log::warn("AHCI: interface non-fatal error (serr: %x)", port->serr);
         if (port->interrupt_status.overflow_interrupt)
-            std::kernel::printf("&4AHCI: overflow error\n");
+            log::warn("AHCI: overflow error");
         if (port->interrupt_status.incorrect_port_multiplier_interrupt)
-            std::kernel::printf("&4AHCI: incorrect port multiplier\n");
+            log::warn("AHCI: incorrect port multiplier");
         if (port->interrupt_status.phy_ready_change_interrupt)
-            std::kernel::printf("&4AHCI: PHY ready change\n");
+            log::warn("AHCI: PHY ready change");
         if (port->interrupt_status.port_connect_change_interrupt)
-            std::kernel::printf("&4AHCI: device connected/disconnected on port %i\n", port_num);
+            log::warn("AHCI: device connected/disconnected on port %i", port_num);
 
         if (has_errored) { // fatal error so do error recovery
             const u8 error_slot = (port->command_status >> 8) & 0x1F;
@@ -317,7 +316,7 @@ namespace drivers::ahci {
             clear_interrupt_errors();
             if ((port->tfd & ATA_DEV_BUSY_BIT) || (port->tfd & ATA_DEV_DRQ_BIT)) {
                 comreset();
-                std::kernel::printf("&aDoing a comreset\n");
+                log::info("Doing a comreset...");
             }
             start();
 
