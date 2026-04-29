@@ -1,5 +1,6 @@
 #pragma once
 #include "Drivers/achi/ahci.h"
+#include "Drivers/fs/partition/partition_manager.h"
 #include "Drivers/GPU/framebuffer.hpp"
 #include "std/types.hpp"
 
@@ -14,6 +15,7 @@ namespace systemPL {
 
     extern drivers::ahci::ahci ahci;
     extern framebuffer::framebuffer fb;
+    extern fs::partition::partition_manager partition_manager;
 
     void Init(void* mbi);
 }

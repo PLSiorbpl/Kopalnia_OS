@@ -79,6 +79,7 @@ set(QEMU_FLAGS
         -m 512M
         -M q35
         -vga std
+        -boot order=dc
         # drive
         -cdrom ${CMAKE_BINARY_DIR}/mykernel.iso
         #ahci

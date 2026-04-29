@@ -14,6 +14,7 @@
 #include "Drivers/achi/ahci.h"
 #include "Drivers/achi/ahci_device.h"
 #include "Drivers/ata/ata.h"
+#include "Drivers/fs/partition/partition_manager.h"
 #include "Drivers/GPU/framebuffer.hpp"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 #include "std/string.h"
@@ -21,6 +22,7 @@
 namespace systemPL {
     drivers::ahci::ahci ahci;
     framebuffer::framebuffer fb;
+    fs::partition::partition_manager partition_manager;
 
     void Init(void* mbi) {
         Multiboot::Init(static_cast<uint8_t*>(mbi));
@@ -83,6 +85,9 @@ namespace systemPL {
             //std::kernel::printf("Read output: %s", buffer);
             //heap::free_align(buffer);
         }
+
+        const auto device = ahci.request_device(0);
+        partition_manager.init(device);
 
         //drivers::ata::device(false);
 
