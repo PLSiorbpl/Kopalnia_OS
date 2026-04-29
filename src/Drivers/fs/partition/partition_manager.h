@@ -11,7 +11,10 @@ namespace fs::partition {
 
         void init(const drivers::ahci::ahci_device& dev);
     private:
-        gpt_header header_partition;
+        [[nodiscard]] bool validate_gpt() const;
+        [[nodiscard]] bool validate_gpt_partition_entries(const u16* entries_buf) const;
+
+        gpt_header* header;
         std::vector<gpt_partition> partitions;
     };
 }
