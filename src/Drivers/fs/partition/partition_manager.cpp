@@ -12,6 +12,7 @@ namespace fs::partition {
 
         if (buf[0] == 0 && buf[67] == 0) {
             log::error("Buf probably all 0 for some reason");
+            log::info("Buffer: %s", buf);
         }
 
         if (mem::memcmp(&header->signature, "EFI PART", 8) == false) {
@@ -20,6 +21,8 @@ namespace fs::partition {
         }
 
         log::success("Found partition header!");
+
+        log::info("entry_lba: %u count: %u size: %u", header->partition_entry_lba, header->partition_entry_count, header->partition_entry_size);
 
         const u32 total_size = header->partition_entry_size * header->partition_entry_count;
         const u32 sectors = (total_size + 511) / 512;
@@ -35,6 +38,8 @@ namespace fs::partition {
             if (guid64[0] == 0 && guid64[1] == 0)
                 continue;
             if (entry->starting_lba == 0)
+                continue;
+            if (entry->name[0] == 0)  // add this
                 continue;
 
             char name_buf[37] = {};
