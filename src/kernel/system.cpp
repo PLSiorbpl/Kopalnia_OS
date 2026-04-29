@@ -49,9 +49,9 @@ namespace systemPL {
 
         Paging::Enable_paging();
 
-        fb.init();
-
         kb::flush_keyboard();
+
+        fb.init();
 
         x64::set_INT_flag(true); // Enable interrupts
 

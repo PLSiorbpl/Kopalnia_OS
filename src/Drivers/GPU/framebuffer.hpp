@@ -39,7 +39,7 @@ namespace framebuffer {
         void dec_cursor(const i32 amount) {
             cursor_x -= amount;
             if (cursor_x < 0) {
-                cursor_x = width_in_chars - amount - 1;
+                cursor_x = width_in_chars - 1;
                 if (cursor_y > 0) {
                     cursor_y--;
                 }
@@ -48,11 +48,11 @@ namespace framebuffer {
 
         bool initialized = false;
         bool is_dirty = true;
-        u32 height_in_chars = 0;
-        u32 width_in_chars = 0;
+        i32 height_in_chars = 0;
+        i32 width_in_chars = 0;
 
-        u32 cursor_x = 0;
-        u32 cursor_y = 0;
+        i32 cursor_x = 0;
+        i32 cursor_y = 0;
         u32* back_buffer {};
         u32* front_buffer {};
         framebuffer_info info {};
