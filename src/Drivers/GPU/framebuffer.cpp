@@ -2,6 +2,7 @@
 #include "framebuffer.hpp"
 
 #include "glyphs.h"
+#include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/vga.h"
 #include "kernel/multiboot2.hpp"
 #include "kernel/Paging.hpp"
@@ -16,7 +17,6 @@ namespace framebuffer {
             return;
         info.width = Multiboot::Frame_buffer->width;
         info.height = Multiboot::Frame_buffer->height;
-        info.bpp = Multiboot::Frame_buffer->bpp;
         info.pitch = Multiboot::Frame_buffer->pitch;
 
         const auto size = info.height * info.pitch;
@@ -40,7 +40,10 @@ namespace framebuffer {
     }
 
     void framebuffer::clear(const u32 color) {
+        const bool old_flag = x64::get_INT_flag();
+        x64::set_INT_flag(false);
         mem::memset32(back_buffer, color, info.height * info.width);
+        x64::set_INT_flag(old_flag);
         is_dirty = true;
     }
 
@@ -99,8 +102,11 @@ namespace framebuffer {
     void framebuffer::scroll() {
         if (!initialized)
             return;
+        const bool old_flag = x64::get_INT_flag();
+        x64::set_INT_flag(false);
         mem::memcpy(back_buffer, back_buffer + (16 * info.pitch / 4), (info.height - 16) * info.pitch);
-        mem::memset32(back_buffer + ((info.height - 16) * info.pitch / 4), 0, 16 * (info.pitch / 4));
+        mem::memset32(back_buffer + ((info.height - 16) * info.pitch / 4), BACKGROUND_COLOR, 16 * (info.pitch / 4));
         is_dirty = true;
+        x64::set_INT_flag(old_flag);
     }
 }

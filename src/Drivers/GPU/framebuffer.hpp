@@ -6,7 +6,6 @@ namespace framebuffer {
         u32 width;
         u32 height;
         u32 pitch;
-        u8 bpp;
         u64 pixel_width;
     };
 
