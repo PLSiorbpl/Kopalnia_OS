@@ -27,8 +27,8 @@ dd -(0xE85250D6 + 0 + (header_end - header_start))
 dw 5
 dw 0
 dd 24
-dd 800
-dd 600
+dd 1280
+dd 720
 dd 32
 
 align 8
