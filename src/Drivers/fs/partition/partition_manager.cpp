@@ -22,18 +22,17 @@ namespace fs::partition {
 
         log::success("Found partition header!");
 
-        log::info("entry_lba: %u count: %u size: %u", header->partition_entry_lba, header->partition_entry_count, header->partition_entry_size);
-
         const u32 total_size = header->partition_entry_size * header->partition_entry_count;
         const u32 sectors = (total_size + 511) / 512;
 
-        std::vector<u16> partitions_buf;
-        partitions_buf.resize(sectors * 256);
-        partitions_buf.size = sectors * 256;
-        dev.read(header->partition_entry_lba, sectors, partitions_buf.data);
+        const auto partitions_buf = static_cast<u16*>(heap::malloc(total_size));
+        if (!dev.read(header->partition_entry_lba, sectors, partitions_buf)) {
+            heap::free(partitions_buf);
+            return;
+        }
 
         for (u32 i = 0; i < header->partition_entry_count; i++) {
-            const auto* entry = reinterpret_cast<gpt_partition*>(reinterpret_cast<u8*>(partitions_buf.data) + i * header->partition_entry_size);
+            const auto* entry = reinterpret_cast<gpt_partition*>(reinterpret_cast<u8*>(partitions_buf) + i * header->partition_entry_size);
             auto* guid64 = reinterpret_cast<const u64*>(entry->type_guid);
             if (guid64[0] == 0 && guid64[1] == 0)
                 continue;
@@ -52,5 +51,7 @@ namespace fs::partition {
             log::info("Found partition %i with name of '%s'", i, name_buf);
             partitions.push_back(*entry);
         }
+
+        heap::free(partitions_buf);
     }
 }
