@@ -26,6 +26,7 @@ namespace fs::partition {
         const u32 sectors = (total_size + 511) / 512;
 
         const auto partitions_buf = static_cast<u16*>(heap::malloc(total_size));
+        Paging::Map_memory(reinterpret_cast<u64>(partitions_buf), reinterpret_cast<u64>(partitions_buf) + total_size, Paging::Profile::MMIO);
         if (!dev.read(header->partition_entry_lba, sectors, partitions_buf)) {
             heap::free(partitions_buf);
             return;
@@ -38,7 +39,7 @@ namespace fs::partition {
                 continue;
             if (entry->starting_lba == 0)
                 continue;
-            if (entry->name[0] == 0)  // add this
+            if (entry->name[0] == 0)
                 continue;
 
             char name_buf[37] = {};
