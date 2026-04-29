@@ -9,4 +9,6 @@ namespace mem {
 
     volatile uint16_t *memset16(volatile uint16_t *dst, uint16_t value, uint64_t count);
     uint32_t *memset32(uint32_t *dst, uint32_t value, uint64_t count);
+
+    bool memcmp(const void* src1, const void* src2, uint64_t size);
 }

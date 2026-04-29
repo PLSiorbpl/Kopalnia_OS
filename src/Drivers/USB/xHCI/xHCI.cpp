@@ -560,5 +560,271 @@ namespace USB {
         log::info("  speed - &a%s", _usb_speed_to_string(device->get_speed()));
         log::info("  inctx - &a%x\n", device->get_input_ctx_dma());
         //log::info("");
+
+        device->set_root_port_id(port_id);
+        device->set_output_ctx(reinterpret_cast<void *>(m_dcbaa[slot_id]));
+
+        //_enumerate_device(device);
     }
+
+    void xhci_driver::_enumerate_device(xhci_device *device) {
+        uint8_t port_id = device->get_port();
+        uint8_t slot_id = device->get_slot();
+        uint8_t port_speed = device->get_speed();
+
+        bool is_root_device = (device->route_string() == 0);
+        uint8_t port_index = port_id - 1;
+
+        // Configure the input context for Address Device command
+        uint16_t max_packet_size = _initial_max_packet_size(port_speed);
+        _configure_ctrl_ep_input_context(device, max_packet_size);
+
+        _address_device(device, true);
+
+        usb_device_descriptor desc = {};
+        int32_t rc = -1;
+        for (uint8_t attempt = 0; attempt < 3; attempt++) {
+            rc = _get_device_descriptor(device, &desc, 8);
+            if (rc == 0) break;
+            //_clear_tt_buffer(device);
+            Time::Sleep(10);
+        }
+        if (rc != 0)
+            log::error("xhci: failed to read device descriptor for slot %u", slot_id);
+    }
+
+    uint16_t xhci_driver::_initial_max_packet_size(uint8_t speed) {
+        switch (speed) {
+            case XHCI_USB_SPEED_LOW_SPEED:
+                return 8;
+            case XHCI_USB_SPEED_FULL_SPEED:
+            case XHCI_USB_SPEED_HIGH_SPEED:
+                return 64;
+            case XHCI_USB_SPEED_SUPER_SPEED:
+            case XHCI_USB_SPEED_SUPER_SPEED_PLUS:
+                return 512;
+            default:
+                return 8;
+        }
+    }
+
+    void xhci_driver::_configure_ctrl_ep_input_context(xhci_device* device, uint16_t max_packet_size) {
+        size_t ctx_size = XHCI_CSZ(m_cap_regs)
+            ? sizeof(xhci_input_context64)
+            : sizeof(xhci_input_context32);
+        mem::memset(device->get_input_ctrl_ctx(), 0, ctx_size);
+
+        auto* input_ctrl = device->get_input_ctrl_ctx();
+        auto* slot_ctx = device->get_input_slot_ctx();
+        auto* ep0_ctx = device->get_input_ctrl_ep_ctx();
+
+        // Enable slot context (A0) and control endpoint context (A1)
+        input_ctrl->add_flags = (1 << 0) | (1 << 1);
+        input_ctrl->drop_flags = 0;
+
+        slot_ctx->route_string = device->route_string();
+        slot_ctx->speed = device->get_speed();
+        slot_ctx->context_entries = 1;
+        slot_ctx->interrupter_target = 0;
+
+        if (device->route_string() == 0) {
+            // Root hub device: port_id is the root hub port number
+            slot_ctx->root_hub_port_num = device->get_port();
+        } else {
+            log::error("skill issue #1");
+            //// Hub-downstream device: use the root port of the topology chain
+            //slot_ctx->root_hub_port_num = device->root_port_id();
+            //
+            //// xHCI spec Section 6.2.2: parent_hub_slot_id and parent_port_number
+            //// shall reference the nearest HS hub providing the TT, only for LS/FS
+            //// devices. Walk up the hub chain to find it.
+            //if (device->get_speed() == XHCI_USB_SPEED_LOW_SPEED ||
+            //    device->get_speed() == XHCI_USB_SPEED_FULL_SPEED) {
+            //    auto* hub = m_slot_devices[device->parent_slot_id()];
+            //    uint8_t port_on_hub = device->parent_port_num();
+            //    while (hub && hub->speed() != XHCI_USB_SPEED_HIGH_SPEED
+            //               && hub->parent_slot_id() != 0) {
+            //        port_on_hub = hub->parent_port_num();
+            //        hub = m_slot_devices[hub->parent_slot_id()];
+            //    }
+            //    if (hub && hub->speed() == XHCI_USB_SPEED_HIGH_SPEED) {
+            //        slot_ctx->parent_hub_slot_id = hub->slot_id();
+            //        slot_ctx->parent_port_number = port_on_hub;
+            //        slot_ctx->mtt = hub->mtt() ? 1 : 0;
+            //        log::info("xhci: slot %u TT: hub_slot=%u hub_port=%u mtt=%u",
+            //                  device->slot_id(), hub->slot_id(), port_on_hub,
+            //                  hub->mtt() ? 1 : 0);
+            //    } else {
+            //        log::info("xhci: slot %u TT: no HS hub found (parent slot %u speed=%u)",
+            //                  device->slot_id(), device->parent_slot_id(),
+            //                  hub ? hub->speed() : 0xFF);
+            //    }
+            //}
+        }
+
+        std::kernel::printf("xhci: slot %u input ctx: route=%x speed=%u root_port=%u mps=%u\n",
+                  device->get_slot(), slot_ctx->route_string, slot_ctx->speed,
+                  slot_ctx->root_hub_port_num, max_packet_size);
+
+        ep0_ctx->endpoint_state = XHCI_ENDPOINT_STATE_DISABLED;
+        ep0_ctx->endpoint_type = XHCI_ENDPOINT_TYPE_CONTROL;
+        ep0_ctx->max_packet_size = max_packet_size;
+        ep0_ctx->max_burst_size = 0;
+        ep0_ctx->error_count = 3;
+        ep0_ctx->interval = 0;
+        ep0_ctx->average_trb_length = 8;
+        ep0_ctx->max_esit_payload_lo = 0;
+        ep0_ctx->transfer_ring_dequeue_ptr =
+            device->ctrl_ring()->get_physical_base();
+        ep0_ctx->dcs = device->ctrl_ring()->get_cycle_bit();
+    }
+
+    void xhci_driver::_address_device(xhci_device* device, bool bsr) {
+        // Construct the Address Device TRB
+        xhci_address_device_command_trb_t address_trb;
+        address_trb.input_context_physical_base = device->get_input_ctx_dma();
+        address_trb.rsvd = 0;
+        address_trb.cycle_bit = 0;
+        address_trb.rsvd1 = 0;
+
+        /*
+            Block Set Address Request (BSR). When this flag is set to '0' the Address Device Command shall
+            generate a USB SET_ADDRESS request to the device. When this flag is set to '1' the Address
+            Device Command shall not generate a USB SET_ADDRESS request. Refer to section 4.6.5 for
+            more information on the use of this flag.
+        */
+        address_trb.bsr = bsr ? 1 : 0;
+
+        address_trb.trb_type = XHCI_TRB_TYPE_ADDRESS_DEVICE_CMD;
+        address_trb.rsvd2 = 0;
+        address_trb.slot_id = device->get_slot();
+
+        _send_command_trb(reinterpret_cast<xhci_trb_t*>(&address_trb));
+    }
+
+    int32_t xhci_driver::_get_device_descriptor(xhci_device* device, void* out, uint16_t length) {
+        xhci_device_request_packet req = {};
+        req.bRequestType = 0x80; // Device to Host, Standard, Device
+        req.bRequest = 6;        // GET_DESCRIPTOR
+        req.wValue = USB_DESCRIPTOR_REQUEST(USB_DESCRIPTOR_DEVICE, 0);
+        req.wIndex = 0;
+        req.wLength = length;
+
+        _send_control_transfer(device, req, out, length);
+
+        return 0;
+    }
+
+    int32_t xhci_driver::_send_control_transfer(xhci_device* device,xhci_device_request_packet& request,void* buffer, uint32_t length) {
+    xhci_transfer_ring* ring = device->ctrl_ring();
+
+    // Use the device's persistent DMA buffer
+    void* dma_buffer = device->ctrl_transfer_buffer();
+    uintptr_t dma_buffer_phys = device->ctrl_transfer_buffer_phys();
+    if (!dma_buffer || dma_buffer_phys == 0) {
+        log::error("xhci: missing control transfer buffer for slot %u", device->get_slot());
+        return -1;
+    }
+    if (length > PAGE_SIZE) {
+        log::error("xhci: control transfer too large (%u bytes)", length);
+        return -1;
+    }
+
+    bool is_in = (request.transfer_direction != 0);
+
+    // For OUT data stage, copy caller data into DMA buffer before enqueue
+    if (length > 0 && !is_in && buffer) {
+        mem::memcpy(dma_buffer, buffer, length);
+    } else {
+        mem::memset(dma_buffer, 0, length > 0 ? length : 1);
+    }
+
+    // Setup Stage TRB
+    xhci_setup_stage_trb_t setup = {};
+    setup.trb_type = XHCI_TRB_TYPE_SETUP_STAGE;
+    setup.request_packet = request;
+    setup.trb_transfer_length = 8;
+    setup.interrupter_target = 0;
+    setup.idt = 1;
+    setup.ioc = 0;
+    // TRT: 0=No Data, 2=OUT Data, 3=IN Data
+    setup.trt = (length > 0) ? (is_in ? 3 : 2) : 0;
+
+    // Data Stage TRB (if there's data to transfer)
+    xhci_data_stage_trb_t data = {};
+    if (length > 0) {
+        data.trb_type = XHCI_TRB_TYPE_DATA_STAGE;
+        data.data_buffer = dma_buffer_phys;
+        data.trb_transfer_length = length;
+        data.td_size = 0;
+        data.interrupter_target = 0;
+        data.dir = is_in ? 1 : 0;
+        data.ioc = 0;
+        data.idt = 0;
+        data.chain = 0;
+    }
+
+    // Status Stage TRB (direction opposite to data stage)
+    xhci_status_stage_trb_t status = {};
+    status.trb_type = XHCI_TRB_TYPE_STATUS_STAGE;
+    status.interrupter_target = 0;
+    status.ioc = 1; // Interrupt on completion
+    status.dir = (length > 0) ? (is_in ? 0 : 1) : 1;
+
+    // Serialize EP0 enqueue+doorbell+wait against concurrent callers
+    // (e.g. hub task and HCD task both sending control transfers to the hub).
+
+    //device->set_ctrl_completed(false);
+//
+    //ring->enqueue(reinterpret_cast<xhci_trb_t*>(&setup));
+    //if (length > 0) {
+    //    ring->enqueue(reinterpret_cast<xhci_trb_t*>(&data));
+    //}
+    //ring->enqueue(reinterpret_cast<xhci_trb_t*>(&status));
+//
+    //// VL805 quirk: avoid ringing the doorbell near the SOF boundary for
+    //// FS non-periodic transfers behind a hub (TT babble avoidance).
+    //if (device->route_string() != 0 &&
+    //    device->get_speed() == XHCI_USB_SPEED_FULL_SPEED) {
+    //    for (uint32_t tries = 0; tries < 20; tries++) {
+    //        if ((_read_mfindex() & 0x7) != 0)
+    //            break;
+    //        Time::Sleep(10);
+    //    }
+    //}
+//
+    //_ring_doorbell(device->get_slot(), XHCI_DOORBELL_TARGET_CONTROL_EP_RING);
+//
+    //constexpr uint64_t XFER_TIMEOUT_MS = 5000;
+    //uint64_t deadline = clock::now_ns() + XFER_TIMEOUT_MS * 1000000ULL;
+//
+    //_process_event_ring();
+    //m_event_ring->finish_processing();
+//
+    //while (!device->ctrl_completed() && clock::now_ns() < deadline) {
+    //    wait_for_event();
+    //    _process_event_ring();
+    //    m_event_ring->finish_processing();
+    //}
+//
+    //if (!device->ctrl_completed()) {
+    //    log::error("xhci: control transfer timed out");
+    //    return -1;
+    //}
+//
+    //if (device->ctrl_result().completion_code != XHCI_TRB_COMPLETION_CODE_SUCCESS) {
+    //    if (device->ctrl_result().completion_code == XHCI_TRB_COMPLETION_CODE_STALL_ERROR) {
+    //        (void)_recover_stalled_control_endpoint(device);
+    //    }
+    //    log::warn("xhci: control transfer failed: %s",
+    //               trb_completion_code_to_string(device->ctrl_result().completion_code));
+    //    return -1;
+    //}
+//
+    //if (buffer && length > 0 && is_in) {
+    //    mem::memcpy(buffer, dma_buffer, length);
+    //}
+//
+    return 0;
+}
 }

@@ -114,4 +114,69 @@ namespace USB {
 
         return ret;
     }
+
+    int32_t xhci_transfer_ring::init(size_t max_trbs, uint8_t doorbell_id) {
+    m_max_trb_count = max_trbs;
+    m_rcs_bit = 1;
+    m_dequeue_ptr = 0;
+    m_enqueue_ptr = 0;
+    m_doorbell_id = doorbell_id;
+
+    const size_t ring_size = max_trbs * sizeof(xhci_trb_t);
+
+    m_trbs = static_cast<xhci_trb_t*>(
+        alloc_xhci_memory(ring_size));
+    if (!m_trbs) {
+        log::error("xhci: failed to allocate transfer ring (%lu TRBs)", max_trbs);
+        return -1;
+    }
+
+    m_physical_base = xhci_get_physical_addr(m_trbs);
+
+    // Set the last TRB as a link TRB to point back to the first TRB
+    m_trbs[m_max_trb_count - 1].parameter = m_physical_base;
+    m_trbs[m_max_trb_count - 1].control =
+        (XHCI_TRB_TYPE_LINK << XHCI_TRB_TYPE_SHIFT) | XHCI_LINK_TRB_TC_BIT | m_rcs_bit;
+
+    return 0;
+}
+
+void xhci_transfer_ring::destroy() {
+    if (m_trbs) {
+        free_xhci_memory(m_trbs);
+        m_trbs = nullptr;
+    }
+}
+
+uintptr_t xhci_transfer_ring::get_enqueue_phys() const {
+    return m_physical_base + m_enqueue_ptr * sizeof(xhci_trb_t);
+}
+
+bool xhci_transfer_ring::can_enqueue(size_t n) const {
+    // Usable slots = m_max_trb_count - 1 (last slot is the Link TRB)
+    size_t usable = m_max_trb_count - 1;
+    size_t available = (m_enqueue_ptr < usable)
+        ? (usable - m_enqueue_ptr)
+        : 0;
+    return n <= available;
+}
+
+void xhci_transfer_ring::enqueue(xhci_trb_t* trb) {
+    // Adjust the TRB's cycle bit to the current DCS
+    trb->cycle_bit = m_rcs_bit;
+
+    // Insert the TRB into the ring
+    m_trbs[m_enqueue_ptr] = *trb;
+
+    // Advance and possibly wrap the enqueue pointer if needed.
+    // maxTrbCount - 1 accounts for the LINK_TRB.
+    if (++m_enqueue_ptr == m_max_trb_count - 1) {
+        // Only now update the Link TRB, syncing its cycle bit and setting the TC flag.
+        m_trbs[m_max_trb_count - 1].control =
+            (XHCI_TRB_TYPE_LINK << XHCI_TRB_TYPE_SHIFT) | XHCI_LINK_TRB_TC_BIT | m_rcs_bit;
+
+        m_enqueue_ptr = 0;
+        m_rcs_bit = !m_rcs_bit;
+    }
+}
 }

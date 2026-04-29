@@ -59,4 +59,31 @@ namespace USB {
         void _update_erdp();
         xhci_trb_t* _dequeue_trb();
     };
+
+    class xhci_transfer_ring {
+    public:
+        xhci_transfer_ring() = default;
+        int32_t init(size_t max_trbs, uint8_t doorbell_id);
+        void destroy();
+
+        inline xhci_trb_t* get_virtual_base() const { return m_trbs; }
+        inline uintptr_t get_physical_base() const { return m_physical_base; }
+        inline uint8_t  get_cycle_bit() const { return m_rcs_bit; }
+        inline uint8_t get_doorbell_id() const { return m_doorbell_id; }
+        inline size_t  get_max_trb_count() const { return m_max_trb_count; }
+
+        uintptr_t get_enqueue_phys() const;
+        bool can_enqueue(size_t n) const;
+
+        void enqueue(xhci_trb_t* trb);
+
+    private:
+        size_t              m_max_trb_count = 0; // Number of valid TRBs in the ring including the LINK_TRB
+        size_t              m_dequeue_ptr = 0;   // Transfer ring consumer dequeue pointer
+        size_t              m_enqueue_ptr = 0;   // Transfer ring producer enqueue pointer
+        xhci_trb_t*         m_trbs = nullptr;    // Base address of the ring buffer
+        uintptr_t           m_physical_base = 0;
+        uint8_t             m_rcs_bit = 0;       // Dequeue cycle state
+        uint8_t             m_doorbell_id = 0;   // ID of the doorbell associated with the ring
+    };
 }

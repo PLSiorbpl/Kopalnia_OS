@@ -2,6 +2,8 @@
 #include "std/types.hpp"
 #include "xHCI_mem.hpp"
 #include "std/mem_common.hpp"
+#include "kernel/Paging.hpp"
+#include "xHCI_rings.hpp"
 
 namespace USB {
     xhci_device::xhci_device(uint8_t port, uint8_t slot, uint8_t speed, bool use_64byte_ctx)
@@ -22,6 +24,11 @@ namespace USB {
         );
 
         m_input_ctx_dma_addr = xhci_get_physical_addr(m_input_ctx);
+
+        m_ctrl_transfer_buffer = alloc_xhci_memory(PAGE_SIZE);
+
+        m_ctrl_ring = new xhci_transfer_ring();
+        m_ctrl_ring->init(XHCI_TRANSFER_RING_TRB_COUNT, m_slot);
     }
 
     xhci_input_control_context32* xhci_device::get_input_ctrl_ctx() {

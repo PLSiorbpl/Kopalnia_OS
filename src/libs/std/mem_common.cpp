@@ -63,4 +63,16 @@ namespace mem {
 
         return dst;
     }
+
+    bool memcmp(const void* src1, const void* src2, const uint64_t size) {
+        const auto p1 = static_cast<const uint8_t*>(src1);
+        const auto p2 = static_cast<const uint8_t*>(src2);
+
+        for (size_t i = 0; i < size; i++) {
+            if (p1[i] != p2[i])
+                return false;
+        }
+
+        return true;
+    }
 }

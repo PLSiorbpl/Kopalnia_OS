@@ -1,10 +1,40 @@
 #pragma once
 #include <std/types.hpp>
+
+#include "xHCI_device.hpp"
 #include "xHCI_regs.hpp"
 #include "xHCI_rings.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 
 namespace USB {
+    constexpr uint16_t USB_DESCRIPTOR_REQUEST(uint8_t type, uint8_t index) {
+        return (type << 8) | index;
+    }
+
+    constexpr uint8_t USB_DESCRIPTOR_DEVICE                          = 0x01;
+
+    struct usb_descriptor_header {
+        uint8_t bLength;
+        uint8_t bDescriptorType;
+    } __attribute__((packed));
+    static_assert(sizeof(usb_descriptor_header) == 2);
+
+    struct usb_device_descriptor {
+        usb_descriptor_header header;
+        uint16_t bcdUsb;
+        uint8_t bDeviceClass;
+        uint8_t bDeviceSubClass;
+        uint8_t bDeviceProtocol;
+        uint8_t bMaxPacketSize0;
+        uint16_t idVendor;
+        uint16_t idProduct;
+        uint16_t bcdDevice;
+        uint8_t iManufacturer;
+        uint8_t iProduct;
+        uint8_t iSerialNumber;
+        uint8_t bNumConfigurations;
+    } __attribute__((packed));
+    static_assert(sizeof(usb_device_descriptor) == 18);
 
     class xhci_driver {
     public:
@@ -103,6 +133,16 @@ namespace USB {
 
         // port is 0-based
         void _setup_device(uint8_t port);
+        void _enumerate_device(xhci_device *device);
+
+        uint16_t _initial_max_packet_size(uint8_t speed);
+        void _configure_ctrl_ep_input_context(xhci_device* device, uint16_t max_packet_size);
+
+        void _address_device(xhci_device* device, bool bsr);
+
+        int32_t _get_device_descriptor(xhci_device* device, void* out, uint16_t length);
+
+        int32_t _send_control_transfer(xhci_device* device,xhci_device_request_packet& request,void* buffer, uint32_t length);
     };
 
     extern xhci_driver m_xhci_driver;
