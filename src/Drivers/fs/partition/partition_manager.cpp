@@ -6,18 +6,13 @@ namespace fs::partition {
     partition_manager::partition_manager() : header_partition() { }
 
     void partition_manager::init(const drivers::ahci::ahci_device& dev) {
-        u16 buf[256];
-        Paging::Map_memory(reinterpret_cast<u64>(buf), reinterpret_cast<u64>(buf) + 512, Paging::Profile::MMIO);
+        const auto buf = static_cast<u16*>(heap::malloc_align(512, 4));
         dev.read(1, 1, buf);
         const auto* header = reinterpret_cast<gpt_header*>(buf);
 
-        if (buf[0] == 0 && buf[67] == 0) {
-            log::error("Buf probably all 0 for some reason");
-            log::info("Buffer: %s", buf);
-        }
-
         if (mem::memcmp(&header->signature, "EFI PART", 8) == false) {
             log::warn("Failed to find signature bytes for GPT partition.");
+            heap::free_align(buf);
             return;
         }
 
@@ -26,10 +21,10 @@ namespace fs::partition {
         const u32 total_size = header->partition_entry_size * header->partition_entry_count;
         const u32 sectors = (total_size + 511) / 512;
 
-        const auto partitions_buf = static_cast<u16*>(heap::malloc(total_size));
-        Paging::Map_memory(reinterpret_cast<u64>(partitions_buf), reinterpret_cast<u64>(partitions_buf) + total_size, Paging::Profile::MMIO);
+        const auto partitions_buf = static_cast<u16*>(heap::malloc_align(total_size, 4));
         if (!dev.read(header->partition_entry_lba, sectors, partitions_buf)) {
-            heap::free(partitions_buf);
+            heap::free_align(partitions_buf);
+            heap::free_align(buf);
             return;
         }
 
@@ -54,6 +49,7 @@ namespace fs::partition {
             partitions.push_back(*entry);
         }
 
-        heap::free(partitions_buf);
+        heap::free_align(partitions_buf);
+        heap::free_align(buf);
     }
 }
