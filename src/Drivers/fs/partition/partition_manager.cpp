@@ -10,8 +10,14 @@ namespace fs::partition {
         dev.read(1, 1, buf);
         const auto* header = reinterpret_cast<gpt_header*>(buf);
 
-        if (mem::memcmp(&header->signature, "EFI PART", 8) == false)
+        if (buf[0] == 0 && buf[67] == 0) {
+            log::error("Buf probably all 0 for some reason");
+        }
+
+        if (mem::memcmp(&header->signature, "EFI PART", 8) == false) {
+            log::warn("Failed to find signature bytes for GPT partition.");
             return;
+        }
 
         log::success("Found partition header!");
 
