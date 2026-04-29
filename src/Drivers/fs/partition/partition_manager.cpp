@@ -30,9 +30,11 @@ namespace fs::partition {
         dev.read(header->partition_entry_lba, sectors, partitions_buf.data);
 
         for (u32 i = 0; i < header->partition_entry_count; i++) {
-            auto* entry = reinterpret_cast<gpt_partition*>(reinterpret_cast<u8*>(partitions_buf.data) + i * header->partition_entry_size);
-
-            if (mem::memcmp(entry->type_guid, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) == true)
+            const auto* entry = reinterpret_cast<gpt_partition*>(reinterpret_cast<u8*>(partitions_buf.data) + i * header->partition_entry_size);
+            auto* guid64 = reinterpret_cast<const u64*>(entry->type_guid);
+            if (guid64[0] == 0 && guid64[1] == 0)
+                continue;
+            if (entry->starting_lba == 0)
                 continue;
 
             char name_buf[37] = {};
