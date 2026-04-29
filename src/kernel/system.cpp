@@ -86,6 +86,8 @@ namespace systemPL {
             //heap::free_align(buffer);
         }
 
+        Time::Sleep(500);
+
         const auto device = ahci.request_device(0);
         partition_manager.init(device);
 
