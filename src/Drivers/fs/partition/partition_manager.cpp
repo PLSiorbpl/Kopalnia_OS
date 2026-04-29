@@ -7,6 +7,7 @@ namespace fs::partition {
 
     void partition_manager::init(const drivers::ahci::ahci_device& dev) {
         u16 buf[256];
+        Paging::Map_memory(reinterpret_cast<u64>(buf), reinterpret_cast<u64>(buf) + 512, Paging::Profile::MMIO);
         dev.read(1, 1, buf);
         const auto* header = reinterpret_cast<gpt_header*>(buf);
 
