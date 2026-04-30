@@ -57,8 +57,8 @@ namespace systemPL {
 
         x64::set_INT_flag(true); // Enable interrupts
 
-        USB::m_xhci_driver.init_device();
-        USB::m_xhci_driver.start_device();
+        //USB::m_xhci_driver.init_device();
+        //USB::m_xhci_driver.start_device();
 
         ahci.init();
         for (int i = 0; i < 32; ++i) {
@@ -86,7 +86,7 @@ namespace systemPL {
             //heap::free_align(buffer);
         }
 
-        Time::Sleep(500);
+        Time::Sleep(100);
 
         const auto device = ahci.request_device(0);
         partition_manager.init(device);
@@ -96,8 +96,6 @@ namespace systemPL {
         //drivers::vga::cursor::enable_cursor(0, 15);
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
-
-        Time::Sleep(250);
 
         enter_user_space();
     }

@@ -11,7 +11,9 @@ namespace drivers::ahci {
 
         bool initialize();
         bool read(const u64 start, const u32 count, u16* buffer) const {
-            return port->read(start, count, buffer, sector_size);
+            const bool error = port->read(start, count, buffer, sector_size);
+            Time::Sleep(10);
+            return error;
         }
 
         bool read_bytes(const u64 start, const i32 count, u16* buffer) const {

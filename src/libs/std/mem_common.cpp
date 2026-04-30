@@ -64,6 +64,7 @@ namespace mem {
         return dst;
     }
 
+    // True - equal False - not equal
     bool memcmp(const void* src1, const void* src2, const uint64_t size) {
         const auto p1 = static_cast<const uint8_t*>(src1);
         const auto p2 = static_cast<const uint8_t*>(src2);

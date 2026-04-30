@@ -24,7 +24,6 @@ namespace fs::partition {
         log::info("Partition Manager initializeing.");
 
         const auto buf = static_cast<u16*>(heap::malloc_align(512, 4));
-        log::info("bufer: %s", buf);
         if (!dev.read(1, 1, buf)) {
             log::error("[ GPT ] Failed to read partition header.");
             return;
