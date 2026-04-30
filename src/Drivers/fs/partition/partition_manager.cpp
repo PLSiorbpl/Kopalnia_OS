@@ -34,7 +34,7 @@ namespace fs::partition {
         log::success("[ GPT ] Found valid partition header!");
 
         const u32 total_size = header->partition_entry_size * header->partition_entry_count;
-        const u32 sectors = (total_size + 511) / 512;
+        const u32 sectors = total_size / dev.get_sector_size();
         const auto partitions_buf = static_cast<u16*>(heap::malloc_align(total_size, 4));
 
         if (!dev.read(header->partition_entry_lba, sectors, partitions_buf)) {
@@ -52,8 +52,7 @@ namespace fs::partition {
 
         for (u32 i = 0; i < header->partition_entry_count; i++) {
             const auto* entry = reinterpret_cast<gpt_partition*>(reinterpret_cast<u8*>(partitions_buf) + i * header->partition_entry_size);
-            auto* guid64 = reinterpret_cast<const u64*>(entry->type_guid);
-            if (guid64[0] == 0 && guid64[1] == 0)
+            if (mem::memcmp(entry->type_guid, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) == true)
                 continue;
             if (entry->starting_lba == 0)
                 continue;
