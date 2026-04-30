@@ -345,7 +345,7 @@ namespace drivers::ahci {
         if (!wait_for_port_completion(slot))
             return false;
 
-        for (int i = 0; i < 10000000000; ++i) {
+        for (int i = 0; i < 10000000; ++i) {
             if (has_received_command_data) {
                 has_received_command_data = false;
                 return true;
