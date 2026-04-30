@@ -72,6 +72,8 @@ namespace fs::partition {
             }
 
             log::info("[ GPT ] Found partition %i with name of '%s'", i, name_buf);
+            auto part_size = static_cast<double>(entry->ending_lba - entry->starting_lba) * static_cast<double>(dev.get_sector_size());
+            log::info("[ GPT ] Partition size: %f%s", part_size, std::format_size(part_size));
             partitions.push_back(*entry);
         }
 
