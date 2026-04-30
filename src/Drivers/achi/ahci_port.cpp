@@ -281,35 +281,38 @@ namespace drivers::ahci {
     }
 
     void ahci_port::on_interrupt() {
-        if (port->interrupt_status.cold_port_detect_interrupt)
+        const auto is = &port->interrupt_status;
+        clear_interrupt_errors();
+
+        if (is->cold_port_detect_interrupt)
             log::warn("AHCI: Device on port %i has been removed or unable to be detected!", port_num);
-        if (port->interrupt_status.task_file_error_interrupt) {
+        if (is->task_file_error_interrupt) {
             log::error("AHCI: task file error (tfd: %x)", port->tfd);
             has_errored = true;
         }
-        if (port->interrupt_status.host_bus_fatal_error_interrupt) {
+        if (is->host_bus_fatal_error_interrupt) {
             log::error("AHCI: host bus fatal error");
             has_errored = true;
         }
-        if (port->interrupt_status.host_bus_data_error_interrupt) {
+        if (is->host_bus_data_error_interrupt) {
             log::error("AHCI: host bus data error");
             has_errored = true;
         }
-        if (port->interrupt_status.interface_fatal_error_interrupt) {
+        if (is->interface_fatal_error_interrupt) {
             log::error("AHCI: interface fatal error (serr: %x)", port->serr);
             has_errored = true;
         }
-        if (port->interrupt_status.interface_non_fatal_error_interrupt)
+        if (is->interface_non_fatal_error_interrupt)
             log::warn("AHCI: interface non-fatal error (serr: %x)", port->serr);
-        if (port->interrupt_status.overflow_interrupt)
+        if (is->overflow_interrupt)
             log::warn("AHCI: overflow error");
-        if (port->interrupt_status.incorrect_port_multiplier_interrupt)
+        if (is->incorrect_port_multiplier_interrupt)
             log::warn("AHCI: incorrect port multiplier");
-        if (port->interrupt_status.phy_ready_change_interrupt)
+        if (is->phy_ready_change_interrupt)
             log::warn("AHCI: PHY ready change");
-        if (port->interrupt_status.port_connect_change_interrupt)
+        if (is->port_connect_change_interrupt)
             log::warn("AHCI: device connected/disconnected on port %i", port_num);
-        if (port->interrupt_status.device_to_host_fis_interrupt)
+        if (is->device_to_host_fis_interrupt)
             has_received_command_data = true;
 
         if (has_errored) { // fatal error so do error recovery
@@ -330,8 +333,6 @@ namespace drivers::ahci {
                     port->command_issue |= (1 << i);
             }
         }
-
-        clear_interrupt_errors();
     }
 
     bool ahci_port::issue_command(const u8 slot) {
@@ -343,7 +344,7 @@ namespace drivers::ahci {
         if (!wait_for_port_completion(slot))
             return false;
 
-        for (int i = 0; i < 1000000000; ++i) {
+        for (int i = 0; i < 1000000000000; ++i) {
             if (has_received_command_data) {
                 has_received_command_data = false;
                 return true;
