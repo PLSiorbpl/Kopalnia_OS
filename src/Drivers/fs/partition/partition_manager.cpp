@@ -21,8 +21,14 @@ namespace fs::partition {
     }
 
     void partition_manager::init(const drivers::ahci::ahci_device& dev) {
+        log::info("Partition Manager initializeing.");
+
         const auto buf = static_cast<u16*>(heap::malloc_align(512, 4));
-        dev.read(1, 1, buf);
+        log::info("bufer: %s", buf);
+        if (!dev.read(1, 1, buf)) {
+            log::error("[ GPT ] Failed to read partition header.");
+            return;
+        }
         header = reinterpret_cast<gpt_header*>(buf);
 
         if (!validate_gpt()) {
