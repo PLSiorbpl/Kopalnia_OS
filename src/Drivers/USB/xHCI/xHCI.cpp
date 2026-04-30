@@ -78,7 +78,7 @@ namespace USB {
             return false;
         }
 
-        log::success("Controller started!\n");
+        //log::success("Controller started!\n");
 
         for (uint8_t port = 0; port < m_max_ports; port++) {
             xhci_portsc_register portsc = _read_portsc_reg(port);

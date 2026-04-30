@@ -43,11 +43,6 @@ namespace systemPL {
 
         // Paging
         Paging::Map_memory(0x0, 1024*1024*16, Paging::Profile::UserCode);
-        // kinda safer but needs clean build sometimes
-        /*
-        Paging::Map_memory(0x0, reinterpret_cast<uint64_t>(&Linker::__heap_start), Paging::Profile::UserCode);
-        Paging::Map_memory(reinterpret_cast<uint64_t>(&Linker::__heap_start), reinterpret_cast<uint64_t>(&Linker::__heap_start)+(1024*1024*16),
-            Paging::Profile::UserData); */
 
         Paging::Enable_paging();
 
@@ -57,8 +52,8 @@ namespace systemPL {
 
         x64::set_INT_flag(true); // Enable interrupts
 
-        //USB::m_xhci_driver.init_device();
-        //USB::m_xhci_driver.start_device();
+        USB::m_xhci_driver.init_device();
+        USB::m_xhci_driver.start_device();
 
         ahci.init();
         for (int i = 0; i < 32; ++i) {

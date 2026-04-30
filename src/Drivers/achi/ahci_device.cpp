@@ -1,6 +1,8 @@
 #include "ahci_device.h"
 #include "kernel/Sleep.hpp"
 
+#include "kernel/Sleep.hpp"
+
 bool drivers::ahci::ahci_device::initialize() {
     auto buffer = static_cast<u16*>(allocate_virtual_memory(PORT_BUFFER_SIZE, 4));
     if (!port->identify(buffer)) {
