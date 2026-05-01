@@ -15,9 +15,9 @@ constexpr uint8_t FLAG_64BIT        = (1 << 1);
 
 constexpr uint8_t ACCESS_TSS = 0x89;
 
-struct gdt_descriptor {
+struct gdtd {
     uint16_t limit;
-    uint32_t base;
+    uint64_t base;
 } __attribute__((packed));
 
 struct tss_entry {
@@ -33,3 +33,6 @@ struct tss_entry {
 } __attribute__((packed));
 
 void init_tss();
+
+extern gdtd gdt_descriptor;
+extern uint64_t gdt[];

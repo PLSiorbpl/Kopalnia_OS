@@ -112,7 +112,7 @@ void list_commands() {
 }
 
 extern "C" void kernel_main(uint32_t magic, void *mbi) {
-    systemPL::Init(mbi);
+    //systemPL::Init(mbi);
     //Framebuffer::Init();
     //Framebuffer::Clear(0x00ff00ff);
     //Framebuffer::Swap();
@@ -133,6 +133,7 @@ extern "C" void user_space_main() {
     static char buffer[256];
     static int i = 0;
     while (true) {
+        sys_swap_framebuffer();
         const kb::key_code key = sys_get_key();
         const char key_char = kb::to_char(key);
 

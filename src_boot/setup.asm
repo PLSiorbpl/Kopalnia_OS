@@ -1,0 +1,53 @@
+bits 64
+
+global setup
+
+extern gdt_descriptor
+extern PML4_Table
+
+section .data
+testword: DW 0x55AA
+value_37F: DW 0x37f
+value_37E: DW 0x37e
+value_37A: DW 0x37a
+
+section .text
+setup:
+    cli
+    lgdt [rel gdt_descriptor]
+    mov rax, 0x18
+    push rax
+    lea rax, [rel .flush]
+    push rax
+    o64 retf
+
+.flush:
+    mov ax, 0x20 ; Set the A-register to the data descriptor.
+    mov ds, ax ; Set the data segment to the A-register.
+    mov es, ax ; Set the extra segment to the A-register.
+    mov fs, ax ; Set the F-segment to the A-register.
+    mov gs, ax ; Set the G-segment to the A-register.
+    mov ss, ax ; Set the stack segment to the A-register.
+
+    mov rax, cr0
+    and rax, ~((1 << 2) | (1 << 3)) ; Set bit 2 off bc itll cause #UD if using FPU and we wanna actually use the FPU and set bit 3 to off bc u need to idk
+    or rax, (1 << 1) | (1 << 5) ; Monitor co-processor bit, Numeric Error bit?
+    mov cr0, rax
+
+    fninit ; load defaults to FPU
+    fnstsw [rel testword]
+    cmp word [rel testword], 0
+    jne .nofpu ; jump if the FPU hasn't written anything (i.e. it's not there)
+
+    fldcw [rel value_37F] ; writes 0x37f into the control word: the value written by F(N)INIT
+    fldcw [rel value_37E] ; writes 0x37e, the default with invalid operand exceptions enabled
+    fldcw [rel value_37A] ; writes 0x37a, both division by zero and invalid operands cause exceptions.
+    ret
+
+.nofpu:
+    ; Reset FPU to off
+    mov rax, cr0
+    or rax, (1 << 2)
+    mov cr0, rax
+
+section .note.GNU-stack noalloc noexec nowrite progbits

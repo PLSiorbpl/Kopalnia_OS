@@ -1,19 +1,21 @@
 #pragma once
 #include "std/types.hpp"
 
+struct Framebuffer;
+
 namespace framebuffer {
     struct framebuffer_info {
         u32 width;
         u32 height;
-        u32 pitch;
-        u64 pixel_width;
+        u32 pixels_in_scanline;
+        u64 size;
     };
 
     class framebuffer {
     public:
         framebuffer() = default;
         ~framebuffer() = default;
-        void init();
+        void init(Framebuffer* framebuffer);
 
         void swap();
         void clear(u32 color);

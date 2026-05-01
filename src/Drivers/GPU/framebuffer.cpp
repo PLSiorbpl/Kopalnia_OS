@@ -2,9 +2,9 @@
 #include "framebuffer.hpp"
 
 #include "glyphs.h"
+#include "../../../UEFI_BOOT/boot_shared.h"
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/vga.h"
-#include "kernel/multiboot2.hpp"
 #include "kernel/Paging.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "std/mem_common.hpp"
@@ -12,17 +12,17 @@
 namespace framebuffer {
     constexpr i32 BACKGROUND_COLOR = 0x0F0F0F;
 
-    void framebuffer::init() {
-        if (!Multiboot::Frame_buffer->addr)
+    void framebuffer::init(Framebuffer* framebuffer) {
+        if (!framebuffer->base)
             return;
-        info.width = Multiboot::Frame_buffer->width;
-        info.height = Multiboot::Frame_buffer->height;
-        info.pitch = Multiboot::Frame_buffer->pitch;
+        info.width = framebuffer->width;
+        info.height = framebuffer->height;
+        info.pixels_in_scanline = framebuffer->pixels_per_scanline;
+        info.size = framebuffer->size;
 
-        const auto size = info.height * info.pitch;
-        front_buffer = reinterpret_cast<u32*>(Multiboot::Frame_buffer->addr);
-        back_buffer = static_cast<u32*>(heap::malloc(size));
-        Paging::Map_memory(reinterpret_cast<u64>(front_buffer), reinterpret_cast<u64>(front_buffer) + size, Paging::Profile::VramWC);
+        front_buffer = static_cast<u32*>(framebuffer->base);
+        back_buffer = static_cast<u32*>(heap::malloc(info.size));
+        Paging::Map_memory(reinterpret_cast<u64>(front_buffer), reinterpret_cast<u64>(front_buffer) + info.size, Paging::Profile::VramWC);
 
         clear(BACKGROUND_COLOR);
         height_in_chars = info.height / 16;
@@ -35,20 +35,20 @@ namespace framebuffer {
     void framebuffer::swap() {
         if (!is_dirty)
             return;
-        mem::memcpy(front_buffer, back_buffer, info.height * info.pitch);
+        mem::memcpy(front_buffer, back_buffer, info.size);
         is_dirty = false;
     }
 
     void framebuffer::clear(const u32 color) {
         const bool old_flag = x64::get_INT_flag();
         x64::set_INT_flag(false);
-        mem::memset32(back_buffer, color, info.height * info.width);
+        mem::memset32(back_buffer, color, info.height * info.pixels_in_scanline);
         x64::set_INT_flag(old_flag);
         is_dirty = true;
     }
 
     void framebuffer::set_pixel(const u32 x, const u32 y, const u32 color) const {
-        back_buffer[(y * (info.pitch / 4)) + x] = color;
+        back_buffer[(y * info.pixels_in_scanline) + x] = color;
     }
 
     void framebuffer::put_char_at(const char c, const u32 x, const u32 y, const u32 color) {
@@ -104,8 +104,8 @@ namespace framebuffer {
             return;
         const bool old_flag = x64::get_INT_flag();
         x64::set_INT_flag(false);
-        mem::memcpy(back_buffer, back_buffer + (16 * info.pitch / 4), (info.height - 16) * info.pitch);
-        mem::memset32(back_buffer + ((info.height - 16) * info.pitch / 4), BACKGROUND_COLOR, 16 * (info.pitch / 4));
+        mem::memcpy(back_buffer, back_buffer + (16 * info.pixels_in_scanline), (info.height - 16) * info.pixels_in_scanline * sizeof(u32) );
+        mem::memset32(back_buffer + ((info.height - 16) * info.pixels_in_scanline), BACKGROUND_COLOR, 16 * info.pixels_in_scanline);
         is_dirty = true;
         x64::set_INT_flag(old_flag);
     }

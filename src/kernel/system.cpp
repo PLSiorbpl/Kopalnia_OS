@@ -1,8 +1,6 @@
 #include "system.hpp"
 
-#include "linker_info.hpp"
 #include "log.h"
-#include "multiboot2.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "arch/x86_64/IDT/IDT.hpp"
 #include "arch/x86_64/Common/Common.hpp"
@@ -10,10 +8,8 @@
 #include "kernel/Sleep.hpp"
 #include "kernel/Paging.hpp"
 #include "arch/x86_64/gdt/gdt.h"
-#include "Drivers/cursor.h"
 #include "Drivers/achi/ahci.h"
 #include "Drivers/achi/ahci_device.h"
-#include "Drivers/ata/ata.h"
 #include "Drivers/fs/partition/partition_manager.h"
 #include "Drivers/GPU/framebuffer.hpp"
 #include "Drivers/USB/xHCI/xHCI.hpp"
@@ -24,8 +20,25 @@ namespace systemPL {
     framebuffer::framebuffer fb;
     fs::partition::partition_manager partition_manager;
 
-    void Init(void* mbi) {
-        Multiboot::Init(static_cast<uint8_t*>(mbi));
+    void Init(Framebuffer* framebuffer) {
+        // asm volatile(
+        //     "lgdt %0\n"
+        //     "movq $0x18, %%rax\n"
+        //     "pushq %%rax\n"
+        //     "leaq 1f(%%rip), %%rax\n"
+        //     "pushq %%rax\n"
+        //     "lretq\n"
+        //     "1:\n"
+        //     "movw $0x20, %%ax\n"
+        //     "movw %%ax, %%ds\n"
+        //     "movw %%ax, %%es\n"
+        //     "movw %%ax, %%ss\n"
+        //     "movw %%ax, %%fs\n"
+        //     "movw %%ax, %%gs\n"
+        //     :
+        //     : "m"(gdt_descriptor)
+        //     : "memory", "rax"
+        // );
 
         init_tss();
 
@@ -44,11 +57,12 @@ namespace systemPL {
         // Paging
         Paging::Map_memory(0x0, 1024*1024*16, Paging::Profile::UserCode);
 
-        Paging::Enable_paging();
+        //Paging::Enable_paging();
+
 
         kb::flush_keyboard();
 
-        fb.init();
+        fb.init(framebuffer);
 
         x64::set_INT_flag(true); // Enable interrupts
 

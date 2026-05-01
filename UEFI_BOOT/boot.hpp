@@ -29,18 +29,8 @@ struct Elf64_Phdr {
     UINT64 p_align;
 };
 
-struct Framebuffer {
-    void*   base;
-    UINT64  size;
-    UINT32  width;
-    UINT32  height;
-    UINT32  pixels_per_scanline;
-};
-
-static Framebuffer fb;
-
-extern EFI_SYSTEM_TABLE     *ST;
-extern EFI_BOOT_SERVICES    *BS;
+extern EFI_SYSTEM_TABLE *ST;
+extern EFI_BOOT_SERVICES *BS;
 extern EFI_RUNTIME_SERVICES *RT;
 
 extern EFI_GUID gEfiFileInfoGuid;

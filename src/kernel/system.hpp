@@ -4,6 +4,8 @@
 #include "Drivers/GPU/framebuffer.hpp"
 #include "std/types.hpp"
 
+struct Framebuffer;
+
 namespace systemPL {
     extern "C" char user_stack_top;
     extern "C" char stack_top;
@@ -17,5 +19,5 @@ namespace systemPL {
     extern framebuffer::framebuffer fb;
     extern fs::partition::partition_manager partition_manager;
 
-    void Init(void* mbi);
+    void Init(Framebuffer* fb);
 }

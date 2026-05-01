@@ -1,3 +1,5 @@
+#include "kernel/system.hpp"
+
 struct Framebuffer {
     void* base;
     unsigned long long size;
@@ -6,7 +8,12 @@ struct Framebuffer {
     unsigned int pixels_per_scanline;
 };
 
-extern "C" void _start(Framebuffer *fb) {
+extern "C" void setup();
+
+extern "C" void _start(Framebuffer* fb) {
+    setup();
+    systemPL::Init(fb);
+
     auto* screen = static_cast<unsigned int *>(fb->base);
 
     for (unsigned int y = 0; y < fb->height; y++) {

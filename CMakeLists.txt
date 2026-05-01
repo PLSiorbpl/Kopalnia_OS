@@ -6,7 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_COMPILER gcc)
 set(CMAKE_CXX_COMPILER g++)
 
+set(CMAKE_ASM_NASM_COMPILER nasm)
+set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
+
 project(Plum-OS C CXX)
+
+enable_language(ASM_NASM)
 
 # =========================================================
 # UEFI Boot Loader
@@ -64,9 +69,18 @@ target_compile_options(BOOTX64_ide PRIVATE
 
 # =========================================================
 # Kernel
-file(GLOB_RECURSE CPP_SOURCES_KERNEL CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.cpp")
 
-add_executable(Kernel ${CPP_SOURCES_KERNEL})
+file(GLOB_RECURSE CPP_SOURCES_KERNEL CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.cpp")
+file(GLOB_RECURSE CPP_SOURCES_64 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+file(GLOB_RECURSE ASM_SOURCES_64 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.asm")
+file(GLOB_RECURSE ASM_SOURCES_BOOT CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.asm")
+
+add_executable(Kernel ${CPP_SOURCES_KERNEL} ${CPP_SOURCES_64} ${ASM_SOURCES_64} ${ASM_SOURCES_BOOT})
+
+target_include_directories(Kernel PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/src_boot"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/libs")
 
 target_compile_options(Kernel PRIVATE
         # ---------------------
@@ -153,7 +167,8 @@ set(QEMU_FLAGS
         -boot order=c
         # ----- Drives -----
         -drive if=pflash,format=raw,readonly=on,file=${OVMF}
-        -drive format=raw,file=${FAT_IMG}
+        -drive if=none,id=fat,format=raw,file=${FAT_IMG}
+        -device virtio-blk-pci,drive=fat
         # ----- AHCI -----
         -device ahci,id=ahci
         -device ide-hd,drive=hd0,bus=ahci.0
