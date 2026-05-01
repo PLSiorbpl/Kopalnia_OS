@@ -34,8 +34,7 @@ enter_user_space:
     wrmsr
 
     ; Preparing user sapace ig
-    mov rax, user_space_main
-    mov rcx, rax
+    mov rcx, user_space_main
     mov r11, 0x202
     ; User stack
     mov rax, user_stack_top
@@ -48,6 +47,7 @@ enter_user_space:
     mov es, ax
     mov fs, ax
     mov gs, ax
+
     o64 sysret ; kernel -> user
 
 section .note.GNU-stack noalloc noexec nowrite progbits

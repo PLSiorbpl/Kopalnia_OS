@@ -12,15 +12,12 @@
 namespace framebuffer {
     constexpr i32 BACKGROUND_COLOR = 0x0F0F0F;
 
-    void framebuffer::init(Framebuffer* framebuffer) {
-        if (!framebuffer->base)
+    void framebuffer::init(framebuffer_info framebuffer) {
+        if (!framebuffer.base)
             return;
-        info.width = framebuffer->width;
-        info.height = framebuffer->height;
-        info.pixels_in_scanline = framebuffer->pixels_per_scanline;
-        info.size = framebuffer->size;
+        info = framebuffer;
 
-        front_buffer = static_cast<u32*>(framebuffer->base);
+        front_buffer = static_cast<u32*>(framebuffer.base);
         back_buffer = static_cast<u32*>(heap::malloc(info.size));
         Paging::Map_memory(reinterpret_cast<u64>(front_buffer), reinterpret_cast<u64>(front_buffer) + info.size, Paging::Profile::VramWC);
 

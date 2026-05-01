@@ -4,6 +4,7 @@
 #include "Drivers/Keyboard.hpp"
 #include "kernel/log.h"
 #include "kernel/Sleep.hpp"
+#include "kernel/system.hpp"
 #include "std/printf.hpp"
 #include "std/vector.hpp"
 
@@ -74,7 +75,7 @@ namespace IDT {
     extern "C" void isr_common(const ISR_Registers* regs) {
         if (regs->int_no <= 31) {
             log::error("%s &c%x\n&4Caused by RIP: &e%x", get_exception_name(regs->int_no), regs->error_code, regs->rip);
-
+            systemPL::fb.swap();
             // CPU interrupts (bad so we halt cpu)
             asm volatile("cli; hlt");
         }

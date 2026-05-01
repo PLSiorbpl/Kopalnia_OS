@@ -57,6 +57,37 @@ namespace Paging {
         }
     }
 
+    void Enable_user_space(uint64_t start, uint64_t end) {
+        uint64_t cr3;
+        asm volatile("mov %%cr3, %0" : "=r"(cr3));
+        auto* pml4 = reinterpret_cast<uint64_t*>(cr3);
+
+        for (uint64_t addr = start; addr < end; addr += 4096) {
+            uint64_t pml4_i = (addr >> 39) & 0x1FF;
+            uint64_t pdpt_i = (addr >> 30) & 0x1FF;
+            uint64_t pd_i   = (addr >> 21) & 0x1FF;
+            uint64_t pt_i   = (addr >> 12) & 0x1FF;
+
+            if (!(pml4[pml4_i] & Present)) continue;
+            auto* pdpt = reinterpret_cast<uint64_t*>(pml4[pml4_i] & ~0xFFFULL);
+            pml4[pml4_i] |= User;
+
+            if (!(pdpt[pdpt_i] & Present)) continue;
+            auto* pd = reinterpret_cast<uint64_t*>(pdpt[pdpt_i] & ~0xFFFULL);
+            pdpt[pdpt_i] |= User;
+
+            if (!(pd[pd_i] & Present)) continue;
+            auto* pt = reinterpret_cast<uint64_t*>(pd[pd_i] & ~0xFFFULL);
+            pd[pd_i] |= User;
+
+            if (!(pt[pt_i] & Present)) continue;
+            pt[pt_i] |= User;
+        }
+
+        // flush TLB
+        asm volatile("mov %%cr3, %%rax; mov %%rax, %%cr3" ::: "rax");
+    }
+
     void Enable_paging() {
         // We only need to update address of PML4 because we enabled it before in elevate.asm
         auto pml4_addr = reinterpret_cast<uint64_t>(PML4);

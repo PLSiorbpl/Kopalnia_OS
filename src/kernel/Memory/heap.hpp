@@ -20,7 +20,7 @@ namespace heap {
 	extern uint64_t heap_ptr;
 	extern Block* heap_head;
 
-	void heap_init(uint64_t size);
+	void heap_init(uint64_t size, u64 heap_addr);
 
 	void* malloc(uint64_t size);
 	void* malloc_align(uint64_t size, uint64_t align);

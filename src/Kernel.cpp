@@ -111,16 +111,10 @@ void list_commands() {
     std::printf("\n");
 }
 
-extern "C" void kernel_main(uint32_t magic, void *mbi) {
-    //systemPL::Init(mbi);
-    //Framebuffer::Init();
-    //Framebuffer::Clear(0x00ff00ff);
-    //Framebuffer::Swap();
-}
-
 mem::Ring_Buffer<TextCommand, 64> previous_commands;
 
 extern "C" void user_space_main() {
+    sys_serial_put_char('a');
     std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", std::Output::std_out, -6767, 0, "LOL",
                 0x00000666, 'j', 0xffffffffff, 3.146767);
     std::printf("&f------------ &bPlum OS 64bit &f------------\n\n");
@@ -129,6 +123,8 @@ extern "C" void user_space_main() {
     list_commands();
 
     std::printf("&fPlum-OS> ");
+
+    sys_serial_put_char('e');
 
     static char buffer[256];
     static int i = 0;

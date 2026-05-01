@@ -5,6 +5,7 @@ struct Framebuffer;
 
 namespace framebuffer {
     struct framebuffer_info {
+        void* base;
         u32 width;
         u32 height;
         u32 pixels_in_scanline;
@@ -15,7 +16,7 @@ namespace framebuffer {
     public:
         framebuffer() = default;
         ~framebuffer() = default;
-        void init(Framebuffer* framebuffer);
+        void init(framebuffer_info framebuffer);
 
         void swap();
         void clear(u32 color);

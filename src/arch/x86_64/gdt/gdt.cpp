@@ -44,6 +44,7 @@ void init_tss() {
         static_cast<uint64_t>(limit & 0xFFFF) |
         (static_cast<uint64_t>(base & 0xFFFFFF) << 16) |
         (static_cast<uint64_t>(ACCESS_TSS) << 40);
+    gdt[8] = (base >> 32);
 
     asm volatile("ltr %0" :: "r"(static_cast<uint16_t>(0x38)));
 }

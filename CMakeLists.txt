@@ -14,60 +14,6 @@ project(Plum-OS C CXX)
 enable_language(ASM_NASM)
 
 # =========================================================
-# UEFI Boot Loader
-set(UEFI_BOOT_FLAGS
-        -target x86_64-unknown-windows
-        -ffreestanding
-        -fshort-wchar
-        -mno-red-zone
-        -nostdlib
-        -fno-exceptions
-        -fno-rtti
-        -Wl,-entry:efi_main
-        -Wl,-subsystem:efi_application
-        -fuse-ld=lld-link
-)
-set(UEFI_BOOT_INCLUDES
-        -I/usr/include/efi
-        -I/usr/include/efi/protocol
-        -I/usr/include/efi/x86_64
-        -I/usr/include/efi/ia32
-)
-
-file(GLOB_RECURSE CPP_SOURCES_UEFI_BOOT CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/UEFI_BOOT/*.cpp")
-
-add_custom_target(BOOTX64.EFI
-        COMMENT "Compiling bootloader -> BOOTX64.EFI"
-        COMMAND clang++
-        ${UEFI_BOOT_FLAGS}
-        ${UEFI_BOOT_INCLUDES}
-        ${CPP_SOURCES_UEFI_BOOT}
-        -o ${CMAKE_CURRENT_BINARY_DIR}/BOOTX64.EFI
-        VERBATIM
-)
-# ---------------------------------------------------------
-
-
-# =========================================================
-# Dummy
-add_library(BOOTX64_ide OBJECT ${CPP_SOURCES_UEFI_BOOT})
-target_include_directories(BOOTX64_ide PUBLIC
-        /usr/include/efi
-        /usr/include/efi/protocol
-        /usr/include/efi/x86_64
-        /usr/include/efi/ia32
-)
-target_compile_options(BOOTX64_ide PRIVATE
-        -ffreestanding
-        -fshort-wchar
-        -mno-red-zone
-        -fno-exceptions
-        -fno-rtti
-)
-# ---------------------------------------------------------
-
-
-# =========================================================
 # Kernel
 
 file(GLOB_RECURSE CPP_SOURCES_KERNEL CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.cpp")
@@ -147,9 +93,12 @@ add_custom_target(build
         ::
         COMMAND mmd    -i ${FAT_IMG} ::/EFI
         COMMAND mmd    -i ${FAT_IMG} ::/EFI/BOOT
-        COMMAND mcopy  -i ${FAT_IMG} ${CMAKE_CURRENT_BINARY_DIR}/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
+        COMMAND mmd    -i ${FAT_IMG} ::/boot
+        COMMAND mmd    -i ${FAT_IMG} ::/boot/limine
+        COMMAND mcopy  -i ${FAT_IMG} ${CMAKE_SOURCE_DIR}/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
         COMMAND mcopy  -i ${FAT_IMG} ${CMAKE_CURRENT_BINARY_DIR}/Kernel.elf  ::/Kernel.elf
-        DEPENDS BOOTX64.EFI Kernel
+        COMMAND mcopy  -i ${FAT_IMG} ${CMAKE_SOURCE_DIR}/limine.conf  ::/boot/limine/limine.conf
+        DEPENDS Kernel
         VERBATIM
 )
 # ---------------------------------------------------------
@@ -190,7 +139,7 @@ set(QEMU_FLAGS
 add_custom_target(run
         COMMENT "launching QEMU"
         COMMAND qemu-system-x86_64 ${QEMU_FLAGS}
-        DEPENDS BOOTX64.EFI Kernel build
+        DEPENDS Kernel build
         VERBATIM
 )
 # ---------------------------------------------------------

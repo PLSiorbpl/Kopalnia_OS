@@ -11,14 +11,14 @@ namespace heap {
     uint64_t heap_end;
     uint64_t heap_ptr;
 
-    void heap_init(const uint64_t size) {
-        heap_head = &Linker::__heap_start;
+    void heap_init(const uint64_t size, u64 heap_addr) {
+        heap_head = reinterpret_cast<Block*>(heap_addr);
         heap_head->size = size - sizeof(Block);
         heap_head->free = true;
         heap_head->next = nullptr;
         heap_head->prev = nullptr;
 
-        heap_start = reinterpret_cast<uint64_t>(&Linker::__heap_start);
+        heap_start = reinterpret_cast<uint64_t>(reinterpret_cast<void*>(heap_addr));
         heap_end = heap_start + size;
     }
 

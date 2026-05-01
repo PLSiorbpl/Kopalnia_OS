@@ -7,8 +7,6 @@
 struct Framebuffer;
 
 namespace systemPL {
-    extern "C" char user_stack_top;
-    extern "C" char stack_top;
     extern "C" u64 kernel_rsp;
 
     extern "C" void enter_user_space();
@@ -19,5 +17,5 @@ namespace systemPL {
     extern framebuffer::framebuffer fb;
     extern fs::partition::partition_manager partition_manager;
 
-    void Init(Framebuffer* fb);
+    void Init(framebuffer::framebuffer_info fb, u64 heap_addr);
 }

@@ -22,6 +22,7 @@ namespace Paging {
     void Init();
     uint64_t alloc_page();
     void Map_memory(uint64_t start, uint64_t end, uint64_t flags = 0);
+    void Enable_user_space(uint64_t start, uint64_t end);
     void Enable_paging();
 
     namespace Profile {

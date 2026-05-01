@@ -67,18 +67,14 @@ UINT64 load_elf_kernel(EFI_FILE* kernel_file, EFI_GRAPHICS_OUTPUT_PROTOCOL* gop)
     for (UINT16 i = 0; i < ehdr->e_phnum; i++) {
         Elf64_Phdr* ph = &phdrs[i];
         if (ph->p_type != 1) continue;
-
         UINTN pages = (ph->p_memsz + 0xFFF) / 0x1000;
         EFI_PHYSICAL_ADDRESS seg_addr = ph->p_paddr;
-
         EFI_STATUS s = BS->AllocatePages(AllocateAddress, EfiLoaderData, pages, &seg_addr);
         if (EFI_ERROR(s)) {
-            fill_screen(gop, 0x00FF8000); // ORANGE = AllocatePages failed
-            while (true) __asm__("hlt");  // ← this is the most likely failure point
+            fill_screen(gop, i == 0 ? 0x00FF8000 : 0x000080FF); // orange = seg0, cyan = seg1
+            while (true) __asm__("hlt");
         }
-
         BS->CopyMem((void*)seg_addr, elf_data + ph->p_offset, ph->p_filesz);
-
         if (ph->p_memsz > ph->p_filesz)
             BS->SetMem((void*)(seg_addr + ph->p_filesz), ph->p_memsz - ph->p_filesz, 0);
     }
