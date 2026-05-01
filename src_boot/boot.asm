@@ -24,12 +24,12 @@ dd header_end - header_start
 dd -(0xE85250D6 + 0 + (header_end - header_start))
 
 ; Framebuffer tag
-dw 5
-dw 0
-dd 24
-dd 800
-dd 600
-dd 32
+;dw 5
+;dw 0
+;dd 24
+;dd 800
+;dd 600
+;dd 32
 
 align 8
 
@@ -51,6 +51,7 @@ align 8
 section .text
 _start:
     cli
+    ;jmp kernel_main
 
     mov [mb2_magic_number], eax
     mov [mb2_info], ebx

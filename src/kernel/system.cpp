@@ -86,9 +86,9 @@ namespace systemPL {
         auto device = ahci.request_device(0);
         partition_manager.init(device);
 
-        //drivers::ata::device(false);
+        drivers::ata::device(false);
 
-        //drivers::vga::cursor::enable_cursor(0, 15);
+        drivers::vga::cursor::enable_cursor(0, 15);
 
         kernel_rsp = reinterpret_cast<u64>(&stack_top);
 
