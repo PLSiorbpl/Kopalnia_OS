@@ -8,7 +8,7 @@
 #include "std/vector.hpp"
 
 namespace IDT {
-    const char* get_exception_name(const uint64_t int_no) {
+    const char* get_exception_name(const u64 int_no) {
         switch(int_no) {
             case 0: return "Divide Error";
             case 1: return "Debug";
@@ -77,6 +77,12 @@ namespace IDT {
 
             // CPU interrupts (bad so we halt cpu)
             asm volatile("cli; hlt");
+        }
+
+        if (uacpi_handlers[regs->int_no]) {
+            uacpi_handlers[regs->int_no](uacpi_handlers_ctx[regs->int_no]);
+            x64::pic_send_eoi(regs->int_no - 32);
+            return;
         }
 
         for (int i = 0; i < custom_handlers_count[regs->int_no]; i++) {

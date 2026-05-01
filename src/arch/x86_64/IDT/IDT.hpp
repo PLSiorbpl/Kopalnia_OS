@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../libs/std/types.hpp"
+#include "uacpi/types.h"
 
 namespace IDT {
     struct IDTR {
@@ -34,8 +34,13 @@ namespace IDT {
     extern isr_t custom_handlers[256][4];
     extern uint8_t custom_handlers_count[256];
 
+    // uACPI Handlers
+    extern uacpi_interrupt_handler uacpi_handlers[256];
+    extern uacpi_handle uacpi_handlers_ctx[256];
+
 	void set_IDT_entry(IDTEntry& entry, void* handler);
     void IDT_Install();
     void Install_handler(isr_t handler, uint8_t irq_no);
+    void install_uacpi_handler(uacpi_interrupt_handler handler, uint8_t irq_no, uacpi_handle ctx);
     void PIC_Remap(uint8_t offset1, uint8_t offset2);
 }

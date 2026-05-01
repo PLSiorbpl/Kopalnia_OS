@@ -18,6 +18,8 @@
 #include "Drivers/GPU/framebuffer.hpp"
 #include "Drivers/USB/xHCI/xHCI.hpp"
 #include "std/string.h"
+#include "uacpi/uacpi.h"
+#include "uacpi/log.h"
 
 namespace systemPL {
     drivers::ahci::ahci ahci;

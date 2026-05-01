@@ -15,6 +15,10 @@ namespace PCI {
     uint16_t pci_read16(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
     uint8_t pci_read8(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
 
+    void pci_write32(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, u32 value);
+    void pci_write16(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, u16 value);
+    void pci_write8(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, u8 value);
+
     void Test();
 
     uint32_t get_class(uint8_t bus, uint8_t dev, uint8_t fn);

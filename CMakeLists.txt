@@ -202,12 +202,16 @@ file(GLOB_RECURSE ASM_SOURCES_32 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/
 # ISO
 set(ISODIR ${CMAKE_SOURCE_DIR}/isodir)
 
-add_executable(kopalnia_os ${ASM_SOURCES_32} ${CPP_SOURCES_64} ${ASM_SOURCES_64})
+include(src/libs/uacpi/uacpi.cmake)
+
+add_executable(kopalnia_os ${ASM_SOURCES_32} ${CPP_SOURCES_64} ${ASM_SOURCES_64} ${UACPI_SOURCES})
 
 target_include_directories(kopalnia_os PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src_boot"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/libs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/Drivers/acpi"
+        ${UACPI_INCLUDES}
 )
 
 target_compile_options(kopalnia_os PRIVATE
@@ -241,6 +245,7 @@ target_compile_options(kopalnia_os PRIVATE
         -g
         -Wall
         -O0
+        -DUACPI_OVERRIDE_CONFIG
 )
 
 set_target_properties(kopalnia_os PROPERTIES

@@ -1,3 +1,4 @@
+#include "arch/x86_64/Common/Common.hpp"
 #include "arch/x86_64/syscall/syscall.h"
 #include "libs/std/types.hpp"
 #include "libs/std/mem_common.hpp"
