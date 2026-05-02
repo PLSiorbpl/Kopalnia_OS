@@ -5,6 +5,7 @@
 #include "kernel/log.h"
 #include "kernel/Memory/heap.hpp"
 #include "kernel/Paging.hpp"
+#include "kernel/Memory/mem_helper.h"
 
 namespace USB {
     uintptr_t xhci_map_mmio(const uint64_t pci_bar_address, const uint32_t bar_size) {
@@ -45,7 +46,7 @@ namespace USB {
     }
 
     uintptr_t xhci_get_physical_addr(void *vaddr) {
-        const auto paddr = reinterpret_cast<uintptr_t>(vaddr);
+        const auto paddr = to_physical(vaddr);
         return paddr;
     }
 }

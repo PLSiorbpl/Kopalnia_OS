@@ -1,6 +1,6 @@
 bits 64
 extern dispatch_syscall
-extern kernel_rsp
+extern stack_top
 extern user_rsp
 extern user_rcx
 extern user_r11
@@ -14,7 +14,7 @@ handle_syscall:
     ; rdi, rsi, rdx, r10 = args 1-4
 
     mov [user_rsp], rsp
-    mov rsp, [kernel_rsp]
+    lea rsp, [rel stack_top]
 
     mov [user_rcx], rcx    ; save user RIP
     mov [user_r11], r11    ; save user RFLAGS

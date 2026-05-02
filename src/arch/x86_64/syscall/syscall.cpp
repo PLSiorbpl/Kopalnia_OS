@@ -10,7 +10,6 @@
 #include "kernel/system.hpp"
 #include "kernel/Memory/heap.hpp"
 
-extern "C" u64 kernel_rsp = 0;
 extern "C" u64 user_rsp = 0;
 
 extern "C" u64 user_rcx = 0;

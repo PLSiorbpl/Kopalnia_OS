@@ -50,8 +50,8 @@ namespace systemPL {
 
         fb.swap();
 
-        // USB::m_xhci_driver.init_device();
-        // USB::m_xhci_driver.start_device();
+        USB::m_xhci_driver.init_device();
+        USB::m_xhci_driver.start_device();
 
         fb.swap();
 
@@ -90,7 +90,6 @@ namespace systemPL {
 
         fb.swap();
 
-        kernel_rsp = reinterpret_cast<u64>(&Linker::stack_top);
         enter_user_space();
     }
 }
