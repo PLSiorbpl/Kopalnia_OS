@@ -22,16 +22,16 @@ namespace Paging {
     void Init();
     uint64_t alloc_page();
     void Map_memory(uint64_t start, uint64_t end, uint64_t flags = 0);
-    void Enable_user_space(uint64_t start, uint64_t end);
+    void Map_memory_vp(uint64_t virt, uint64_t phys, uint64_t size, uint64_t flags = 0);
     void Enable_paging();
 
     namespace Profile {
-        constexpr uint64_t KernelCode =  Global;
-        constexpr uint64_t KernelData =  (NoExecute | Global);
-        constexpr uint64_t KernelStack = NoExecute;
-        constexpr uint64_t UserCode =    User;
-        constexpr uint64_t UserData =    (User | NoExecute);
-        constexpr uint64_t MMIO =        (CacheDisable | NoExecute);
-        constexpr uint64_t VramWC =      (CacheDisable | NoExecute);
+        constexpr uint64_t KernelCode =  Present | Global;
+        constexpr uint64_t KernelData =  Present | Writable | NoExecute | Global;
+        constexpr uint64_t KernelStack = Present | Writable | NoExecute;
+        constexpr uint64_t UserCode =    Present | User;
+        constexpr uint64_t UserData =    Present | Writable | User | NoExecute;
+        constexpr uint64_t MMIO =        Present | Writable | CacheDisable | NoExecute;
+        constexpr uint64_t VramWC =      Present | Writable | CacheDisable | NoExecute;
     }
 }

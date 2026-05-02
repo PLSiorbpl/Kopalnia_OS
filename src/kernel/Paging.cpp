@@ -1,8 +1,9 @@
 #include "Paging.hpp"
 
 #include "Memory/heap.hpp"
-#include "../libs/std/mem_common.hpp"
 #include "../libs/std/types.hpp"
+
+extern u64 hddm_offset;
 
 namespace Paging {
     alignas(4096) uint64_t PML4[512];
@@ -23,69 +24,67 @@ namespace Paging {
     // TODO
     // fix being able to map only 0-136MB
     void Map_memory(uint64_t start, uint64_t end, const uint64_t flags) {
-        start = start & ~(4095);
-        end = (end + 4095) & ~(4095);
+        start = start & ~4095ULL;
+        end   = (end + 4095) & ~4095ULL;
 
         for (uint64_t addr = start; addr < end; addr += 4096) {
             const uint64_t pml4_i = (addr >> 39) & 0x1FF;
             const uint64_t pdpt_i = (addr >> 30) & 0x1FF;
-            const uint64_t pd_i = (addr >> 21) & 0x1FF;
+            const uint64_t pd_i   = (addr >> 21) & 0x1FF;
             const uint64_t pt_i   = (addr >> 12) & 0x1FF;
 
             if (!(PML4[pml4_i] & Present)) {
-                const uint64_t new_table = alloc_page();
-                mem::memset(reinterpret_cast<void*>(new_table), 0, 4096);
-                PML4[pml4_i] = new_table | Present | Writable | User;
+                uint64_t phys = alloc_page(); // returns physical addr, already zeroed
+                PML4[pml4_i] = phys | Present | Writable | User;
             }
+            auto *PDPT = reinterpret_cast<uint64_t *>((PML4[pml4_i] & ~0xFFFULL) + hddm_offset);
 
-            auto *PDPT = reinterpret_cast<uint64_t *>(PML4[pml4_i] & ~0xFFFULL);
             if (!(PDPT[pdpt_i] & Present)) {
-                const uint64_t new_table = alloc_page();
-                mem::memset(reinterpret_cast<void*>(new_table), 0, 4096);
-                PDPT[pdpt_i] = new_table | Present | Writable | User;
+                uint64_t phys = alloc_page();
+                PDPT[pdpt_i] = phys | Present | Writable | User;
             }
+            auto *PD = reinterpret_cast<uint64_t *>((PDPT[pdpt_i] & ~0xFFFULL) + hddm_offset);
 
-            auto *PD = reinterpret_cast<uint64_t *>(PDPT[pdpt_i] & ~0xFFFULL);
             if (!(PD[pd_i] & Present)) {
-                const uint64_t new_table = alloc_page();
-                mem::memset(reinterpret_cast<void*>(new_table), 0, 4096);
-                PD[pd_i] = new_table | Present | Writable | User;
+                uint64_t phys = alloc_page();
+                PD[pd_i] = phys | Present | Writable | User;
             }
+            auto *PT = reinterpret_cast<uint64_t *>((PD[pd_i] & ~0xFFFULL) + hddm_offset);
 
-            auto *PT = reinterpret_cast<uint64_t *>(PD[pd_i] & ~0xFFFULL);
-            PT[pt_i] = addr | Present | Writable | flags; // Physical == Virtual (identity mapping)
+            PT[pt_i] = addr | flags; // caller is responsible for all flags
         }
     }
 
-    void Enable_user_space(uint64_t start, uint64_t end) {
-        uint64_t cr3;
-        asm volatile("mov %%cr3, %0" : "=r"(cr3));
-        auto* pml4 = reinterpret_cast<uint64_t*>(cr3);
+    void Map_memory_vp(uint64_t virt, uint64_t phys, uint64_t size, uint64_t flags) {
+        for (uint64_t offset = 0; offset < size; offset += 4096) {
+            uint64_t v = virt + offset;
+            uint64_t p = phys + offset;
 
-        for (uint64_t addr = start; addr < end; addr += 4096) {
-            uint64_t pml4_i = (addr >> 39) & 0x1FF;
-            uint64_t pdpt_i = (addr >> 30) & 0x1FF;
-            uint64_t pd_i   = (addr >> 21) & 0x1FF;
-            uint64_t pt_i   = (addr >> 12) & 0x1FF;
+            const uint64_t pml4_i = (v >> 39) & 0x1FF;
+            const uint64_t pdpt_i = (v >> 30) & 0x1FF;
+            const uint64_t pd_i   = (v >> 21) & 0x1FF;
+            const uint64_t pt_i   = (v >> 12) & 0x1FF;
 
-            if (!(pml4[pml4_i] & Present)) continue;
-            auto* pdpt = reinterpret_cast<uint64_t*>(pml4[pml4_i] & ~0xFFFULL);
-            pml4[pml4_i] |= User;
+            if (!(PML4[pml4_i] & Present)) {
+                uint64_t phys = alloc_page(); // returns physical addr, already zeroed
+                PML4[pml4_i] = phys | Present | Writable | User;
+            }
+            auto *PDPT = reinterpret_cast<uint64_t *>((PML4[pml4_i] & ~0xFFFULL) + hddm_offset);
 
-            if (!(pdpt[pdpt_i] & Present)) continue;
-            auto* pd = reinterpret_cast<uint64_t*>(pdpt[pdpt_i] & ~0xFFFULL);
-            pdpt[pdpt_i] |= User;
+            if (!(PDPT[pdpt_i] & Present)) {
+                uint64_t phys = alloc_page();
+                PDPT[pdpt_i] = phys | Present | Writable | User;
+            }
+            auto *PD = reinterpret_cast<uint64_t *>((PDPT[pdpt_i] & ~0xFFFULL) + hddm_offset);
 
-            if (!(pd[pd_i] & Present)) continue;
-            auto* pt = reinterpret_cast<uint64_t*>(pd[pd_i] & ~0xFFFULL);
-            pd[pd_i] |= User;
+            if (!(PD[pd_i] & Present)) {
+                uint64_t phys = alloc_page();
+                PD[pd_i] = phys | Present | Writable | User;
+            }
+            auto *PT = reinterpret_cast<uint64_t *>((PD[pd_i] & ~0xFFFULL) + hddm_offset);
 
-            if (!(pt[pt_i] & Present)) continue;
-            pt[pt_i] |= User;
+            PT[pt_i] = p | flags; // caller is responsible for all flags
         }
-
-        // flush TLB
-        asm volatile("mov %%cr3, %%rax; mov %%rax, %%cr3" ::: "rax");
     }
 
     void Enable_paging() {

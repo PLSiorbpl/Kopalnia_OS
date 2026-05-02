@@ -24,6 +24,16 @@ static volatile limine_hhdm_request hhdm_request = {
     .revision = 0
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile limine_kernel_address_request kernel_address_request = {
+    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+    .revision = 0
+};
+
+u64 hddm_offset = 0;
+u64 kernel_address_phys = 0;
+u64 kernel_address_vert = 0;
+
 extern "C" void setup();
 
 extern "C" void kernel_main() {
@@ -60,6 +70,10 @@ extern "C" void kernel_main() {
     if (!heap_addr)
         for(;;) __asm__("hlt");
 
+
+    hddm_offset = hhdm_request.response->offset;
+    kernel_address_phys = kernel_address_request.response->physical_base;
+    kernel_address_vert = kernel_address_request.response->virtual_base;
 
     systemPL::Init(fb_info, heap_addr);
 

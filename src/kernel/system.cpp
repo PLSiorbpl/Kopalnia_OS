@@ -14,6 +14,10 @@
 #include "Drivers/fs/partition/partition_manager.h"
 #include "Drivers/GPU/framebuffer.hpp"
 
+extern u64 kernel_address_vert;
+extern u64 kernel_address_phys;
+extern u64 hddm_offset;
+
 namespace systemPL {
     drivers::ahci::ahci ahci;
     framebuffer::framebuffer fb;
@@ -33,17 +37,27 @@ namespace systemPL {
 
         // Heap Initialization
         heap::heap_init(1024*1024*8, heap_addr);
+        Paging::Map_memory(heap_addr, heap_addr + 1024*1024*8, Paging::Profile::KernelData);
 
         // Paging
         Paging::Map_memory(0x0, 1024*1024*16, Paging::Profile::UserCode);
-        Paging::Enable_user_space(0x0, 1024*1024*16);
-        Paging::Enable_user_space(reinterpret_cast<uint64_t>(&Linker::user_stack_bottom), reinterpret_cast<uint64_t>(&Linker::user_stack_top));
+
+        u64 kernel_size = reinterpret_cast<u64>(&Linker::__kernel_end) - reinterpret_cast<u64>(&Linker::__kernel_start);
+        Paging::Map_memory_vp(kernel_address_vert, kernel_address_phys, kernel_size, Paging::Profile::KernelCode);
+
+        u64 stack_virt = reinterpret_cast<u64>(&Linker::stack_bottom);
+        u64 stack_phys = stack_virt - hddm_offset;
+        u64 stack_size = reinterpret_cast<u64>(&Linker::stack_top)
+                       - reinterpret_cast<u64>(&Linker::stack_bottom);
+        Paging::Map_memory_vp(stack_virt, stack_phys, stack_size, Paging::Profile::KernelStack);
 
         kb::flush_keyboard();
 
-        fb.init(framebuffer);
+        Paging::Enable_paging();
 
         x64::set_INT_flag(true); // Enable interrupts
+
+        fb.init(framebuffer);
 
         fb.swap();
 
@@ -87,13 +101,6 @@ namespace systemPL {
         // partition_manager.init(device);
         //
         // fb.swap();
-
-        auto* pml4 = Paging::PML4;
-        log::info("PML4[511] = %x\n", pml4[511]);
-        log::info("PML4[0]   = %x\n", pml4[0]);
-        fb.swap();
-
-        //Paging::Enable_paging();
 
         kernel_rsp = reinterpret_cast<u64>(&Linker::stack_top);
 
