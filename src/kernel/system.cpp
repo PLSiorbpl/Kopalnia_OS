@@ -1,5 +1,6 @@
 #include "system.hpp"
 
+#include "limine.h"
 #include "linker_info.hpp"
 #include "log.h"
 #include "kernel/Memory/heap.hpp"
@@ -18,6 +19,7 @@
 
 extern u64 kernel_address_vert;
 extern u64 kernel_address_phys;
+extern volatile limine_memmap_request memmap_request;
 
 namespace systemPL {
     drivers::ahci::ahci ahci;
@@ -39,6 +41,19 @@ namespace systemPL {
 
         u64 kernel_size = reinterpret_cast<u64>(&Linker::__kernel_end) - kernel_address_vert;
         Paging::Map_memory_vp(kernel_address_vert, kernel_address_phys, kernel_size, Paging::Profile::KernelCode | Paging::Writable);
+
+        // Map HHDM
+        u64 phys_top = 0;
+        for (u64 i = 0; i < memmap_request.response->entry_count; i++) {
+            const auto* entry = memmap_request.response->entries[i];
+            if (entry->type != LIMINE_MEMMAP_USABLE && entry->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
+                continue;
+            const u64 end = entry->base + entry->length;
+            if (end > phys_top)
+                phys_top = end;
+        }
+
+        Paging::Map_memory_vp(hhdm_offset, 0x0, phys_top, Paging::Profile::KernelCode | Paging::Writable);
 
         kb::flush_keyboard();
 

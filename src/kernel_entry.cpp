@@ -2,31 +2,30 @@
 
 #include "kernel/linker_info.hpp"
 #include "kernel/system.hpp"
-#include "libs/limine.h"
 
 __attribute__((used, section(".limine_requests")))
-static volatile LIMINE_BASE_REVISION(3)
+volatile LIMINE_BASE_REVISION(3)
 
 __attribute__((used, section(".limine_requests")))
-static volatile limine_framebuffer_request fb_request = {
+volatile limine_framebuffer_request fb_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
     .revision = 0
 };
 
 __attribute__((used, section(".limine_requests")))
-static volatile limine_memmap_request memmap_request = {
+volatile limine_memmap_request memmap_request = {
     .id = LIMINE_MEMMAP_REQUEST,
     .revision = 0
 };
 
 __attribute__((used, section(".limine_requests")))
-static volatile limine_hhdm_request hhdm_request = {
+volatile limine_hhdm_request hhdm_request = {
     .id = LIMINE_HHDM_REQUEST,
     .revision = 0
 };
 
 __attribute__((used, section(".limine_requests")))
-static volatile limine_kernel_address_request kernel_address_request = {
+volatile limine_kernel_address_request kernel_address_request = {
     .id = LIMINE_KERNEL_ADDRESS_REQUEST,
     .revision = 0
 };
