@@ -21,12 +21,17 @@ file(GLOB_RECURSE CPP_SOURCES_64 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/
 file(GLOB_RECURSE ASM_SOURCES_64 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.asm")
 file(GLOB_RECURSE ASM_SOURCES_BOOT CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src_boot/*.asm")
 
-add_executable(Kernel ${CPP_SOURCES_KERNEL} ${CPP_SOURCES_64} ${ASM_SOURCES_64} ${ASM_SOURCES_BOOT})
+include(src/libs/uacpi/uacpi.cmake)
+
+add_executable(Kernel ${CPP_SOURCES_KERNEL} ${CPP_SOURCES_64} ${ASM_SOURCES_64} ${ASM_SOURCES_BOOT} ${UACPI_SOURCES})
 
 target_include_directories(Kernel PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src_boot"
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/libs")
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/libs"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/Drivers/acpi"
+        ${UACPI_INCLUDES}
+)
 
 target_compile_options(Kernel PRIVATE
         # ---------------------
@@ -59,6 +64,9 @@ target_compile_options(Kernel PRIVATE
         -g
         -Wall
         -O0
+        # ---------------------
+        # uACPI
+        -DUACPI_OVERRIDE_CONFIG
 )
 
 target_link_options(Kernel PRIVATE

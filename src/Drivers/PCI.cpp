@@ -26,6 +26,32 @@ namespace PCI {
         return (val >> ((offset & 3) * 8)) & 0xFF;
     }
 
+    void pci_write32(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, u32 value) {
+        const uint32_t address = (1u << 31) |
+        (static_cast<uint32_t>(bus) << 16) |
+        (static_cast<uint32_t>(device) << 11) |
+        (static_cast<uint32_t>(func) << 8) |
+        (offset & 0xFC);
+        x64::outl(0xCF8, address);
+        x64::outl(0xCFC, value);
+    }
+
+    void pci_write16(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, u16 value) {
+        u32 current = pci_read32(bus, device, func, offset & 0xFC);
+        u8 shift = (offset & 2) * 8;
+        current &= ~(0xFFFFu << shift);
+        current |= (static_cast<u32>(value) << shift);
+        pci_write32(bus, device, func, offset & 0xFC, current);
+    }
+
+    void pci_write8(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, u8 value) {
+        u32 current = pci_read32(bus, device, func, offset & 0xFC);
+        u8 shift = (offset & 3) * 8;
+        current &= ~(0xFFu << shift);
+        current |= (static_cast<u32>(value) << shift);
+        pci_write32(bus, device, func, offset & 0xFC, current);
+    }
+
     void Test() {
         uint32_t devices = 0;
         for (int bus = 0; bus < 256; bus++) {

@@ -1,5 +1,6 @@
 #include "system.hpp"
 
+#include "acpi.h"
 #include "limine.h"
 #include "linker_info.hpp"
 #include "log.h"
@@ -39,21 +40,24 @@ namespace systemPL {
         // Paging
         Paging::Map_memory(0x0, 1024*1024*16, Paging::Profile::UserCode);
 
-        u64 kernel_size = reinterpret_cast<u64>(&Linker::__kernel_end) - kernel_address_vert;
+        u64 kernel_size = reinterpret_cast<u64>(&Linker::__kernel_end) - reinterpret_cast<u64>(&Linker::__kernel_start);
         Paging::Map_memory_vp(kernel_address_vert, kernel_address_phys, kernel_size, Paging::Profile::KernelCode | Paging::Writable);
 
         // Map HHDM
-        u64 phys_top = 0;
         for (u64 i = 0; i < memmap_request.response->entry_count; i++) {
             const auto* entry = memmap_request.response->entries[i];
-            if (entry->type != LIMINE_MEMMAP_USABLE && entry->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
-                continue;
-            const u64 end = entry->base + entry->length;
-            if (end > phys_top)
-                phys_top = end;
+            switch (entry->type) {
+                case LIMINE_MEMMAP_USABLE:
+                case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
+                case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
+                case LIMINE_MEMMAP_ACPI_NVS:
+                case LIMINE_MEMMAP_FRAMEBUFFER:
+                    Paging::Map_memory_vp(hhdm_offset + entry->base, entry->base, entry->length, Paging::Profile::KernelData);
+                    break;
+                default:
+                    break;
+            }
         }
-
-        Paging::Map_memory_vp(hhdm_offset, 0x0, phys_top, Paging::Profile::KernelCode | Paging::Writable);
 
         kb::flush_keyboard();
 
@@ -104,6 +108,8 @@ namespace systemPL {
         partition_manager.init(device);
 
         fb.swap();
+
+        drivers::acpi::init();
 
         enter_user_space();
     }

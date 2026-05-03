@@ -30,6 +30,12 @@ volatile limine_kernel_address_request kernel_address_request = {
     .revision = 0
 };
 
+__attribute__((used, section(".limine_requests")))
+volatile limine_rsdp_request rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST,
+    .revision = 0
+};
+
 u64 hhdm_offset = 0;
 u64 kernel_address_phys = 0;
 u64 kernel_address_vert = 0;
