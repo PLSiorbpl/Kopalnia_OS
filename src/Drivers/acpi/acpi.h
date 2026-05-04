@@ -21,7 +21,7 @@ namespace drivers::acpi {
         void register_driver(const acpi_driver &driver);
         void enumerate_bus();
 
-        static void* find_table(const uacpi_char* signature);
+        static uacpi_table find_table(const uacpi_char *signature);
 
         private:
         uacpi_iteration_decision init_device(void* ctx, uacpi_namespace_node *node, uacpi_u32 node_depth) const;

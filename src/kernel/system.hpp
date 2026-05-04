@@ -1,5 +1,6 @@
 #pragma once
 #include "acpi.h"
+#include "arch/x86_64/IDT/APIC.hpp"
 #include "Drivers/achi/ahci.h"
 #include "Drivers/fs/partition/partition_manager.h"
 #include "Drivers/GPU/framebuffer.hpp"
@@ -18,6 +19,7 @@ namespace systemPL {
     extern framebuffer::framebuffer fb;
     extern fs::partition::partition_manager partition_manager;
     extern drivers::acpi::acpi acpi;
+    extern IDT::IOAPIC ioapic;
 
     void Init(framebuffer::framebuffer_info framebuffer_info, u64 heap_addr);
 }

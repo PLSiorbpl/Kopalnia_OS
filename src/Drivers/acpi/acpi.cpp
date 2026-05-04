@@ -39,14 +39,14 @@ void drivers::acpi::acpi::enumerate_bus() {
     }, nullptr, UACPI_OBJECT_DEVICE_BIT, UACPI_MAX_DEPTH_ANY, this);
 }
 
-void* drivers::acpi::acpi::find_table(const uacpi_char* signature) {
+uacpi_table drivers::acpi::acpi::find_table(const uacpi_char *signature) {
     uacpi_table table;
     const auto ret = uacpi_table_find_by_signature(signature, &table);
     if (uacpi_unlikely_error(ret)) {
         log::error("[ uACPI ] Failed to find table: %s", uacpi_status_to_string(ret));
-        return nullptr;
+        return {};
     }
-    return table.ptr;
+    return table;
 }
 
 uacpi_iteration_decision drivers::acpi::acpi::init_device(void* ctx, uacpi_namespace_node *node, uacpi_u32 node_depth) const

@@ -1,12 +1,9 @@
 #include "IDT.hpp"
 #include "std/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
-#include "Drivers/Keyboard.hpp"
 #include "kernel/log.h"
 #include "kernel/Sleep.hpp"
 #include "kernel/system.hpp"
-#include "std/printf.hpp"
-#include "std/vector.hpp"
 #include "APIC.hpp"
 
 namespace IDT {
@@ -64,7 +61,10 @@ namespace IDT {
 
         if (custom_handlers_count[vector] == 0) {
             log::info("Installed &afirst &7handler for IRQ &a%u", irq_no);
-            ioapic_route_irq(irq_no, irq_no+32, 0);
+            const auto iso = IOAPIC::resolve_irq(irq_no);
+            systemPL::ioapic.route(iso.gsi, vector, IOAPIC::Fixed,
+                                   iso.level_triggered ? IOAPIC::TriggerMode::LEVEL : IOAPIC::TriggerMode::EDGE,
+                                   iso.active_low, false);
         } else {
             log::success("&aAdded shared &7handler for IRQ &a%u", irq_no);
         }
@@ -79,14 +79,17 @@ namespace IDT {
             log::error("%s &c%x\n&4Caused by RIP: &e%x", get_exception_name(regs->int_no), regs->error_code, regs->rip);
             u64 cr2;
             asm volatile("mov %%cr2, %0" : "=r"(cr2));
-            log::info("Faulting address (CR2): %x\n", cr2);
+            log::error("CR2: %x", cr2);
             systemPL::fb.swap();
-            // CPU interrupts (bad so we halt cpu)
             asm volatile("cli; hlt");
         }
 
         for (int i = 0; i < custom_handlers_count[regs->int_no]; i++) {
             custom_handlers[regs->int_no][i](regs);
+        }
+
+        if (uacpi_handlers[regs->int_no] != nullptr) {
+            uacpi_handlers[regs->int_no](uacpi_handlers_ctx[regs->int_no]);
         }
 
         // Handlers here

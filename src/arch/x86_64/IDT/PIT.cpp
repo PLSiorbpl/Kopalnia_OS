@@ -28,7 +28,7 @@ namespace PIT {
         constexpr int scale = 1;
         set_PIT_timer_freq(100*scale);
 
-        IDT::write_apic(0x320, 0);
+        IDT::write_apic(0x320, 1 << 16);
         IDT::write_apic(0x380, 0xFFFFFFFF);
 
         Time::tick = 0;
@@ -38,7 +38,7 @@ namespace PIT {
         ticks_per_ms = lapic_elapsed / 10;
         uint32_t initial = ticks_per_ms * 10;
 
-        IDT::write_apic(0x380, initial);
         IDT::write_apic(0x320, 32 | (1 << 17)); // periodic bit
+        IDT::write_apic(0x380, initial);
     }
 }

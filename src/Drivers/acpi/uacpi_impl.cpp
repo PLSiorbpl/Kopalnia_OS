@@ -9,6 +9,7 @@
 #include "kernel/Memory/heap.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Memory/mem_helper.h"
+#include "kernel/system.hpp"
 #include "uacpi/log.h"
 
 extern volatile limine_rsdp_request rsdp_request;
@@ -135,6 +136,8 @@ void uacpi_kernel_free(void *mem) {
 }
 
 uacpi_u64 uacpi_kernel_get_nanoseconds_since_boot(void) {
+    if (Time::hz == 0)
+        return Time::tick;
     return (static_cast<uacpi_u64>(Time::tick) * 1000000000ULL) / Time::hz;
 }
 
@@ -225,7 +228,13 @@ uacpi_status uacpi_kernel_handle_firmware_request(uacpi_firmware_request* req) {
 }
 
 uacpi_status uacpi_kernel_install_interrupt_handler(uacpi_u32 irq, uacpi_interrupt_handler handler, uacpi_handle ctx, uacpi_handle *out_irq_handle) {
-    IDT::install_uacpi_handler(handler, irq, ctx);
+    const auto vector = static_cast<u8>(irq + 32);
+    const auto iso = IDT::IOAPIC::resolve_irq(static_cast<u8>(irq));
+    systemPL::ioapic.route(iso.gsi, vector,
+                           IDT::IOAPIC::DeliveryMode::Fixed,
+                           iso.level_triggered ? IDT::IOAPIC::TriggerMode::LEVEL : IDT::IOAPIC::TriggerMode::EDGE,
+                           iso.active_low, false);
+    IDT::install_uacpi_handler(handler, vector, ctx);
     *out_irq_handle = reinterpret_cast<uacpi_handle>(static_cast<u64>(irq));
     return UACPI_STATUS_OK;
 }
@@ -233,7 +242,7 @@ uacpi_status uacpi_kernel_install_interrupt_handler(uacpi_u32 irq, uacpi_interru
 
 uacpi_status uacpi_kernel_uninstall_interrupt_handler(uacpi_interrupt_handler, uacpi_handle irq_handle) {
     const u32 irq = static_cast<u32>(reinterpret_cast<u64>(irq_handle));
-    IDT::install_uacpi_handler(nullptr, irq, nullptr);
+    IDT::install_uacpi_handler(nullptr, static_cast<u8>(irq + 32), nullptr);
     return UACPI_STATUS_OK;
 }
 

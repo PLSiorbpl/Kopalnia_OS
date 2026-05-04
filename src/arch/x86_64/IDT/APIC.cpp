@@ -3,8 +3,12 @@
 #include "arch/x86_64/Common/Common.hpp"
 #include "kernel/log.h"
 #include "kernel/Paging.hpp"
-#include <uacpi/tables.h>
-#include <uacpi/acpi.h>
+#include <uacpi/uacpi.h>
+
+#include "acpi.h"
+#include "kernel/system.hpp"
+#include "kernel/Memory/mem_helper.h"
+#include "uacpi/acpi.h"
 
 namespace IDT {
     volatile uint32_t* apic = nullptr;
@@ -29,10 +33,9 @@ namespace IDT {
         x64::wrmsr(0x1B, apic_base);
 
         const uint64_t apic_addr = apic_base & 0xFFFFF000;
-
-        Paging::Map_memory_vp(apic_addr, apic_addr, 0x1000, Paging::Profile::MMIO);
-
-        apic = reinterpret_cast<volatile uint32_t *>(apic_addr);
+        u64 apic_virtual_address = to_virtual(apic_addr);
+        Paging::Map_memory_vp(apic_virtual_address, apic_addr, 0x1000, Paging::Profile::MMIO);
+        apic = reinterpret_cast<volatile uint32_t*>(apic_virtual_address);
 
         constexpr uint32_t APIC_ENABLE = 1 << 8;
         constexpr uint32_t SPURIOUS_VECTOR = 0xFF;
@@ -47,234 +50,106 @@ namespace IDT {
         return true;
     }
 
-    // ── IOAPIC register offsets ───────────────────────────────────
-    constexpr uint32_t IOAPIC_REGSEL  = 0x00;
-    constexpr uint32_t IOAPIC_IOWIN   = 0x10;
+    bool IOAPIC::init() {
+        auto table = drivers::acpi::acpi::acpi::find_table(ACPI_MADT_SIGNATURE);
+        auto* madt = static_cast<acpi_madt*>(table.ptr);
+        if (madt == nullptr)
+            return false;
 
-    // IOAPIC registers
-    constexpr uint32_t IOAPIC_ID      = 0x00;
-    constexpr uint32_t IOAPIC_VER     = 0x01;
-    constexpr uint32_t IOAPIC_REDTBL  = 0x10; // + 2*n for entry n
+        acpi_madt_ioapic* ioapic_entry = nullptr;
+        uacpi_for_each_subtable(&madt->hdr, sizeof(acpi_madt), [](void* ctx, acpi_entry_hdr* entry) -> uacpi_iteration_decision {
+            if (entry->type != ACPI_MADT_ENTRY_TYPE_IOAPIC)
+                return UACPI_ITERATION_DECISION_CONTINUE;
 
-    // ── IOAPIC instance ───────────────────────────────────────────
-    struct IOAPIC {
-        uint8_t  id;
-        uint32_t address;           // physical address
-        uint32_t gsi_base;          // global system interrupt base
-        uint8_t  max_redirects;     // filled after reading VERSION register
+            *static_cast<acpi_madt_ioapic**>(ctx) = reinterpret_cast<acpi_madt_ioapic*>(entry);
+            return UACPI_ITERATION_DECISION_BREAK;
+        }, &ioapic_entry);
 
-        volatile uint32_t* regs;   // mapped virtual address
-    };
-
-    // ── ISO (Interrupt Source Override) ──────────────────────────
-    struct ISO {
-        uint8_t  bus;
-        uint8_t  irq;               // source IRQ
-        uint32_t gsi;               // mapped GSI
-        uint16_t flags;             // polarity + trigger mode
-    };
-
-    constexpr uint8_t MAX_IOAPICS = 8;
-    constexpr uint8_t MAX_ISOS    = 32;
-
-    static IOAPIC ioapics[MAX_IOAPICS];
-    static ISO    isos[MAX_ISOS];
-    static uint8_t ioapic_count = 0;
-    static uint8_t iso_count    = 0;
-
-    // ── IOAPIC read/write ─────────────────────────────────────────
-    static uint32_t ioapic_read(const IOAPIC& io, uint8_t reg) {
-        io.regs[IOAPIC_REGSEL / 4] = reg;
-        return io.regs[IOAPIC_IOWIN / 4];
-    }
-
-    static void ioapic_write(const IOAPIC& io, uint8_t reg, uint32_t val) {
-        io.regs[IOAPIC_REGSEL / 4] = reg;
-        io.regs[IOAPIC_IOWIN / 4]  = val;
-    }
-
-    // ── Redirection entry ─────────────────────────────────────────
-    struct RedirEntry {
-        uint8_t  vector;
-        uint8_t  delivery_mode; // 0=fixed, 1=lowest, 2=SMI, 4=NMI, 5=INIT, 7=ExtINT
-        bool     logical_dest;
-        bool     active_low;    // false=active high
-        bool     level_trigger; // false=edge
-        bool     masked;
-        uint8_t  dest;          // APIC ID of destination CPU
-    };
-
-    static void ioapic_set_redirect(IOAPIC& io, uint8_t gsi_offset, const RedirEntry& e) {
-        uint64_t entry = e.vector;
-        entry |= ((uint64_t)e.delivery_mode  & 0x7) << 8;
-        entry |= ((uint64_t)e.logical_dest   & 0x1) << 11;
-        entry |= ((uint64_t)e.active_low     & 0x1) << 13;
-        entry |= ((uint64_t)e.level_trigger  & 0x1) << 15;
-        entry |= ((uint64_t)e.masked         & 0x1) << 16;
-        entry |= ((uint64_t)e.dest)                 << 56;
-
-        uint8_t reg = IOAPIC_REDTBL + gsi_offset * 2;
-        ioapic_write(io, reg,     (uint32_t)(entry & 0xFFFFFFFF));
-        ioapic_write(io, reg + 1, (uint32_t)(entry >> 32));
-    }
-
-    // ── Find IOAPIC responsible for a GSI ────────────────────────
-    static IOAPIC* ioapic_for_gsi(uint32_t gsi) {
-        for (uint8_t i = 0; i < ioapic_count; i++) {
-            IOAPIC& io = ioapics[i];
-            if (gsi >= io.gsi_base && gsi < io.gsi_base + io.max_redirects)
-                return &io;
-        }
-        return nullptr;
-    }
-
-    // ── Find ISO for a given IRQ ──────────────────────────────────
-    static const ISO* iso_for_irq(uint8_t irq) {
-        for (uint8_t i = 0; i < iso_count; i++)
-            if (isos[i].irq == irq) return &isos[i];
-        return nullptr;
-    }
-
-    // ── MADT parser ───────────────────────────────────────────────
-    bool IOAPIC_Init() {
-        uacpi_table madt_table;
-        uacpi_status status = uacpi_table_find_by_signature("APIC", &madt_table);
-        if (status != UACPI_STATUS_OK) {
-            log::error("MADT not found");
+        if (!ioapic_entry) {
+            log::error("[ IOAPIC ] Failed to find IOAPIC entry inside of MADT!");
             return false;
         }
 
-        auto* madt = reinterpret_cast<acpi_madt*>(madt_table.ptr);
-        uint8_t* entry = reinterpret_cast<uint8_t*>(madt + 1);
-        uint8_t* end   = reinterpret_cast<uint8_t*>(madt) + madt->hdr.length;
+        phys_regs = ioapic_entry->address;
+        virt_address = to_virtual(phys_regs);
+        global_intr_base = static_cast<u8>(ioapic_entry->gsi_base);
+        Paging::Map_memory_vp(virt_address, phys_regs, 0x1000, Paging::Profile::MMIO);
 
-        while (entry < end) {
-            uint8_t type   = entry[0];
-            uint8_t length = entry[1];
-
-            switch (type) {
-                case 1: { // IOAPIC
-                    if (ioapic_count >= MAX_IOAPICS) break;
-
-                    auto* rec = reinterpret_cast<acpi_madt_ioapic*>(entry);
-                    IOAPIC& io = ioapics[ioapic_count++];
-
-                    io.id       = rec->id;
-                    io.address  = rec->address;
-                    io.gsi_base = rec->gsi_base;
-
-                    // Map IOAPIC registers
-                    Paging::Map_memory_vp(
-                        io.address, io.address,
-                        0x1000,
-                        Paging::Profile::MMIO
-                    );
-                    io.regs = reinterpret_cast<volatile uint32_t*>(
-                        static_cast<uint64_t>(io.address)
-                    );
-
-                    // Read max redirections from VERSION register
-                    uint32_t ver    = ioapic_read(io, IOAPIC_VER);
-                    io.max_redirects = ((ver >> 16) & 0xFF) + 1;
-
-                    log::info("IOAPIC id=%d addr=0x%x gsi_base=%d max_redirects=%d",
-                        io.id, io.address, io.gsi_base, io.max_redirects);
-                    break;
-                }
-
-                case 2: { // Interrupt Source Override (ISO)
-                    if (iso_count >= MAX_ISOS) break;
-
-                    auto* rec = reinterpret_cast<acpi_madt_interrupt_source_override*>(entry);
-                    ISO& iso = isos[iso_count++];
-
-                    iso.bus   = rec->bus;
-                    iso.irq   = rec->source;
-                    iso.gsi   = rec->gsi;
-                    iso.flags = rec->flags;
-
-                    log::info("ISO irq=%d -> gsi=%d flags=0x%x",
-                        iso.irq, iso.gsi, iso.flags);
-                    break;
-                }
-
-                default:
-                    break;
-            }
-
-            entry += length;
+        id_register id_reg { .raw = read(ID_REGISTER) };
+        if (id_reg.id != ioapic_entry->id) {
+            id_reg.id = ioapic_entry->id;
+            write(ID_REGISTER, id_reg.raw);
         }
+        apic_id = ioapic_entry->id;
 
-        if (ioapic_count == 0) {
-            log::error("No IOAPICs found in MADT");
-            return false;
-        }
+        const version_register ver_reg { .raw = read(VERSION_REGISTER) };
+        apic_version = ver_reg.version;
+        redirect_entry_count = ver_reg.max_redir_entry + 1;
 
-        // Mask all redirection entries on all IOAPICs
-        for (uint8_t i = 0; i < ioapic_count; i++) {
-            IOAPIC& io = ioapics[i];
-            for (uint8_t j = 0; j < io.max_redirects; j++) {
-                uint8_t reg = IOAPIC_REDTBL + j * 2;
-                ioapic_write(io, reg, 1 << 16); // masked
-                ioapic_write(io, reg + 1, 0);
-            }
-        }
-
+        uacpi_table_unref(&table);
         return true;
     }
 
-    // ── Public API — route an IRQ to a vector ────────────────────
-    // irq    = legacy IRQ number (0-15) or GSI directly
-    // vector = IDT vector to deliver to (32-255)
-    // dest   = destination LAPIC ID (usually 0 for BSP)
-    bool ioapic_route_irq(uint8_t irq, uint8_t vector, uint8_t dest) {
-        uint32_t gsi = irq;
-        bool     active_low    = false;
-        bool     level_trigger = false;
+    void IOAPIC::route(const u8 gsi, u8 vector, DeliveryMode delivery_mode, TriggerMode trigger_mode, bool active_low, bool masked) const {
+        log::info("[ IOAPIC ] Routing: gsi=%u vector=%u trigger=%u polarity=%u masked=%u",
+              gsi, vector, static_cast<u32>(trigger_mode), static_cast<u32>(active_low), static_cast<u32>(masked));
+        const u8 index = gsi - global_intr_base;
 
-        // Check if there's an ISO remapping this IRQ
-        const ISO* iso = iso_for_irq(irq);
-        if (iso) {
-            gsi = iso->gsi;
-            // Flags bits [1:0] = polarity, [3:2] = trigger mode
-            if ((iso->flags & 0x3) == 0x3) active_low    = true;
-            if ((iso->flags & 0xC) == 0xC) level_trigger = true;
-        }
+        redirection_entry entry {};
+        entry.vector = vector;
+        entry.delivery_mode = delivery_mode;
+        entry.trigger_mode = trigger_mode;
+        entry.pin_polarity = active_low;
+        entry.mask = masked;
+        entry.dest = 0; // CPU 0 (LAPIC ID)
 
-        IOAPIC* io = ioapic_for_gsi(gsi);
-        if (!io) {
-            log::error("No IOAPIC for GSI %d", gsi);
-            return false;
-        }
-
-        RedirEntry e {
-            .vector        = vector,
-            .delivery_mode = 0,       // fixed
-            .logical_dest  = false,
-            .active_low    = active_low,
-            .level_trigger = level_trigger,
-            .masked        = false,
-            .dest          = dest,
-        };
-
-        ioapic_set_redirect(*io, gsi - io->gsi_base, e);
-        return true;
+        write(REDIRECTION_TABLE_REGISTER + index * 2, entry.low);
+        write(REDIRECTION_TABLE_REGISTER + index * 2 + 1, entry.hi);
     }
 
-    // ── Mask/unmask a GSI ─────────────────────────────────────────
-    void ioapic_mask(uint32_t gsi) {
-        IOAPIC* io = ioapic_for_gsi(gsi);
-        if (!io) return;
-        uint8_t reg = IOAPIC_REDTBL + (gsi - io->gsi_base) * 2;
-        uint32_t low = ioapic_read(*io, reg);
-        ioapic_write(*io, reg, low | (1 << 16));
+    iso_info IOAPIC::resolve_irq(const u8 irq) {
+        struct find_result {
+            u8 irq {};
+            iso_info info {};
+        } result { .irq = irq, .info = { .gsi = irq, .active_low = false, .level_triggered = false } };
+
+        auto table = drivers::acpi::acpi::acpi::find_table(ACPI_MADT_SIGNATURE);
+        auto* madt = static_cast<acpi_madt*>(table.ptr);
+        if (madt == nullptr)
+            return result.info;
+
+        uacpi_for_each_subtable(&madt->hdr, sizeof(acpi_madt),
+                                [](void* ctx, acpi_entry_hdr* entry) -> uacpi_iteration_decision {
+                                    if (entry->type != ACPI_MADT_ENTRY_TYPE_INTERRUPT_SOURCE_OVERRIDE)
+                                        return UACPI_ITERATION_DECISION_CONTINUE;
+
+                                    auto* res = static_cast<find_result*>(ctx);
+                                    const auto* iso = reinterpret_cast<acpi_madt_interrupt_source_override*>(entry);
+
+                                    if (iso->source != res->irq)
+                                        return UACPI_ITERATION_DECISION_CONTINUE;
+
+                                    res->info.gsi = iso->gsi;
+                                    res->info.active_low = (iso->flags & ACPI_MADT_POLARITY_MASK) == ACPI_MADT_POLARITY_ACTIVE_LOW;
+                                    res->info.level_triggered = (iso->flags & ACPI_MADT_TRIGGERING_MASK) == ACPI_MADT_TRIGGERING_LEVEL;
+                                    return UACPI_ITERATION_DECISION_BREAK;
+                                }, &result);
+
+        uacpi_table_unref(&table);
+        return result.info;
     }
 
-    void ioapic_unmask(uint32_t gsi) {
-        IOAPIC* io = ioapic_for_gsi(gsi);
-        if (!io) return;
-        uint8_t reg = IOAPIC_REDTBL + (gsi - io->gsi_base) * 2;
-        uint32_t low = ioapic_read(*io, reg);
-        ioapic_write(*io, reg, low & ~(1 << 16));
+    void IOAPIC::mask(const u8 gsi) const {
+        const u8 index = gsi - global_intr_base;
+        redirection_entry entry { .raw = read64(REDIRECTION_TABLE_REGISTER + index * 2) };
+        entry.mask = 1;
+        write64(REDIRECTION_TABLE_REGISTER + index * 2, entry.raw);
+    }
+
+    void IOAPIC::unmask(const u8 gsi) const {
+        const u8 index = gsi - global_intr_base;
+        redirection_entry entry { .raw = read64(REDIRECTION_TABLE_REGISTER + index * 2) };
+        entry.mask = 0;
+        write64(REDIRECTION_TABLE_REGISTER + index * 2, entry.raw);
     }
 }

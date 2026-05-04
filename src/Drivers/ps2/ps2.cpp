@@ -33,7 +33,8 @@ namespace drivers::ps2 {
         x64::set_INT_flag(false);
 
         uacpi_resources *kb_res;
-        auto* fadt = static_cast<acpi_fadt*>(acpi::acpi::find_table(ACPI_FADT_SIGNATURE));
+        auto table = acpi::acpi::acpi::find_table(ACPI_FADT_SIGNATURE);
+        auto* fadt = static_cast<acpi_fadt*>(table.ptr);
         if (fadt == nullptr) {
             x64::set_INT_flag(true);
             return -ENODEV;

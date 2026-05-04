@@ -28,15 +28,18 @@ namespace IDT {
         idtr.limit = sizeof(idt) - 1;
         idtr.base  = reinterpret_cast<uint64_t>(&idt);
         asm volatile("lidt %0" : : "m"(idtr));
+
         PIC_Remap(0x20, 0x28); // 0x20 Master 0x28 Slave
         PIC_enabled = true;
-        aPIC_Init();
         x64::set_INT_flag(true);
+        aPIC_Init();
         PIT::calibrate_aPIC_timer();
         x64::set_INT_flag(false);
+
         x64::outb(0x21, 0xFF);
         x64::outb(0xA1, 0xFF);
         PIC_enabled = false;
+        x64::set_INT_flag(true);
     }
 
     void PIC_Remap(const uint8_t offset1, const uint8_t offset2) {

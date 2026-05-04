@@ -19,6 +19,7 @@
 #include "Drivers/USB/xHCI/xHCI.hpp"
 #include "Memory/mem_helper.h"
 #include "arch/x86_64/IDT/APIC.hpp"
+#include "uacpi/uacpi.h"
 
 extern u64 kernel_address_vert;
 extern u64 kernel_address_phys;
@@ -29,6 +30,7 @@ namespace systemPL {
     framebuffer::framebuffer fb;
     fs::partition::partition_manager partition_manager;
     drivers::acpi::acpi acpi;
+    IDT::IOAPIC ioapic;
 
     void Init(framebuffer::framebuffer_info framebuffer_info, u64 heap_addr) {
         init_tss();
@@ -68,9 +70,10 @@ namespace systemPL {
         x64::set_INT_flag(true); // Enable interrupts
         Time::Set_PIT(100); // 100Hz
 
+        uint8_t acpi_early_buf[4096];
+        uacpi_setup_early_table_access(acpi_early_buf, sizeof(acpi_early_buf));
+        ioapic.init();
         acpi.init();
-
-        IDT::IOAPIC_Init();
 
         log::info("\n");
 
