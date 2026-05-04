@@ -2,7 +2,6 @@
 #include "framebuffer.hpp"
 
 #include "glyphs.h"
-#include "../../../UEFI_BOOT/boot_shared.h"
 #include "arch/x86_64/Common/Common.hpp"
 #include "Drivers/vga.h"
 #include "kernel/Paging.hpp"
@@ -61,10 +60,10 @@ namespace framebuffer {
         const auto pixel_y = y * 16;
         const u8* glyph = glyph::get(c);
         for (int row = 0; row < 16; row++) {
-            if (pixel_y + row >= static_cast<i32>(info.height))
+            if (pixel_y + row >= info.height)
                 break;
             for (int col = 0; col < 8; col++) {
-                if (pixel_x + col >= static_cast<i32>(info.width))
+                if (pixel_x + col >= info.width)
                     break;
                 const bool set = glyph[row] & (0b10000000 >> col);
                 set_pixel(pixel_x + col, pixel_y + row, set ? color : BACKGROUND_COLOR);

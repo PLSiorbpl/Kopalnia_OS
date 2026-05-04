@@ -1,15 +1,11 @@
 #include "heap.hpp"
 #include "std/printf.hpp"
 #include "std/string.h"
-#include "kernel/linker_info.hpp"
-#include "kernel/Sleep.hpp"
-#include "std/mem_common.hpp"
 
 namespace heap {
     Block* heap_head;
     uint64_t heap_start;
     uint64_t heap_end;
-    uint64_t heap_ptr;
 
     void heap_init(const uint64_t size, u64 heap_addr) {
         heap_head = reinterpret_cast<Block*>(heap_addr);
@@ -24,11 +20,11 @@ namespace heap {
 
     // Block allocator
     void* malloc(uint64_t size) {
-        size = (size + 15) & ~15ULL; // align but Block needs to be 16B aligned
+        size = (size + 15) & ~15ULL;
         for (Block* block = heap_head; block; block = block->next) {
             if (block->free && block->size >= size) {
 
-                if (block->size >= size + sizeof(Block) + 16) { // 16 is minimum split size
+                if (block->size >= size + sizeof(Block) + 16) { // 32B+16B is minimum split size
                     // Split
                     const uint64_t new_size = block->size - size - sizeof(Block);
                     auto* new_block = reinterpret_cast<Block *>(reinterpret_cast<uint8_t *>(block+1) + size);

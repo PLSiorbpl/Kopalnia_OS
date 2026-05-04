@@ -38,6 +38,8 @@ namespace IDT {
 
         x64::outb(0x21, 0xFF);
         x64::outb(0xA1, 0xFF);
+        x64::outb(0x20, 0x20);
+        x64::outb(0xA0, 0x20);
         PIC_enabled = false;
         x64::set_INT_flag(true);
     }

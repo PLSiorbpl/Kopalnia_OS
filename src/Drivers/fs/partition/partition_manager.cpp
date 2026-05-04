@@ -5,7 +5,7 @@
 namespace fs::partition {
     // https://gist.github.com/xobs/91a84d29152161e973d717b9be84c4d0
     u32 crc32(const u8* data, const u32 len) {
-        int i = 0;
+        u32 i = 0;
         u32 crc = 0xFFFFFFFF;
         while (i < len) {
             crc = crc ^ data[i];
@@ -81,7 +81,7 @@ namespace fs::partition {
 
     void partition_manager::list_partitions() {
         for (u32 i = 0; i < header->partition_entry_count; i++) {
-            auto partition = &partitions.data[i];
+            auto partition = &partitions[i];
             if (mem::memcmp(partition->type_guid, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) == true)
                 continue;
             if (partition->starting_lba == 0)

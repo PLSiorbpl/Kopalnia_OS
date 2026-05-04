@@ -118,8 +118,8 @@ namespace USB {
 
         uint8_t command_completion_status = 0;
 
-        for (size_t i = 0; i < events.size; i++) {
-            xhci_trb_t *event = events.data[i];
+        for (size_t i = 0; i < events.size(); i++) {
+            xhci_trb_t *event = events[i];
             switch (event->trb_type) {
                 case XHCI_TRB_TYPE_CMD_COMPLETION_EVENT: {
                     command_completion_status = 1;
@@ -249,8 +249,8 @@ namespace USB {
     }
 
     bool xhci_driver::_is_usb3_port(uint8_t port_id) {
-        for (size_t i = 0; i < m_usb3_ports.size; i++) {
-            if (m_usb3_ports.data[i] == port_id) {
+        for (size_t i = 0; i < m_usb3_ports.size(); i++) {
+            if (m_usb3_ports[i] == port_id) {
                 return true;
             }
         }
@@ -407,7 +407,7 @@ namespace USB {
             }
         }
 
-        xhci_command_completion_trb_t* completion_trb = m_command_completion_events.size ? m_command_completion_events.data[0] : nullptr;
+        xhci_command_completion_trb_t* completion_trb = m_command_completion_events.size() ? m_command_completion_events[0] : nullptr;
 
         m_command_completion_events.clear();
         m_command_irq_completion = 0;
@@ -572,8 +572,8 @@ namespace USB {
         uint8_t slot_id = device->get_slot();
         uint8_t port_speed = device->get_speed();
 
-        bool is_root_device = (device->route_string() == 0);
-        uint8_t port_index = port_id - 1;
+        //bool is_root_device = (device->route_string() == 0);
+        //uint8_t port_index = port_id - 1;
 
         // Configure the input context for Address Device command
         uint16_t max_packet_size = _initial_max_packet_size(port_speed);
