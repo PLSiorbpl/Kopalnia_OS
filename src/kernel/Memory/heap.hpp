@@ -1,6 +1,5 @@
 #pragma once
 #include "libs/std/types.hpp"
-#include "std/printf.hpp"
 
 namespace heap {
 	struct alignas(16) Block {
@@ -9,15 +8,14 @@ namespace heap {
 		Block* next;
 		Block* prev;
 	};
+	static_assert(sizeof(Block) % 16 == 0);
 
 	struct AlignHeader {
 		void* raw;
 	};
-	static_assert(sizeof(Block) % 16 == 0);
 
 	extern uint64_t heap_start;
 	extern uint64_t heap_end;
-	extern uint64_t heap_ptr;
 	extern Block* heap_head;
 
 	void heap_init(uint64_t size, u64 heap_addr);
@@ -37,10 +35,25 @@ namespace heap {
 	void dump_heap();
 }
 
+
 inline void* operator new(const size_t size) {
 	return heap::malloc(size);
 }
 
 inline void operator delete(void* ptr) noexcept {
+	heap::free(ptr);
+}
+
+inline void* operator new(size_t, void* ptr) noexcept {
+	return ptr;
+}
+
+inline void operator delete(void*, void*) noexcept {}
+
+inline void* operator new[](const size_t size) {
+	return heap::malloc(size);
+}
+
+inline void operator delete[](void* ptr) noexcept {
 	heap::free(ptr);
 }

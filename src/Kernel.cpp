@@ -114,8 +114,8 @@ void list_commands() {
 mem::Ring_Buffer<TextCommand, 64> previous_commands;
 
 extern "C" void user_space_main() {
-    std::printf("&aPrintf(%/i %/u %/s %/x %/c %/u %/f) &c%i %u %s %x %c %u %f\n", std::Output::std_out, -6767, 0, "LOL",
-                0x00000666, 'j', 0xffffffffff, 3.146767);
+    std::printf("\n&aPrintf(%/i %/u %/s %/x %/c %/l %/f) &c%i %u %s %x %c %l %f\n", std::Output::std_out, -6767, 6767, "LOL",
+                0x00006677, 'j', 0x7FFFFFFFFFFFFFFF, 3.146767);
     std::printf("&f------------ &bPlum OS 64bit &f------------\n\n");
     std::printf("&aHello from user space!\n");
 

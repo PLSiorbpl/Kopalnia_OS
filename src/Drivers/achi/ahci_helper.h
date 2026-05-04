@@ -1,9 +1,9 @@
 #pragma once
 #include "ahci_port.h"
-#include "kernel/Paging.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "std/mem_common.hpp"
 #include "std/types.hpp"
+#include "std/printf.hpp"
 
 namespace drivers::ahci {
     inline void* allocate_virtual_memory(u64 size, u64 alignment) {
