@@ -13,6 +13,7 @@
 #include "xHCI_ext_cap.hpp"
 #include "xHCI_device_ctx.hpp"
 #include "xHCI_device.hpp"
+#include "arch/x86_64/Common/Common.hpp"
 #include "kernel/log.h"
 
 namespace USB {
@@ -21,7 +22,6 @@ namespace USB {
     bool xhci_driver::init_device() {
         // Get xHCI device from PCI
         const PCI::PCI_Device usb = PCI::Find_Class(0x0030030C);
-        irq_number = PCI::pci_read8(usb.bus, usb.device, usb.function, 0x3C);
 
         // Get base mmio address
         if (usb.vendor_id == 0) {
@@ -65,7 +65,43 @@ namespace USB {
 
         _configure_runtime_registers();
 
-        if (irq_number != 0) {
+        irq_number = 255;
+        uint64_t msi_offset = PCI::get_msi_offset(usb);
+        if (msi_offset != 0) {
+            uint16_t control = PCI::pci_read16(usb.bus, usb.device, usb.function, msi_offset + 0x02);
+            control &= ~1;
+            PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x02, control);
+
+            uint8_t vector = 0x40;
+            uint16_t data = vector;
+            uint64_t apic_base = x64::rdmsr(0x1B);
+            uint32_t addr = (apic_base & 0xFFFFF000);
+
+            control &= ~(0b111 << 1);
+
+            PCI::pci_write32(usb.bus, usb.device, usb.function, msi_offset + 0x04, addr);
+
+            if (control & (1 << 7)) { // 64-bit
+                PCI::pci_write32(usb.bus, usb.device, usb.function, msi_offset + 0x08, 0x0);
+                PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x0C, data);
+            } else {
+                PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x08, data);
+            }
+            
+            // Disable INTX
+            uint16_t cmd = PCI::pci_read16(usb.bus, usb.device, usb.function, 0x04);
+            cmd |= (1 << 10);
+            PCI::pci_write16(usb.bus, usb.device, usb.function, 0x04, cmd);
+
+            IDT::Install_handler(_xhci_irq_handler, irq_number);
+
+            // Enable MSI
+            control |= 1;
+            PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x02, control);
+
+            log::success("[ xHCI ] MSI interrupt");
+        } else {
+            irq_number = PCI::pci_read8(usb.bus, usb.device, usb.function, 0x3C);
             IDT::Install_handler(_xhci_irq_handler, irq_number);
         }
 

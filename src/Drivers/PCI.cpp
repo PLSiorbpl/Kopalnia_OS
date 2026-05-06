@@ -4,8 +4,27 @@
 
 #include "std/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
+#include "kernel/log.h"
 
 namespace PCI {
+    uint64_t get_msi_offset(PCI_Device device) {
+        int safety = 32;
+        uint8_t cap_ptr = pci_read8(device.bus, device.device, device.function, 0x34);
+
+        while (cap_ptr != 0 && safety--) {
+            uint8_t id = pci_read8(device.bus, device.device, device.function, cap_ptr);
+            uint8_t next = pci_read8(device.bus, device.device, device.function, cap_ptr+1);
+
+            if (id == 0x05) {
+                return cap_ptr;
+            }
+
+            cap_ptr = next;
+        }
+        log::error("[ PCI ] no msi offset");
+        return 0;
+    }
+
     uint32_t pci_read32(const uint8_t bus, const uint8_t device, const uint8_t func, const uint8_t offset) {
         const uint32_t address = (1u << 31) |
         (static_cast<uint32_t>(bus) << 16) |
