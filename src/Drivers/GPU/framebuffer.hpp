@@ -26,6 +26,8 @@ namespace framebuffer {
         void put_char(char c, u32 color);
 
         void scroll(u32 lines = 1);
+
+        i32 get_height_in_chars() const { return height_in_chars; }
     private:
         void inc_cursor(const i32 amount) {
             cursor_x += amount;

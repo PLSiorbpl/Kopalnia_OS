@@ -1,6 +1,7 @@
 #include "heap.hpp"
 
 #include "kernel/Sleep.hpp"
+#include "kernel/system.hpp"
 #include "std/printf.hpp"
 #include "std/string.h"
 
@@ -192,11 +193,16 @@ namespace heap {
         uint64_t free = 0;
         uint64_t all = 0;
         uint64_t b_count = 0;
+        uint64_t total_blocks = 0;
+        uint32_t heigh = systemPL::fb.get_height_in_chars();
 
         std::kernel::printf("&bHeap Visualization\n");
+        for (const Block* b = heap_head; b; b = b->next) {
+            total_blocks++;
+        }
 
         for (Block* b = heap_head; b; b = b->next) {
-            uint64_t m_size = b->size;
+            const uint64_t m_size = b->size;
             all += m_size;
             if (b->free)
                 free += m_size;
@@ -205,16 +211,17 @@ namespace heap {
 
             b_count += 1;
 
-            if (show_all) {
+            if (show_all && total_blocks <= heigh) {
                 auto size = static_cast<double>(m_size);
                 const char *post_fix = std::format_size(size);
                 std::kernel::printf("&f\tBlock #&a%u &f@ &7%x &fsize: &a%f&f%s ", b_count, reinterpret_cast<uint64_t>(b+1), size, post_fix);
 
                 if (b->free)
-                    std::kernel::printf("&afree");
+                    std::kernel::printf("&afree\n");
                 else
-                    std::kernel::printf("&cused");
+                    std::kernel::printf("&cused\n");
             }
+            total_blocks--;
         }
 
         std::kernel::printf("&f\tBlock total: &a%u\n", b_count);
