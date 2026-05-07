@@ -44,8 +44,36 @@ Command commands[10] = {
     },
     {
         "sleep", [](int argc, char** argv) {
-            std::printf("&a\tSleeping for &f5 &aseconds\n");
-            sys_sleep(5000);
+            uint64_t wait = 1;
+            uint8_t unit = true; // ms, s
+            if (argc > 1) {
+                for (int i = 1; i < argc; i++) {
+                    if (std::str_cmp(argv[i], "-h")) {
+                        std::printf("&7Usage: &fsleep &e[OPTIONS]\n\n");
+                        std::printf("&eOption     &fMeaning\n");
+                        std::printf("&b-ns        &Nano-seconds mode\n");
+                        std::printf("&b-ms        &7Mili-seconds mode\n");
+                        std::printf("&b-s         &7Seconds mode\n");
+                        std::printf("&b-t TIME    &7Time to wait\n");
+                        std::printf("&b-h         &7This text\n");
+                        return;
+                    } else if (std::str_cmp(argv[i], "-ns")) {
+                        std::printf("&c Fr no nano-seconds\n");
+                        unit = false;
+                    } else if (std::str_cmp(argv[i], "-ms")) {
+                        unit = false;
+                    } else if (std::str_cmp(argv[i], "-s")) {
+                        unit = true;
+                    } else if (std::str_cmp(argv[i], "-t")) {
+                        if (i+1 < argc) {
+                            wait = std::str_to_int(argv[i+1]);
+                        }
+                    }
+                }
+            }
+            std::printf("&a\tSleeping for &f%l ", std::Output::std_out, wait);
+            std::printf("&a%s\n", std::Output::std_out, unit ? "seconds" : "mili-seconds");
+            sys_sleep(unit ? wait*1000 : wait);
         }
     },
     {

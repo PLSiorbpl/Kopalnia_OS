@@ -176,4 +176,26 @@ namespace std {
 
         *ptr = '\0';
     }
+
+    inline int64_t str_to_int(const char *str) {
+        int result = 0;
+        bool negative = false;
+
+        int i = 0;
+        if (str[0] == '-') {
+            negative = true;
+            i++;
+        }
+        while (str[i]) {
+            char c = str[i];
+
+            if (c < '0' || c > '9') {
+                break;
+            }
+
+            result = result * 10 + (c - '0');
+            i++;
+        }
+        return negative ? -result : result;
+    }
 }
