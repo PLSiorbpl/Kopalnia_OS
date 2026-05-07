@@ -233,10 +233,17 @@ namespace heap {
         const char *free_p = std::format_size(free_s);
         auto all_s = static_cast<double>(all);
         const char *all_p = std::format_size(all_s);
-        std::kernel::printf("&c%f&f%s / &a%f&f%s / &b%f&f%s\n\n", used_s, used_p, free_s, free_p, all_s, all_p);
+        std::kernel::printf("&c%f&f%s / &a%f&f%s / &b%f&f%s\n", used_s, used_p, free_s, free_p, all_s, all_p);
         uint64_t end = Time::tick;
         uint64_t elapsed_ticks = end - start;
         uint64_t ms = elapsed_ticks * 10;
-        std::kernel::printf("Took %lms\n\n", ms);
+        std::kernel::printf("&7Took ");
+        if (ms < 50)
+            std::kernel::printf("&a%l", ms);
+        else if (ms < 100)
+            std::kernel::printf("&e%l", ms);
+        else if (ms > 200)
+            std::kernel::printf("&c%l", ms);
+        std::kernel::printf("&fms\n\n");
     }
 }

@@ -5,6 +5,7 @@
 #include "std/types.hpp"
 #include "arch/x86_64/Common/Common.hpp"
 #include "kernel/log.h"
+#include "arch/x86_64/IDT/IDT.hpp"
 
 namespace PCI {
     uint64_t get_msi_offset(PCI_Device device) {
@@ -21,9 +22,54 @@ namespace PCI {
 
             cap_ptr = next;
         }
-        log::error("[ PCI ] no msi offset");
         return 0;
     }
+
+    void install_interrupt(const PCI_Device &dev, const IDT::isr_t handler, uint8_t irq) {
+        uint64_t msi_offset = get_msi_offset(dev);
+
+        if (msi_offset != 0) {
+            // MSI
+
+            // Disable MSI
+            uint16_t control = pci_read16(dev.bus, dev.device, dev.function, msi_offset + 0x02);
+            control &= ~1;
+            pci_write16(dev.bus, dev.device, dev.function, msi_offset + 0x02, control);
+
+            const uint8_t vector = irq+32;
+            const uint16_t data = vector;
+            const uint32_t addr = x64::rdmsr(0x1B) & 0xFFFFF000;
+
+            // Use 1 vector
+            control &= ~(0b111 << 4);
+
+            pci_write32(dev.bus, dev.device, dev.function, msi_offset + 0x04, addr);
+
+            if (control & (1 << 7)) { // 64-bit
+                pci_write32(dev.bus, dev.device, dev.function, msi_offset + 0x08, 0x0);
+                pci_write16(dev.bus, dev.device, dev.function, msi_offset + 0x0C, data);
+            } else { // 32bit
+                pci_write16(dev.bus, dev.device, dev.function, msi_offset + 0x08, data);
+            }
+
+            // Disable INTX
+            uint16_t cmd = PCI::pci_read16(dev.bus, dev.device, dev.function, 0x04);
+            cmd |= (1 << 10);
+            pci_write16(dev.bus, dev.device, dev.function, 0x04, cmd);
+
+            IDT::Install_handler(handler, irq);
+
+            // Enable MSI
+            control |= 1;
+            pci_write16(dev.bus, dev.device, dev.function, msi_offset + 0x02, control);
+            log::info("[ PCI ] Installed MSI interrupt");
+        } else {
+            irq = pci_read8(dev.bus, dev.device, dev.function, 0x3C);
+            IDT::Install_handler(handler, irq);
+            log::info("[ PCI ] Installed INTX interrupt");
+        }
+    }
+
 
     uint32_t pci_read32(const uint8_t bus, const uint8_t device, const uint8_t func, const uint8_t offset) {
         const uint32_t address = (1u << 31) |

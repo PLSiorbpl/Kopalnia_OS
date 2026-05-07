@@ -65,45 +65,8 @@ namespace USB {
 
         _configure_runtime_registers();
 
-        irq_number = 255;
-        uint64_t msi_offset = PCI::get_msi_offset(usb);
-        if (msi_offset != 0) {
-            uint16_t control = PCI::pci_read16(usb.bus, usb.device, usb.function, msi_offset + 0x02);
-            control &= ~1;
-            PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x02, control);
-
-            uint8_t vector = 0x40;
-            uint16_t data = vector;
-            uint64_t apic_base = x64::rdmsr(0x1B);
-            uint32_t addr = (apic_base & 0xFFFFF000);
-
-            control &= ~(0b111 << 1);
-
-            PCI::pci_write32(usb.bus, usb.device, usb.function, msi_offset + 0x04, addr);
-
-            if (control & (1 << 7)) { // 64-bit
-                PCI::pci_write32(usb.bus, usb.device, usb.function, msi_offset + 0x08, 0x0);
-                PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x0C, data);
-            } else {
-                PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x08, data);
-            }
-            
-            // Disable INTX
-            uint16_t cmd = PCI::pci_read16(usb.bus, usb.device, usb.function, 0x04);
-            cmd |= (1 << 10);
-            PCI::pci_write16(usb.bus, usb.device, usb.function, 0x04, cmd);
-
-            IDT::Install_handler(_xhci_irq_handler, irq_number);
-
-            // Enable MSI
-            control |= 1;
-            PCI::pci_write16(usb.bus, usb.device, usb.function, msi_offset + 0x02, control);
-
-            log::success("[ xHCI ] MSI interrupt");
-        } else {
-            irq_number = PCI::pci_read8(usb.bus, usb.device, usb.function, 0x3C);
-            IDT::Install_handler(_xhci_irq_handler, irq_number);
-        }
+        irq_number = 10;
+        PCI::install_interrupt(usb, _xhci_irq_handler, irq_number);
 
         return true;
     }

@@ -5,6 +5,7 @@
 #include "../PCI.hpp"
 #include "../../kernel/Paging.hpp"
 #include "../../libs/std/printf.hpp"
+#include "arch/x86_64/Common/Common.hpp"
 #include "kernel/log.h"
 #include "kernel/Sleep.hpp"
 #include "kernel/system.hpp"
@@ -24,9 +25,10 @@ void drivers::ahci::ahci::init() {
     }
 
     const auto device = PCI::find_class_with_sub(0x01, 0x06);
-    const u8 irq = PCI::pci_read8(device.bus, device.device, device.function, 0x3C);
+    //const u8 irq = PCI::pci_read8(device.bus, device.device, device.function, 0x3C);
 
-    IDT::Install_handler([](const IDT::ISR_Registers* regs) {
+    constexpr uint8_t irq = 11;
+    PCI::install_interrupt(device, [](const IDT::ISR_Registers* regs) {
         const auto ahci = &systemPL::ahci;
         ahci->on_interrupt(regs);
     }, irq);

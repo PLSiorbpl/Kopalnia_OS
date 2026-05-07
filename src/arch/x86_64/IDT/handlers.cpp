@@ -43,30 +43,30 @@ namespace IDT {
 
     void Install_handler(const isr_t handler, const uint8_t irq_no) {
         if (!handler) {
-            log::error("Install_handler &cERROR&f: &anull handler");
+            log::error("[ IDT ] Install_handler &cERROR&f: &anull handler");
             return;
         }
 
         if (irq_no >= 24) { // PIC IRQ 0–15
-            log::error("Install_handler &cERROR&f: &cinvalid &firq &e%u", irq_no);
+            log::error("[ IDT ] Install_handler &cERROR&f: &cinvalid &firq &e%u", irq_no);
             return;
         }
 
         const uint8_t vector = irq_no + 32;
 
         if (custom_handlers_count[vector] >= 4) {
-            log::error("Install_handler &cERROR&f: Max handlers for IRQ: %u", irq_no);
+            log::error("[ IDT ] Install_handler &cERROR&f: Max handlers for IRQ: %u", irq_no);
             return;
         }
 
         if (custom_handlers_count[vector] == 0) {
-            log::info("Installed &afirst &7handler for IRQ &a%u", irq_no);
+            log::info("[ IDT ] Installed &afirst &7handler for IRQ &a%u", irq_no);
             const auto iso = IOAPIC::resolve_irq(irq_no);
             systemPL::ioapic.route(iso.gsi, vector, IOAPIC::Fixed,
                                    iso.level_triggered ? IOAPIC::TriggerMode::LEVEL : IOAPIC::TriggerMode::EDGE,
                                    iso.active_low, false);
         } else {
-            log::success("&aAdded shared &7handler for IRQ &a%u", irq_no);
+            log::success("[ IDT ] &aAdded shared &7handler for IRQ &a%u", irq_no);
         }
 
         custom_handlers[vector][custom_handlers_count[vector]] = handler;

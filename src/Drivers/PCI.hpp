@@ -1,5 +1,6 @@
 #pragma once
-#include "../libs/std/types.hpp"
+#include "libs/std/types.hpp"
+#include "arch/x86_64/IDT/IDT.hpp"
 
 namespace PCI {
     struct PCI_Device {
@@ -20,6 +21,7 @@ namespace PCI {
     void pci_write8(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, u8 value);
 
     uint64_t get_msi_offset(PCI_Device device);
+    void install_interrupt(const PCI_Device &dev, IDT::isr_t handler, uint8_t irq = 255);
 
     void Test();
 
