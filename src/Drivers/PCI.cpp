@@ -121,12 +121,16 @@ namespace PCI {
         uint32_t devices = 0;
         for (int bus = 0; bus < 256; bus++) {
             for (int dev = 0; dev < 32; dev++) {
-                const uint16_t vendor = pci_read16(bus, dev, 0, 0x00);
+                for (int func = 0; func < 8; func++) {
 
-                if (vendor != 0xFFFF && vendor != 0000) {
-                    const uint16_t device = pci_read16(bus, dev, 0, 0x02);
+                    const uint16_t vendor = pci_read16(bus, dev, func, 0x00);
 
-                    std::kernel::printf("&fVendor: &a%x&f, Device: &a%x ", vendor, device);
+                    if (vendor == 0xFFFF || vendor == 0000)
+                        continue;
+
+                    const uint16_t device = pci_read16(bus, dev, func, 0x02);
+
+                    std::kernel::printf("&fVendor: &a%x&f, Device: &a%x, Fun: &a%x ", vendor, device, func);
                     switch (vendor) {
                         case 0x8086: {
                             std::kernel::printf("&bIntel ");
@@ -252,6 +256,38 @@ namespace PCI {
                             device.bar[i] =
                                 pci_read32(bus, dev, fn, 0x10 + i * 4);
                         }
+                        return device;
+                    }
+                }
+            }
+        }
+        return {};
+    }
+
+    PCI_Device find_vendor_class(uint32_t vendor, uint8_t base_class, uint8_t sub_class) {
+        for (int bus = 0; bus < 256; bus++) {
+            for (int dev = 0; dev < 32; dev++) {
+                uint16_t vid = pci_read16(bus, dev, 0, 0x00);
+                if (vid == 0xFFFF) continue;
+                const uint8_t header = pci_read8(bus, dev, 0, 0x0E);
+                const int fn_limit = (header & 0x80) ? 8 : 1;
+
+                for (int fn = 0; fn < fn_limit; fn++) {
+                    vid = pci_read16(bus, dev, fn, 0x00);
+                    if (vid == 0xFFFF || vid == 0x0000) continue;
+
+                    const uint8_t base = pci_read8(bus, dev, fn, 0x0B);
+                    const uint8_t sub  = pci_read8(bus, dev, fn, 0x0A);
+
+                    if (base == base_class && sub == sub_class && vendor == vid) {
+                        PCI_Device device{};
+                        device.bus = bus;
+                        device.device = dev;
+                        device.function = fn;
+                        device.vendor_id = vid;
+                        device.device_id = pci_read16(bus, dev, fn, 0x02);
+                        for (int i = 0; i < 6; ++i)
+                            device.bar[i] = pci_read32(bus, dev, fn, 0x10 + i * 4);
                         return device;
                     }
                 }

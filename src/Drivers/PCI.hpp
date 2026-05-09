@@ -29,5 +29,6 @@ namespace PCI {
 
     PCI_Device Find(uint32_t vendor, uint32_t device_);
     PCI_Device Find_Class(uint32_t Class);
+    PCI_Device find_vendor_class(uint32_t vendor, uint8_t base_class, uint8_t sub_class);
     PCI_Device find_class_with_sub(u8 base_class, u8 sub_class);
 }

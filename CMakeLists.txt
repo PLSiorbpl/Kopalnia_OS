@@ -136,6 +136,9 @@ set(QEMU_FLAGS
         -device usb-storage,drive=usbstick
         -drive if=none,id=usbstick,file=${USB_IMG},format=raw
         -device virtio-keyboard-pci
+        # ----- NET -----
+        -netdev tap,id=n0,ifname=tap0,script=no,downscript=no
+        -device rtl8139,netdev=n0
         # ----- Debug -----
         -serial stdio
         -no-reboot
@@ -144,7 +147,6 @@ set(QEMU_FLAGS
 
         #-d trace:usb_xhci_*
         #-d usb,guest_errors,int
-        -d int,cpu_reset # Debug
         #-trace usb_xhci_*
         -s
 )

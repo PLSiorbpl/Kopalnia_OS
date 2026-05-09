@@ -19,6 +19,7 @@
 #include "Drivers/USB/xHCI/xHCI.hpp"
 #include "Memory/mem_helper.h"
 #include "arch/x86_64/IDT/APIC.hpp"
+#include "Drivers/Network/RTL8139.hpp"
 #include "uacpi/uacpi.h"
 
 extern u64 kernel_address_vert;
@@ -78,6 +79,8 @@ namespace systemPL {
 
         USB::m_xhci_driver.init_device();
         USB::m_xhci_driver.start_device();
+
+        RTL8139::init();
 
         drivers::ps2::init(acpi);
         acpi.enumerate_bus();
