@@ -20,6 +20,7 @@
 #include "Memory/mem_helper.h"
 #include "arch/x86_64/IDT/APIC.hpp"
 #include "Drivers/Network/RTL8139.hpp"
+#include "Drivers/hpet/hpet.h"
 #include "uacpi/uacpi.h"
 
 extern u64 kernel_address_vert;
@@ -74,6 +75,10 @@ namespace systemPL {
         uacpi_setup_early_table_access(acpi_early_buf, sizeof(acpi_early_buf));
         ioapic.init();
         acpi.init();
+
+        log::info("\n");
+
+        hpet::init();
 
         log::info("\n");
 
