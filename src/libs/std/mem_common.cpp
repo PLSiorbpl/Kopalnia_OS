@@ -1,7 +1,7 @@
 #include "types.hpp"
 
 namespace mem {
-    void* memcpy(void* dst, const void* src, const uint64_t size) {
+    extern "C" void* memcpy(void* dst, const void* src, const uint64_t size) {
         auto d64 = static_cast<uint64_t *>(dst);
         auto s64 = static_cast<const uint64_t *>(src);
         uint64_t i = 0;
@@ -17,7 +17,7 @@ namespace mem {
         return dst;
     }
 
-    volatile void* memmove(volatile void* dst, volatile const void* src, const uint64_t size) {
+    extern "C" volatile void* memmove(volatile void* dst, volatile const void* src, const uint64_t size) {
         const auto d = static_cast<volatile uint8_t*>(dst);
         const auto s = static_cast<volatile const uint8_t*>(src);
 
@@ -32,7 +32,7 @@ namespace mem {
         return dst;
     }
 
-    void* memset(void* dst, const uint8_t value, const uint64_t size) {
+    extern "C" void* memset(void* dst, const uint8_t value, const uint64_t size) {
         const auto d = static_cast<uint8_t *>(dst);
         for (uint64_t i = 0; i < size; i++) {
             d[i] = value;
@@ -65,7 +65,7 @@ namespace mem {
     }
 
     // True - equal False - not equal
-    bool memcmp(const void* src1, const void* src2, const uint64_t size) {
+    extern "C" bool memcmp(const void* src1, const void* src2, const uint64_t size) {
         const auto p1 = static_cast<const uint8_t*>(src1);
         const auto p2 = static_cast<const uint8_t*>(src2);
 
