@@ -1,41 +1,44 @@
 #include "ICMP.hpp"
 #include "Drivers/Network/Common.hpp"
+#include "Drivers/Network/Ethernet.hpp"
 #include "Drivers/Network/Net_Device.hpp"
 #include "kernel/log.h"
 #include "std/mem_common.hpp"
 
 namespace NET {
-    void receive_ICMP(Net_Device *dev, IPv4Packet *packet) {
-        const uint8_t ip_header_len = (packet->ip.ihl_version & 0x0F) * 4;
+    void receive_ICMP(Net_Device *dev, const uint8_t *frame, uint16_t len) {
+        if (len < sizeof(EthernetHeader) + sizeof(IPv4Header) + sizeof(ICMPHeader)) {
+            log::warn("[ NET ] ICMP packet too short");
+            return;
+        }
+        auto *eth = (EthernetHeader *)frame;
 
-        auto* frame = reinterpret_cast<uint8_t *>(packet);
+        auto *ip = (IPv4Header *)(frame + sizeof(EthernetHeader));
+        const uint8_t ip_header_len = (ip->ihl_version & 0x0F) * 4;
 
-        auto* icmp = reinterpret_cast<ICMPHeader *>(frame + 14 + ip_header_len);
+        auto *icmp = (ICMPHeader *)(frame + sizeof(EthernetHeader) + ip_header_len);
 
         char buf[16];
-        ipv4_to_str(packet->ip.src_ip, buf, true);
+        ipv4_to_str(ip->src_ip, buf, true);
         log::info("icmp from: %s", buf);
+
         if (icmp->type == 8) { // Echo request
+            // This should be its own function fr send_ICMP()
+
+            const uint32_t tmp_ip = ip->src_ip;
+            ip->src_ip = ip->dst_ip;
+            ip->dst_ip = tmp_ip;
+
+            ip->checksum = 0;
+            ip->checksum = checksum(ip, ip_header_len);
+
             icmp->type = 0; // Reply
             icmp->code = 0;
 
-            const uint32_t tmp_ip = packet->ip.src_ip;
-            packet->ip.src_ip = packet->ip.dst_ip;
-            packet->ip.dst_ip = tmp_ip;
-
-            uint8_t tmp_mac[6];
-            mem::memcpy(tmp_mac, packet->eth.dst_mac, 6);
-            mem::memcpy(packet->eth.dst_mac, packet->eth.src_mac, 6);
-            mem::memcpy(packet->eth.src_mac, tmp_mac, 6);
-
-
-            packet->ip.checksum = 0;
-            packet->ip.checksum = checksum(&packet->ip, ip_header_len);
-
             icmp->checksum = 0;
-            icmp->checksum = checksum(icmp, Bswap_16(packet->ip.total_length) - ip_header_len);
+            icmp->checksum = checksum(icmp, Bswap_16(ip->total_length) - ip_header_len);
 
-            dev->send(reinterpret_cast<uint8_t *>(packet), Bswap_16(packet->ip.total_length) + 14);
+            send_ethernet(dev, eth->src_mac, Bswap_16(IPv4_Ether_Type), ip, Bswap_16(ip->total_length));
         }
     }
 }

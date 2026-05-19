@@ -2,6 +2,7 @@
 #include "Drivers/PCI.hpp"
 #include "kernel/log.h"
 #include "arch/x86_64/Common/Common.hpp"
+#include "Drivers/Network/Common.hpp"
 #include "kernel/Sleep.hpp"
 #include "kernel/Memory/heap.hpp"
 #include "kernel/Memory/mem_helper.h"
@@ -22,6 +23,10 @@ namespace RTL8139 {
 
     const char *RTL8139::get_name() const {
         return "RTL8139";
+    }
+
+    const uint32_t RTL8139::get_ipv4() const {
+        return make_ipv4(10, 0, 0, 2);
     }
 
     RTL8139::~RTL8139() = default;

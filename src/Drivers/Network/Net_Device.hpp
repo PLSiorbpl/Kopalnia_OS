@@ -13,5 +13,7 @@ namespace NET {
         virtual const uint8_t* get_mac() const = 0;
 
         virtual const char* get_name() const = 0;
+
+        virtual const uint32_t get_ipv4() const = 0;
     };
 }

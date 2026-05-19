@@ -3,5 +3,5 @@
 #include "Drivers/Network/Net_Device.hpp"
 
 namespace NET {
-    void receive_ICMP(Net_Device *dev, IPv4Packet *packet);
+    void receive_ICMP(Net_Device *dev, const uint8_t *frame, uint16_t len);
 }

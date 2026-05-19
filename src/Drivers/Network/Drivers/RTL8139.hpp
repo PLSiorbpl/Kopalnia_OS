@@ -18,6 +18,8 @@ namespace RTL8139 {
 
         [[nodiscard]] const char *get_name() const override;
 
+        [[nodiscard]] const uint32_t get_ipv4() const override;
+
     private:
         bool Find_Device();
         bool Reset_Device();

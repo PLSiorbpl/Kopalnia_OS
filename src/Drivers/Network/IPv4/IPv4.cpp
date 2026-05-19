@@ -6,17 +6,22 @@
 #include "Drivers/Network/IPv4/ICMP.hpp"
 
 namespace NET {
-    void receive_IPv4(Net_Device *dev, IPv4Packet *packet) {
-        auto ip = &packet->ip;
-        if (ip->dst_ip != Bswap_32(make_ipv4(10,0,0,2))) return;
+    void receive_IPv4(Net_Device *dev, const uint8_t *frame, const uint16_t len) {
+        if (len < sizeof(IPv4Header) + sizeof(EthernetHeader)) {
+            log::warn("IPv4 packet too short");
+            return;
+        }
+
+        const auto ip = (IPv4Header *)(frame + sizeof(EthernetHeader));
+        if (ip->dst_ip != Bswap_32( dev->get_ipv4() )) return; // not to us
 
         switch (ip->protocol) {
             case IPv4_Protocol_ICMP: {
-                receive_ICMP(dev, packet);
+                receive_ICMP(dev, frame, len);
                 return;
             }
             case IPv4_Protocol_UDP: {
-                receive_udp(packet);
+                receive_udp(dev, frame, len);
                 return;
             }
             default:
