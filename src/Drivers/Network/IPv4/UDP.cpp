@@ -1,23 +1,29 @@
 #include "UDP.hpp"
 #include "Drivers/Network/Common.hpp"
+#include "kernel/Memory/heap.hpp"
+#include "std/mem_common.hpp"
+#include "kernel/log.h"
 
 namespace NET {
     void receive_udp(Net_Device *dev, const uint8_t *frame, uint16_t len) {
-        auto *packet = (IPv4Packet *)frame;
+        const auto *ip = (IPv4Header *)(frame + sizeof(EthernetHeader));
+        const uint8_t ip_header_len = (ip->ihl_version & 0x0F) * 4;
 
-        const uint8_t ip_header_len = (packet->ip.ihl_version & 0x0F) * 4;
+        auto* udp = (UDPHeader *)(frame + sizeof(EthernetHeader) + ip_header_len);
 
-        auto* udp = (UDPHeader *)(frame + 14 + ip_header_len);
+        // TODO
+        // Implement checksum checking
 
-        if (udp->checksum == 0)
-            log::warn("[ NET ] UDP packet whitout checksum");
+        const uint16_t payload_len = Bswap_16(udp->length) - sizeof(UDPHeader);
 
-        log::info("[ NET ] UDP from port: %u -> %u", (uint32_t)Bswap_16(udp->src_port), (uint32_t)Bswap_16(udp->dst_port));
+        auto *buf = static_cast<uint8_t *>(heap::malloc(payload_len + 1));
+        const uint8_t* payload = reinterpret_cast<uint8_t *>(udp) + sizeof(UDPHeader);
+        mem::memcpy(buf, payload, payload_len);
 
-        uint16_t payload_len = Bswap_16(udp->length) - sizeof(UDPHeader);
+        buf[payload_len] = '\0';
 
-        uint8_t* payload = (uint8_t*)udp + sizeof(UDPHeader);
-
-        log::success("UDP payload: %s", payload);
+        log::info("[ NET ] UDP from port: %u -> %u payload: &e%s", static_cast<uint32_t>(Bswap_16(udp->src_port)),
+                  static_cast<uint32_t>(Bswap_16(udp->dst_port)), buf);
+        heap::free(buf);
     }
 }

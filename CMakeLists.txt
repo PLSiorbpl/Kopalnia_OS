@@ -35,16 +35,20 @@ target_include_directories(Kernel PUBLIC
 
 target_compile_options(Kernel PRIVATE
         # ---------------------
-        # C++/C
+        # C++
+        $<$<COMPILE_LANGUAGE:CXX>:
+        -fno-use-cxa-atexit
+        -fno-rtti
+        >
+        # C++ / C
         $<$<COMPILE_LANGUAGE:C,CXX>:
         -m64
         -ffreestanding
         -fno-exceptions
         -fno-stack-protector
         -fno-omit-frame-pointer
-        -fno-use-cxa-atexit
+        -fno-strict-aliasing
         -fno-builtin
-        -fno-rtti
         -fno-pie
         -fno-pic
         -mcmodel=kernel

@@ -4,21 +4,24 @@
 #include "Drivers/Network/Net_Device.hpp"
 #include "std/types.hpp"
 #include "std/mem_common.hpp"
+#include "kernel/log.h"
 
 namespace NET {
     void receive_ARP(Net_Device *dev, const uint8_t *frame, uint16_t len) {
-        if (len < sizeof(ARPPacket)) {
+        if (len < sizeof(ARPHeader)) {
             log::warn("[ NET ] ARP packet too short");
             return;
         }
 
-        const auto packet = (ARPPacket *)frame;
+        auto *arp = (ARPHeader *)(frame + sizeof(EthernetHeader));
 
-        if (packet->arp.target_ip != Bswap_32( dev->get_ipv4() )) return;
-        if (packet->arp.opcode == Bswap_16( ARP_REPLY )) return;
+        auto *eth = (EthernetHeader *)frame;
+
+        if (arp->target_ip != Bswap_32( dev->get_ipv4() )) return;
+        if (arp->opcode == Bswap_16( ARP_REPLY )) return;
 
         char buf[16];
-        ipv4_to_str(packet->arp.sender_ip, buf, true);
+        ipv4_to_str(arp->sender_ip, buf, true);
         log::info("[ NET ] ARP from: %s", buf);
 
         ARPHeader reply{};
@@ -35,8 +38,8 @@ namespace NET {
         mem::memcpy(reply.sender_mac, dev->get_mac(), 6); // Me MAC
         reply.sender_ip = Bswap_32( dev->get_ipv4() ); // My ip 10.0.0.2
 
-        mem::memcpy(reply.target_mac, packet->eth.src_mac, 6);      // Sender MAC
-        reply.target_ip = packet->arp.sender_ip;                        // Sender IP
+        mem::memcpy(reply.target_mac, eth->src_mac, 6);      // Sender MAC
+        reply.target_ip = arp->sender_ip;                        // Sender IP
 
         send_ethernet(dev, reply.target_mac, Bswap_16(ARP_Ether_Type), &reply, sizeof(ARPHeader));
     }

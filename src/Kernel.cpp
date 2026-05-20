@@ -162,7 +162,7 @@ struct TextCommand {
 
 void list_commands(int argc, char** argv) {
     std::printf("&9\tCommands: &9%s", std::Output::std_out, commands[0].name);
-    for (i32 i = 1; i < sizeof(commands) / sizeof(Command); ++i) {
+    for (u32 i = 1; i < sizeof(commands) / sizeof(Command); ++i) {
         std::printf("&9, %s", std::Output::std_out, commands[i].name);
     }
     std::printf("\n");
